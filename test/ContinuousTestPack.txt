@@ -1,2 +1,7 @@
+TestActionPotentialDownsampler.hpp
+TestApPredict.hpp
 TestDavies2012Paper.hpp
+TestDoseCalculator.hpp
+TestLinearDiscriminantAnalysis.hpp
 TestMetadataCellmlModels.hpp
+TestTorsadePredict.hpp
