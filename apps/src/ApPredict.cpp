@@ -62,7 +62,7 @@ int main(int argc, char *argv[])
 
         if (num_args == 0 || CommandLineArguments::Instance()->OptionExists("--help"))
         {
-            ExecutableSupport::PrintError(ApPredictMethods::PrintArguments(false));
+            ExecutableSupport::PrintError(ApPredictMethods::PrintArguments());
             ExecutableSupport::FinalizePetsc();
             return ExecutableSupport::EXIT_BAD_ARGUMENTS;
         }
