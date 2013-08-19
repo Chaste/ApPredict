@@ -67,7 +67,7 @@ public:
      * @param model_index  1 = Shannon, 2=TenTusscher, 3 = Mahajan, 4 = Hund-Rudy, 5 = Grandi, 6 = O'Hara-Rudy
      * @param hertz  The frequency of the regular stimulus that this model should use.
      */
-    SetupModel(double hertz, unsigned model_index = UNSIGNED_UNSET);
+    SetupModel(const double& rHertz, unsigned model_index = UNSIGNED_UNSET);
 
     /**
      * Get a boost shared pointer to the model the constructor sets up

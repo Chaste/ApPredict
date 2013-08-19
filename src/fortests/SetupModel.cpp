@@ -49,22 +49,22 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "grandi_pasqualini_bers_2010_ssCvode.hpp"
 #include "ohara_rudy_2011Cvode.hpp"
 
-SetupModel::SetupModel(double hertz, unsigned model_index)
+SetupModel::SetupModel(const double& rHertz, unsigned modelIndex)
 {
     /// Cvode cells use a CVODE solver regardless of which standard solver is passed in.
     boost::shared_ptr<AbstractIvpOdeSolver> p_solver;
     boost::shared_ptr<AbstractStimulusFunction> p_stimulus;
 
-    if (model_index == UNSIGNED_UNSET)
+    if (modelIndex == UNSIGNED_UNSET)
     {
         if (!CommandLineArguments::Instance()->OptionExists("--model"))
         {
             EXCEPTION("Argument \"--model <index>\" is required");
         }
-        model_index = CommandLineArguments::Instance()->GetUnsignedCorrespondingToOption("--model");
+        modelIndex = CommandLineArguments::Instance()->GetUnsignedCorrespondingToOption("--model");
     }
 
-    switch (model_index)
+    switch (modelIndex)
     {
         case 1u:
             // This one is from the cellml project - more metadata.
@@ -94,7 +94,7 @@ SetupModel::SetupModel(double hertz, unsigned model_index)
 
     double s_magnitude = -15; // We will attempt to overwrite these with model specific ones below
     double s_duration = 3.0; // We will attempt to overwrite these with model specific ones below
-    double s1_period = 1000/hertz;  // ms - we may overwrite this with a model specific one below...
+    double s1_period = 1000.0/rHertz;  // ms - we may overwrite this with a model specific one if it is self exciting.
     // Use the default CellML stimulus amplitude and duration, but set start time and period to what we want.
 
     if (mpModel->HasCellMLDefaultStimulus())
