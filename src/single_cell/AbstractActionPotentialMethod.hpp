@@ -48,7 +48,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /**
  * This is a class that provides methods for running cell models to steady state and evaluating
- * the resulting action potentials.
+ * the resulting action potential markers like APD90.
  */
 class AbstractActionPotentialMethod
 {
@@ -104,7 +104,7 @@ protected:
      * @param rApd50  double to populate with the postprocessed APD50 (ms)
      * @param rUpstroke  double to populate with the postprocessed maximum upstroke velocity (mV/ms)
      * @param rPeak  double to populate with the postprocessed peak voltage (mV)
-     * @param printingTimeStep  the printing time step to use
+     * @param printingTimeStep  the printing time step to use (defaults to 1ms).
      * @param conc  [optional] concentration argument (only used for more helpful warning messages).
      *
      * @return the solution of the ODE.
@@ -173,7 +173,7 @@ public:
 
     /**
      * Tell this class to treat a lack of 1:1 correspondence between stimuli and action potentials
-     * as an error, rather than just a warning
+     * as an error, rather than just a warning.
      */
     void SetLackOfOneToOneCorrespondenceIsError(bool errorOn = true);
 

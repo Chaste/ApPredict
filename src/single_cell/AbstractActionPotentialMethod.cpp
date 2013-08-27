@@ -43,7 +43,7 @@ AbstractActionPotentialMethod::AbstractActionPotentialMethod()
        mNoOneToOneCorrespondenceIsError(false),
        mActionPotentialThreshold(-50),
        mSuppressOutput(false),
-       mHertz(1.0), // Hz
+       mHertz(1.0), // default to 1 Hz, replaced by suitable command line argument if present.
        mSuccessful(false)
 {
     CommandLineArguments* p_args = CommandLineArguments::Instance();

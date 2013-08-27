@@ -205,8 +205,8 @@ void ApPredictMethods::CommonRunMethod()
     // Set the initial values of these
     for (unsigned i=0; i<6u; i++)
     {
-        IC50s.push_back(-1);
-        hills.push_back(-1);
+        IC50s.push_back(-1); // These are our code for 'unset'.
+        hills.push_back(-1); // These are our code for 'unset'.
     }
 
     metadata_names.push_back("membrane_fast_sodium_current_conductance");
@@ -232,8 +232,7 @@ void ApPredictMethods::CommonRunMethod()
     DoseCalculator dose_calculator;
     mConcs = dose_calculator.GetConcentrations();
 
-
-    // We check the desired parameters are present, warn if not.
+    // We check the desired parameters are present in the model, warn if not.
     // This method also changes some metadata names if the model has variants that will do, but aren't ideal
     // and warns if it does this.
     ParameterWrapper(mpModel, metadata_names);
@@ -245,16 +244,20 @@ void ApPredictMethods::CommonRunMethod()
         ReadInIC50AndHill(IC50s[i], hills[i], short_names[i]);
     }
 
-    if (!mSuppressOutput) std::cout << "* max free plasma concentration = " << mConcs.back()<< " uM\n"
-                 "* min free plasma concentration = " << mConcs[0] << " uM\n"
-                 "* number of plasma concentrations = " << mConcs.size() << "\n";// << std::flush;
+    if (!mSuppressOutput)
+    {
+        std::cout << "* max free plasma concentration = " << mConcs.back()<< " uM\n"
+                     "* min free plasma concentration = " << mConcs[0] << " uM\n"
+                     "* number of plasma concentrations = " << mConcs.size() << "\n";// << std::flush;
+    }
 
     // This just stops the cell automatically resetting the CVODE solver before each call to Solve().
     mpModel->SetAutoReset(false);
 
     // The following names are fixed and correspond to metadata tags.
-    // We record the default parameter values that the model uses and const them to avoid problems!
+    // We record the default parameter values that the model uses.
     // All the drug block models should include these parameter labels
+    // But you only get a warning if not, so check the warnings...
     std::vector<double> default_conductances;
     for (unsigned i=0; i<metadata_names.size(); i++)
     {
@@ -276,6 +279,7 @@ void ApPredictMethods::CommonRunMethod()
     // Make and clean the above directories.
     mpFileHandler.reset(new OutputFileHandler(foldername));
 
+    // Print out a progress file for monitoring purposes.
     ProgressReporter progress_reporter(foldername, 0.0, (double)(mConcs.size()));
     progress_reporter.PrintInitialising();
 
@@ -289,6 +293,8 @@ void ApPredictMethods::CommonRunMethod()
     *steady_voltage_results_file_html << "<body>\n";
     *steady_voltage_results_file_html << "<table width=\"60%\" style=\"background-color:white\" border=\"1\" cellpadding=\"2\" cellspacing=\"0\">\n";
     *steady_voltage_results_file_html << "<tr><td>Concentration (uM)</td><td>Upstroke Velocity (mV/ms)</td><td>Peak membrane voltage (mV)</td><td>APD50 (ms)</td><td>APD90 (ms)</td><td>Change in APD90 (%)</td></tr>\n"; // Header line
+
+
 
     /**
      * START LOOP OVER EACH CONCENTRATION TO TEST WITH
