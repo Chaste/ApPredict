@@ -67,12 +67,12 @@ private:
         for (unsigned i=0; i<samples.size(); i++)
         {
             temp_mean += samples[i];
-            samples[i] = AbstractDrugDataStructure::ConvertPic50ToIc50(samples[i]);
+            samples[i] = AbstractDataStructure::ConvertPic50ToIc50(samples[i]);
         }
         temp_mean /= samples.size();
 
-        std::cout << "Original iC50 = " << AbstractDrugDataStructure::ConvertPic50ToIc50(rData[0]) <<
-                ", mean of inferred samples = " << AbstractDrugDataStructure::ConvertPic50ToIc50(temp_mean) << std::endl << std::flush;
+        std::cout << "Original iC50 = " << AbstractDataStructure::ConvertPic50ToIc50(rData[0]) <<
+                ", mean of inferred samples = " << AbstractDataStructure::ConvertPic50ToIc50(temp_mean) << std::endl << std::flush;
 
         return samples;
     }
@@ -171,7 +171,7 @@ public:
         std::vector<double> samples;
 
         std::vector<double> data;
-        data.push_back(AbstractDrugDataStructure::ConvertIc50ToPic50(duloxetine_iks_ic50));
+        data.push_back(AbstractDataStructure::ConvertIc50ToPic50(duloxetine_iks_ic50));
 
         for (unsigned i=0; i<10; i++)
         {

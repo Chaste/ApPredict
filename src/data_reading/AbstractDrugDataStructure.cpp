@@ -36,18 +36,21 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "AbstractDrugDataStructure.hpp"
 #include "Exception.hpp"
 
-unsigned AbstractDrugDataStructure::GetNumDrugs(void)
+template<unsigned NUM_CHANNELS>
+unsigned AbstractDrugDataStructure<NUM_CHANNELS>::GetNumDrugs(void)
 {
     return mDrugNames.size();
 }
 
-std::string AbstractDrugDataStructure::GetDrugName(unsigned drugIndex)
+template<unsigned NUM_CHANNELS>
+std::string AbstractDrugDataStructure<NUM_CHANNELS>::GetDrugName(unsigned drugIndex)
 {
     assert(drugIndex < GetNumDrugs());
     return mDrugNames[drugIndex];
 }
 
-unsigned AbstractDrugDataStructure::GetDrugIndex(const std::string& rName)
+template<unsigned NUM_CHANNELS>
+unsigned AbstractDrugDataStructure<NUM_CHANNELS>::GetDrugIndex(const std::string& rName)
 {
     unsigned idx = UINT_MAX;
     for (unsigned i=0; i<mDrugNames.size(); ++i)
@@ -65,10 +68,11 @@ unsigned AbstractDrugDataStructure::GetDrugIndex(const std::string& rName)
     return idx;
 }
 
-double AbstractDrugDataStructure::GetIC50Value(unsigned drugIndex, unsigned channelIndex)
+template<unsigned NUM_CHANNELS>
+double AbstractDrugDataStructure<NUM_CHANNELS>::GetIC50Value(unsigned drugIndex, unsigned channelIndex)
 {
     assert(drugIndex < GetNumDrugs());
-    assert(channelIndex < 4u);
+    assert(channelIndex < NUM_CHANNELS);
     double ic50 = mIc50values[drugIndex](channelIndex);
 
     /**
@@ -80,10 +84,11 @@ double AbstractDrugDataStructure::GetIC50Value(unsigned drugIndex, unsigned chan
     return ic50;
 }
 
-double AbstractDrugDataStructure::GetHillCoefficient(unsigned drugIndex, unsigned channelIndex)
+template<unsigned NUM_CHANNELS>
+double AbstractDrugDataStructure<NUM_CHANNELS>::GetHillCoefficient(unsigned drugIndex, unsigned channelIndex)
 {
     assert(drugIndex < GetNumDrugs());
-    assert(channelIndex < 4u);
+    assert(channelIndex < NUM_CHANNELS);
     double hill = mHillCoefficients[drugIndex](channelIndex);
     if (hill < 0)
     {   // Should default to 1
@@ -92,10 +97,11 @@ double AbstractDrugDataStructure::GetHillCoefficient(unsigned drugIndex, unsigne
     return hill;
 }
 
-double AbstractDrugDataStructure::GetSaturationLevel(unsigned drugIndex, unsigned channelIndex)
+template<unsigned NUM_CHANNELS>
+double AbstractDrugDataStructure<NUM_CHANNELS>::GetSaturationLevel(unsigned drugIndex, unsigned channelIndex)
 {
     assert(drugIndex < GetNumDrugs());
-    assert(channelIndex < 4u);
+    assert(channelIndex < NUM_CHANNELS);
     double sat = mSaturationLevels[drugIndex](channelIndex);
 
     if (sat < 0)
@@ -104,5 +110,14 @@ double AbstractDrugDataStructure::GetSaturationLevel(unsigned drugIndex, unsigne
     }
     return sat;
 }
+
+/////////////////////////////////////////////////////////////////////////////////////
+// Explicit instantiation
+/////////////////////////////////////////////////////////////////////////////////////
+
+template class AbstractDrugDataStructure<3u>;
+template class AbstractDrugDataStructure<4u>;
+template class AbstractDrugDataStructure<5u>;
+
 
 

@@ -41,7 +41,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "CommandLineArguments.hpp"
 #include "FileFinder.hpp"
 
-#include "AbstractDrugDataStructure.hpp"
+#include "AbstractDataStructure.hpp"
 #include "DoseCalculator.hpp"
 #include "ActionPotentialDownsampler.hpp"
 
@@ -55,10 +55,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 std::string ApPredictMethods::PrintArguments()
 {
-	std::string message = "ApPredict::Please provide these inputs:\n"
-	                    "* --model\n"
-	                    "*    options: 1 = Shannon, 2 = TenTusscher, 3 = Mahajan\n"
-	                    "*             4 = HundRudy, 5 = Grandi, 6 = O'Hara.\n";
+	std::string message = "ApPredict::Please provide these inputs:\n" + SetupModel::PrintArguments();
 	message += PrintCommonArguments();
 	return message;
 }
@@ -155,7 +152,7 @@ void ApPredictMethods::ApplyDrugBlock(boost::shared_ptr<AbstractCvodeCell> pMode
 {
     // Here we calculate the proportion of the different channels which are still active
     // (at this concentration of this drug)
-    const double conductance_factor = AbstractDrugDataStructure::CalculateConductanceFactor(concentration, iC50,  hill);
+    const double conductance_factor = AbstractDataStructure::CalculateConductanceFactor(concentration, iC50,  hill);
 
     // Some screen output for info.
     if (!mSuppressOutput) std::cout << "g_" << rShortName <<  " factor = " << conductance_factor << "\n";// << std::flush;

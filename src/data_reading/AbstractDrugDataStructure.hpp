@@ -39,16 +39,18 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "AbstractDataStructure.hpp"
 
 /**
- * A class which is designed to read in data on drugs from a text file, subclassed for particular formats.
+ * A class which is designed to read in data on drugs from a text file,
+ * subclassed for particular formats.
  */
+template<unsigned NUM_CHANNELS>
 class AbstractDrugDataStructure : public AbstractDataStructure
 {
 protected:
 
     std::vector<std::string> mDrugNames;
-    std::vector<c_vector<double,4> > mIc50values;
-    std::vector<c_vector<double,4> > mHillCoefficients;
-    std::vector<c_vector<double,4> > mSaturationLevels;
+    std::vector<c_vector<double,NUM_CHANNELS> > mIc50values;
+    std::vector<c_vector<double,NUM_CHANNELS> > mHillCoefficients;
+    std::vector<c_vector<double,NUM_CHANNELS> > mSaturationLevels;
 
 public:
 
@@ -90,7 +92,7 @@ public:
      * If the IC50 is known and there is no effect -2 is returned.
      *
      * @param drugIndex  index of the drug as listed in rows of the data file.
-     * @param channelIndex  index of the channel we are interested in 0 = INa, 1 = ICaL, 2 = IKr, 3 = IKs.
+     * @param channelIndex  index of the channel we are interested in.
      * @return the IC50 value for a certain drug on a certain channel.
      */
     double GetIC50Value(unsigned drugIndex, unsigned channelIndex);
@@ -99,8 +101,8 @@ public:
      * Return the hill coefficient associated with this drug and this channel's dose-reponse curve
      *
      * @param drugIndex  The index of the drug (in drug_data.dat file)
-     * @param channelIndex  The index of the channel, 0=Na, 1 = CaL, 2 = hERG, 3 = IKs
-     * @return the hill coefficient
+     * @param channelIndex  The index of the channel we are interested in.
+     * @return the hill coefficient.
      */
     double GetHillCoefficient(unsigned drugIndex, unsigned channelIndex);
 
@@ -108,59 +110,11 @@ public:
      * Return the saturation levels associates with this channel's dose-response curve
      *
      * @param drugIndex  The index of the drug (in drug_data.dat file)
-     * @param channelIndex  The index of the channel, 0=Na, 1 = CaL, 2 = hERG, 3 = IKs
-     * @return the saturation level
+     * @param channelIndex  The index of the channel we are interested in.
+     * @return the saturation level.
      */
     double GetSaturationLevel(unsigned drugIndex, unsigned channelIndex);
 
-    /**
-     * Calculate the probability of a channel being open given this drug, IC50 and hill coefficient.
-     *
-     * Note: A negative IC50 value is interpreted as "drug has no effect on this channel".
-     *
-     * @param rConc  concentration of the drug.
-     * @param rIC50  IC50 value for this drug and channel (note if saturation is less than 100 this parameter is not IC50, but 50% of max  response)
-     * @param hill  Hill coefficient for this drug dependent inactivation curve (defaults to 1).
-     * @param saturation  The saturation level for this drug (defaults to 100).
-     *
-     * @return proportion of channels which are still active at this drug concentration
-     */
-    static double CalculateConductanceFactor(const double& rConc, const double& rIC50, double hill = 1.0, double saturation = 100)
-    {
-        if (rIC50 < 0) // missing information ('-1'), or known-to-be-no-affect ('-2'), do not alter conductance.
-        {
-            return 1.0;
-        }
-        else
-        {
-            // If the hill coefficient has not been set (defaults to a negative value) then use 1.0 instead.
-            if (hill < 0)
-            {
-                hill = 1.0;
-            }
-            return 1.0 - (saturation/100.0)*(1.0 - 1.0/(1.0 + pow((rConc/rIC50), hill)));
-        }
-    }
-
-    /**
-     * Converts an IC50 IN MICRO MOLAR (uM) into a pIC50 (in log Molar)
-     * @param rIc50  The IC50 value in microMolar
-     * @return the pIC50 value
-     */
-    static double ConvertIc50ToPic50(const double& rIc50)
-    {
-        return -log10((1e-6)*rIc50);
-    }
-
-    /**
-     * Converts a pIC50 value into an IC50 IN MICRO MOLAR (uM)
-     * @return rIc50  The IC50 value in microMolar
-     * @param the pIC50 value
-     */
-    static double ConvertPic50ToIc50(const double& rPic50)
-    {
-        return pow(10.0,6.0-rPic50);
-    }
 };
 
 #endif // ABSTRACTDRUGDATASTRUCTURE_HPP_

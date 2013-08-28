@@ -53,9 +53,10 @@ protected:
      * Main method for loading the data file, line by line it calls
      * the overloaded method LoadALine
      *
-     * @param fileName  of the drug data file
+     * @param rFileName  of the drug data file
+     * @param numHeaderLines  the number of header lines in the file to skip
      */
-    void LoadDataFromFile(std::string fileName);
+    void LoadDataFromFile(const std::string& rFileName, unsigned numHeaderLines=0);
 
     /**
      * This method must be overridden by subclasses to fill in the
@@ -84,6 +85,55 @@ public:
      * Destructor (empty)
      */
     virtual ~AbstractDataStructure(){};
+
+    /**
+     * Calculate the probability of a channel being open given this drug, IC50 and hill coefficient.
+     *
+     * Note: A negative IC50 value is interpreted as "drug has no effect on this channel".
+     *
+     * @param rConc  concentration of the drug.
+     * @param rIC50  IC50 value for this drug and channel (note if saturation is less than 100 this parameter is not IC50, but 50% of max  response)
+     * @param hill  Hill coefficient for this drug dependent inactivation curve (defaults to 1).
+     * @param saturation  The saturation level for this drug (defaults to 100).
+     *
+     * @return proportion of channels which are still active at this drug concentration
+     */
+    static double CalculateConductanceFactor(const double& rConc, const double& rIC50, double hill = 1.0, double saturation = 100)
+    {
+        if (rIC50 < 0) // missing information ('-1'), or known-to-be-no-affect ('-2'), do not alter conductance.
+        {
+            return 1.0;
+        }
+        else
+        {
+            // If the hill coefficient has not been set (defaults to a negative value) then use 1.0 instead.
+            if (hill < 0)
+            {
+                hill = 1.0;
+            }
+            return 1.0 - (saturation/100.0)*(1.0 - 1.0/(1.0 + pow((rConc/rIC50), hill)));
+        }
+    }
+
+    /**
+     * Converts an IC50 IN MICRO MOLAR (uM) into a pIC50 (in log Molar)
+     * @param rIc50  The IC50 value in microMolar
+     * @return the pIC50 value
+     */
+    static double ConvertIc50ToPic50(const double& rIc50)
+    {
+        return -log10((1e-6)*rIc50);
+    }
+
+    /**
+     * Converts a pIC50 value into an IC50 IN MICRO MOLAR (uM)
+     * @return rIc50  The IC50 value in microMolar
+     * @param the pIC50 value
+     */
+    static double ConvertPic50ToIc50(const double& rPic50)
+    {
+        return pow(10.0,6.0-rPic50);
+    }
 
 };
 

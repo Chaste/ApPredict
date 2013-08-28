@@ -33,63 +33,38 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 */
 
+#ifndef TESTDATAREADERS_HPP_
+#define TESTDATAREADERS_HPP_
+
+#include <cxxtest/TestSuite.h>
+
 #include "AbstractDataStructure.hpp"
-#include "Exception.hpp"
 
-void AbstractDataStructure::LoadDataFromFile(const std::string& rFileName, unsigned numHeaderLines)
+class TestDataReaders : public CxxTest::TestSuite
 {
-    std::ifstream indata; // indata is like cin
-    indata.open(rFileName.c_str()); // opens the file
-    if(!indata.good())
-    { // file couldn't be opened
-       EXCEPTION("Couldn't open data file: " + rFileName);
-    }
-
-    bool first_line = true;
-    unsigned num_lines_read = 0u;
-
-    while (indata.good())
+public:
+    void TestConductanceFactorCalculations() throw(Exception)
     {
-       std::string this_line;
-       getline(indata, this_line);
-       num_lines_read++;
+        // We've got two inputs that we want to return unchanged conductance:
+        // -1 : we don't know what the conductance is
+        // DBL_MAX : we know there is no effect.
 
-       if (this_line=="" || this_line=="\r")
-       {
-           if (indata.eof())
-           {    // If the blank line is the last line carry on OK.
-               break;
-           }
-           else
-           {
-               EXCEPTION("No data found on this line");
-           }
-       }
-       std::stringstream line(this_line);
+        TS_ASSERT_DELTA(AbstractDataStructure::CalculateConductanceFactor(0.0,-1.0), 1.0, 1e-9);
+        TS_ASSERT_DELTA(AbstractDataStructure::CalculateConductanceFactor(0.0,DBL_MAX), 1.0, 1e-9);
 
-       if (first_line || (numHeaderLines>0u && num_lines_read<=numHeaderLines))
-       {
-           first_line = false;
-           // Try and read a header line if present
-           if(LoadHeaderLine(line))
-           {
-               continue;
-           }
-       }
-       // Load a standard data line.
-       LoadALine(line);
+        // Test normal conductance calculations
+        TS_ASSERT_DELTA(AbstractDataStructure::CalculateConductanceFactor(1.0,1.0), 0.5, 1e-9);
+        TS_ASSERT_DELTA(AbstractDataStructure::CalculateConductanceFactor(1.0,1.0,2.0), 0.5, 1e-9);
+        TS_ASSERT_DELTA(AbstractDataStructure::CalculateConductanceFactor(2.0,1.0,2.0), 0.2, 1e-9);
+        TS_ASSERT_DELTA(AbstractDataStructure::CalculateConductanceFactor(1.0,1.0,2.0,50), 0.75, 1e-9);
+        TS_ASSERT_DELTA(AbstractDataStructure::CalculateConductanceFactor(0.0,1.0,2.0,90), 1.0, 1e-9);
+        TS_ASSERT_DELTA(AbstractDataStructure::CalculateConductanceFactor(0.0,1.0,2.0,50), 1.0, 1e-9);
+        TS_ASSERT_DELTA(AbstractDataStructure::CalculateConductanceFactor(DBL_MAX,1.0,2.0,90), 0.1, 1e-9);
+        TS_ASSERT_DELTA(AbstractDataStructure::CalculateConductanceFactor(DBL_MAX,1.0,2.0,50), 0.5, 1e-9);
+
+        TS_ASSERT_DELTA(AbstractDataStructure::ConvertIc50ToPic50(1000),3, 1e-9);
+        TS_ASSERT_DELTA(AbstractDataStructure::ConvertPic50ToIc50(5),10, 1e-9);
     }
+};
 
-    if (!indata.eof())
-    {
-       EXCEPTION("A file reading error occurred");
-    }
-}
-
-bool AbstractDataStructure::LoadHeaderLine(std::stringstream& rLine)
-{
-    return false;
-}
-
-
-
+#endif // TESTDATAREADERS_HPP_

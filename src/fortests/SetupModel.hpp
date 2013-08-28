@@ -57,7 +57,9 @@ private:
 
 public:
     /**
-     * This method generates a cell model for one of the models specified by #model_index
+     * This method generates a cell model for one of the models specified by #model_index.
+     * If model_index is not set then this class attempts to read it from CommandLineOptions as
+     * specified in #PrintArguments().
      *
      * It attempts to use the model's default stimulus magnitude and duration from CellML
      * with a frequency of #hertz and a start time of 1ms.
@@ -68,6 +70,18 @@ public:
      * @param hertz  The frequency of the regular stimulus that this model should use.
      */
     SetupModel(const double& rHertz, unsigned model_index = UNSIGNED_UNSET);
+
+    /**
+     * Print the option and possible arguments that this class takes.
+     *
+     * @return arguments for command line display.
+     */
+    static std::string PrintArguments()
+    {
+        return "* --model\n"
+                "    options: 1 = Shannon, 2 = TenTusscher, 3 = Mahajan,\n"
+                "             4 = HundRudy, 5 = Grandi, 6 = O'Hara-Rudy.\n";
+    }
 
     /**
      * Get a boost shared pointer to the model the constructor sets up

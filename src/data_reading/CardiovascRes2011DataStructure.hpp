@@ -41,7 +41,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /**
  * Helper class to read in data
  */
-class CardiovascRes2011DataStructure: public AbstractDrugDataStructure
+class CardiovascRes2011DataStructure: public AbstractDrugDataStructure<3>
 {
   protected:
     virtual void LoadALine(std::stringstream& rLine)
@@ -49,7 +49,7 @@ class CardiovascRes2011DataStructure: public AbstractDrugDataStructure
         int redfern_category;
         std::string name;
         std::string in_redfern_figs;
-        c_vector<double, 4> ic50s;
+        c_vector<double, 3> ic50s;
         ic50s.clear();
         c_vector<double, 2> doses;
         double grandi_measure;
