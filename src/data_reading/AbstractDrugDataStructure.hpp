@@ -141,6 +141,26 @@ public:
             return 1.0 - (saturation/100.0)*(1.0 - 1.0/(1.0 + pow((rConc/rIC50), hill)));
         }
     }
+
+    /**
+     * Converts an IC50 IN MICRO MOLAR (uM) into a pIC50 (in log Molar)
+     * @param rIc50  The IC50 value in microMolar
+     * @return the pIC50 value
+     */
+    static double ConvertIc50ToPic50(const double& rIc50)
+    {
+        return -log10((1e-6)*rIc50);
+    }
+
+    /**
+     * Converts a pIC50 value into an IC50 IN MICRO MOLAR (uM)
+     * @return rIc50  The IC50 value in microMolar
+     * @param the pIC50 value
+     */
+    static double ConvertPic50ToIc50(const double& rPic50)
+    {
+        return pow(10.0,6.0-rPic50);
+    }
 };
 
 #endif // ABSTRACTDRUGDATASTRUCTURE_HPP_

@@ -1,7 +1,9 @@
 TestActionPotentialDownsampler.hpp
 TestApPredict.hpp
+TestBayesianInferer.hpp
 TestDavies2012Paper.hpp
 TestDoseCalculator.hpp
 TestLinearDiscriminantAnalysis.hpp
+TestLogisticDistribution.hpp
 TestMetadataCellmlModels.hpp
 TestTorsadePredict.hpp
