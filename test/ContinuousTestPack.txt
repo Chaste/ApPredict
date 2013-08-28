@@ -4,6 +4,8 @@ TestBayesianInferer.hpp
 TestDavies2012Paper.hpp
 TestDoseCalculator.hpp
 TestLinearDiscriminantAnalysis.hpp
+TestLookupTableGenerator.hpp
 TestLogisticDistribution.hpp
 TestMetadataCellmlModels.hpp
+TestParameterBox.hpp
 TestTorsadePredict.hpp
