@@ -81,13 +81,13 @@ class CardiovascRes2011DataStructure: public AbstractDrugDataStructure<3>
   public:
 
     CardiovascRes2011DataStructure(std::string fileName)
-      : AbstractDrugDataStructure()
+      : AbstractDrugDataStructure<3>()
     {
         LoadDataFromFile(fileName);
     };
 
     CardiovascRes2011DataStructure(FileFinder& rFileFinder)
-      : AbstractDrugDataStructure()
+      : AbstractDrugDataStructure<3>()
     {
         LoadDataFromFile(rFileFinder.GetAbsolutePath());
     };
