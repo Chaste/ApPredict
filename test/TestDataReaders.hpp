@@ -38,11 +38,60 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <cxxtest/TestSuite.h>
 
-#include "AbstractDataStructure.hpp"
+#include "CardiovascRes2011DataStructure.hpp"
 
 class TestDataReaders : public CxxTest::TestSuite
 {
 public:
+    void TestDrugDataLoading(void) throw(Exception)
+    {
+        FileFinder file("projects/ApPredict/test/data/paper_drug_data.dat", RelativeTo::ChasteSourceRoot);
+
+        // Test the drug data loads correctly...
+        CardiovascRes2011DataStructure drug_data(file);
+        TS_ASSERT_EQUALS(drug_data.GetNumDrugs(), 31u);
+
+        unsigned ajmaline_idx = drug_data.GetDrugIndex("Ajmaline");
+        TS_ASSERT_EQUALS(ajmaline_idx,0u);
+
+        TS_ASSERT_THROWS_THIS(drug_data.GetDrugIndex("Sausages"),
+                              "Drug Sausages not found.");
+
+        unsigned quinidine = drug_data.GetDrugIndex("Quinidine");
+        unsigned cisapride = drug_data.GetDrugIndex("Cisapride");
+        unsigned tedisamil = drug_data.GetDrugIndex("Tedisamil");
+        unsigned propranolol = drug_data.GetDrugIndex("Propranolol");
+        unsigned verapamil = drug_data.GetDrugIndex("Verapamil");
+
+        TS_ASSERT_EQUALS(drug_data.GetRedfernCategory(ajmaline_idx), 1u);
+        TS_ASSERT_EQUALS(drug_data.GetDrugName(quinidine), "Quinidine");
+        TS_ASSERT_DELTA(drug_data.GetIC50Value(quinidine,0), 16600, 1e-4);
+        TS_ASSERT_DELTA(drug_data.GetIC50Value(cisapride,2), 6.5, 1e-4);
+        TS_ASSERT_DELTA(drug_data.GetIC50Value(propranolol,1), 18000, 1e-4);
+        TS_ASSERT_DELTA(drug_data.GetIC50Value(propranolol,2), 2828, 1e-4);
+        TS_ASSERT_DELTA(drug_data.GetClinicalDoseRange(quinidine,0), 1000, 1e-4);
+        TS_ASSERT_DELTA(drug_data.GetClinicalDoseRange(quinidine,1), 4000, 1e-4);
+        TS_ASSERT_DELTA(drug_data.GetClinicalDoseRange(cisapride,0), 2, 1e-4);
+        TS_ASSERT_DELTA(drug_data.GetClinicalDoseRange(cisapride,1), 5, 1e-4);
+        TS_ASSERT_DELTA(drug_data.GetClinicalDoseRange(verapamil,0), 25, 1e-4);
+        TS_ASSERT_DELTA(drug_data.GetClinicalDoseRange(verapamil,1), 90, 1e-4);
+        TS_ASSERT_EQUALS(drug_data.HasRedfernCategory(verapamil), true);
+        TS_ASSERT_DELTA(drug_data.GetGrandiMeasure(verapamil), -20.753, 1e-4);
+
+        TS_ASSERT_EQUALS(drug_data.HasClinicalDoseRange(verapamil), true);
+
+        // We want a "no affect drug" to return DBL_MAX, which the CalculateConductanceFactor() method handles nicely (see below).
+        unsigned chlorpromazine = drug_data.GetDrugIndex("Chlorpromazine");
+        TS_ASSERT_EQUALS(drug_data.GetDrugName(chlorpromazine),"Chlorpromazine");
+        TS_ASSERT_DELTA(drug_data.GetIC50Value(chlorpromazine,1), -2, 1e-9);
+
+        // Check how it deals with a "NA" (No affect) entry - should return DBL_MAX for the IC50.
+        // (i.e. a positive value which won't affect conductance so that analysis will run)
+        TS_ASSERT_EQUALS(drug_data.GetDrugName(tedisamil), "Tedisamil");
+        TS_ASSERT_DELTA(drug_data.GetIC50Value(tedisamil,0), 20000, 1e-9);
+        TS_ASSERT_DELTA(drug_data.GetIC50Value(tedisamil,1), -2, 1e-9);
+    }
+
     void TestConductanceFactorCalculations() throw(Exception)
     {
         // We've got two inputs that we want to return unchanged conductance:

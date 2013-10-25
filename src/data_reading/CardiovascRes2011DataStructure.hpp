@@ -140,6 +140,16 @@ class CardiovascRes2011DataStructure: public AbstractDrugDataStructure<3>
         return mClinicalDoseRange[drugIndex](lowOrHigh);
     }
 
+    bool HasClinicalDoseRange(unsigned drugIndex)
+    {
+        assert(drugIndex < GetNumDrugs());
+        bool result = true;
+        if (mClinicalDoseRange[drugIndex](0) < 0)
+        {
+            result = false;
+        }
+        return result;
+    }
 
 };
 

@@ -291,8 +291,6 @@ void ApPredictMethods::CommonRunMethod()
     *steady_voltage_results_file_html << "<table width=\"60%\" style=\"background-color:white\" border=\"1\" cellpadding=\"2\" cellspacing=\"0\">\n";
     *steady_voltage_results_file_html << "<tr><td>Concentration (uM)</td><td>Upstroke Velocity (mV/ms)</td><td>Peak membrane voltage (mV)</td><td>APD50 (ms)</td><td>APD90 (ms)</td><td>Change in APD90 (%)</td></tr>\n"; // Header line
 
-
-
     /**
      * START LOOP OVER EACH CONCENTRATION TO TEST WITH
      */
