@@ -13,6 +13,14 @@ for simulation of drug action in cardiac electrophysiology models.
 
 It must be checked out into
 <chaste source directory>/projects/ApPredict
-
 in order for file paths to be picked up correctly, and 
 it should be used with the current revision of Chaste.
+
+(replacing <chaste source directory> with the place you have put the 
+Chaste source code).
+
+So the following instructions should work:
+cd <chaste source directory>/projects
+svn co https://chaste.cs.ox.ac.uk/svn/chaste/projects/ApPredict
+
+
