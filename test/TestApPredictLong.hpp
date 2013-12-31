@@ -1,6 +1,6 @@
 /*
 
-Copyright (c) 2005-2013, University of Oxford.
+Copyright (c) 2005-2014, University of Oxford.
 All rights reserved.
 
 University of Oxford means the Chancellor, Masters and Scholars of the
@@ -75,6 +75,11 @@ public:
             TS_ASSERT_DELTA(apd90s[1], 302.6703, 1e-3);
             TS_ASSERT_DELTA(apd90s[2], 311.2667, 1e-3);
         }
+    }
+
+    void TestWithConfidenceIntervalOutputs(void) throw(Exception)
+    {
+
     }
 
 };
