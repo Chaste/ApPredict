@@ -175,12 +175,19 @@ class ParameterBox
     DataMap mParameterPointDataMapPredictions;
 
     /**
-     * The errors in the QoIs at each predicted data point.
+     * The errors in the QoIs at each new corner / predicted data point.
+     * This is unordered (but the values are propagated into the relevant
+     * ParameterPointData structure).
+     *
+     * It is populated each time you call AssignQoI values.
      */
     std::vector<std::vector<double> > mErrorsInQoIs;
 
     /**
      * The maximum errors in each QoIs over all new data points.
+     *
+     * This is populated by AssignQoI values when it has been called for
+     * ALL of the new corners.
      */
     std::vector<double> mMaxErrorsInEachQoI;
 
@@ -192,7 +199,7 @@ class ParameterBox
     /**
      * Get a measure of the error associated with predicting the quantity of interest in this box.
      * Calculated by providing an interpolated estimate from parent, and then comparing with
-     * our assigned quantity of interest.
+     * our new assigned quantities of interest.
      *
      * Any QoI that were associated with errors on evaluation are ignored,
      * and error is said to be zero (no refinement needed).

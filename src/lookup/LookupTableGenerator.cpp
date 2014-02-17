@@ -169,11 +169,14 @@ void LookupTableGenerator<DIM>::GenerateLookupTable()
             {
                 line_of_output << mParameterPointData[i]->rGetQoIs()[j] << "\t";
             }
-            unsigned num_estimates = mParameterPointData[i]->rGetQoIErrorEstimates().size();
-            line_of_output << num_estimates << "\t";
-            for (unsigned j=0; j< num_estimates; j++)
+            if (mParameterPointData[i]->HasErrorEstimates())
             {
-                line_of_output << mParameterPointData[i]->rGetQoIErrorEstimates()[j] << "\t";
+                unsigned num_estimates = mParameterPointData[i]->rGetQoIErrorEstimates().size();
+                line_of_output << num_estimates << "\t";
+                for (unsigned j=0; j< num_estimates; j++)
+                {
+                    line_of_output << mParameterPointData[i]->rGetQoIErrorEstimates()[j] << "\t";
+                }
             }
             *p_file << line_of_output.str() << std::endl;
         }
@@ -303,11 +306,14 @@ void LookupTableGenerator<DIM>::RunEvaluationsForThesePoints(CornerSet setOfPoin
             {
                 line_of_output << results[j] << "\t";
             }
-            unsigned num_estimates = data->rGetQoIErrorEstimates().size();
-            line_of_output << num_estimates << "\t";
-            for (unsigned j=0; j<num_estimates; j++)
+            if (data->HasErrorEstimates())
             {
-                line_of_output << data->rGetQoIErrorEstimates()[j] << "\t";
+                unsigned num_estimates = data->rGetQoIErrorEstimates().size();
+                line_of_output << num_estimates << "\t";
+                for (unsigned j=0; j<num_estimates; j++)
+                {
+                    line_of_output << data->rGetQoIErrorEstimates()[j] << "\t";
+                }
             }
             *rFile << line_of_output.str() << std::endl;
         }

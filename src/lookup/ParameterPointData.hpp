@@ -109,6 +109,10 @@ public:
      */
     const std::vector<double>& rGetQoIErrorEstimates() const
     {
+        if (mErrorEstimates.size()==0u)
+        {
+            EXCEPTION("Error estimates have not been set on this parameter data point.");
+        }
         return mErrorEstimates;
     }
 
@@ -116,10 +120,18 @@ public:
      * Set the error estimates associated with the QoIs at this point
      * @param errorEstimates  The error estimates.
      */
-    void SetErrorEstimates(std::vector<double> errorEstimates)
+    void SetErrorEstimates(const std::vector<double>& rErrorEstimates)
     {
-        assert(errorEstimates.size()==mQoIs.size());
-        mErrorEstimates = errorEstimates;
+        assert(rErrorEstimates.size()==mQoIs.size());
+        mErrorEstimates = rErrorEstimates;
+    }
+
+    /**
+     * @return Whether there are any error estimates for this data point.
+     */
+    bool HasErrorEstimates()
+    {
+        return (mErrorEstimates.size() > 0u);
     }
 
     /**

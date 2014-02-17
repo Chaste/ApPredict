@@ -302,14 +302,15 @@ void ParameterBox<DIM>::AssignQoIValues(c_vector<double, DIM>* pCorner,
                                         bool isPredictedQoI)
 {
     DataMap* p_data_map;
-    // If this is a QoI prediction then store it in the predictions map, otherwise store in the 'proper' map.
+    // If this is a QoI prediction then store it in the predictions map,
+    // otherwise store in the 'proper' map.
     if (isPredictedQoI)
     {
         p_data_map = &mParameterPointDataMapPredictions;
     }
     else
     {
-       p_data_map = &mParameterPointDataMap;
+        p_data_map = &mParameterPointDataMap;
     }
 
     // Each corner is only in each box once, so we can safely take the first find result...
@@ -333,7 +334,7 @@ void ParameterBox<DIM>::AssignQoIValues(c_vector<double, DIM>* pCorner,
                 assert(predictions.size() == real_values.size());
                 for (unsigned i=0; i<predictions.size(); i++)
                 {
-                    double difference = fabs(predictions[i] - real_values[i]);
+                    double difference = predictions[i] - real_values[i];
                     //std::cout << "QoI[" << i << "]: prediction = " << predictions[i] << ", \treal = " <<
                     //        real_values[i] << ", \tdifference = " << difference << "\n" << std::flush;
                     errors_in_predicitons.push_back(difference);
@@ -348,17 +349,23 @@ void ParameterBox<DIM>::AssignQoIValues(c_vector<double, DIM>* pCorner,
                 if (mParameterPointDataMapPredictions.size()==0)
                 {
                     mAllCornersEvaluated = true;
-                    // Take errors at first corner to be the max for now.
-                    mMaxErrorsInEachQoI = mErrorsInQoIs[0];
+
+                    mMaxErrorsInEachQoI.clear();
+                    // Take each QoI error at first corner to be the max for now.
+                    for (unsigned i=0; i<mErrorsInQoIs[0].size(); i++)
+                    {
+                        mMaxErrorsInEachQoI.push_back(fabs(mErrorsInQoIs[0][i]));
+                    }
+
                     // For each other corner
                     for (unsigned i=1u; i<mErrorsInQoIs.size(); i++)
                     {
                         // For each QoI.
                         for (unsigned j=0; j<mErrorsInQoIs[i].size(); j++)
                         {
-                            if (mErrorsInQoIs[i][j] > mMaxErrorsInEachQoI[j])
+                            if (fabs(mErrorsInQoIs[i][j]) > mMaxErrorsInEachQoI[j])
                             {
-                                mMaxErrorsInEachQoI[j] = mErrorsInQoIs[i][j];
+                                mMaxErrorsInEachQoI[j] = fabs(mErrorsInQoIs[i][j]);
                             }
                         }
                     }

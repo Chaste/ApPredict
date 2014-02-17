@@ -53,7 +53,23 @@ private:
     void AssignExponentialData(ParameterBox<1>& rBox,
                                std::vector<c_vector<double, 1u>* >& rCorners)
     {
-        // Invent some data with exp(x)
+        // Invent some initial guesses (some too big, some too small)
+        for (unsigned i=0; i<rCorners.size(); i++)
+        {
+            std::vector<double> qoi;
+            qoi.push_back(0.5); // Our initial guess is 0.5 everywhere.
+            boost::shared_ptr<ParameterPointData> p_data = boost::shared_ptr<ParameterPointData>(new ParameterPointData(qoi, false));
+
+            // Assign this data as an estimate at this corner (with the 'true' flag).
+            rBox.AssignQoIValues(rCorners[i], p_data, true);
+
+            // Check that the error estimates are being assigned to the parameter point data appropriately.
+            TS_ASSERT_EQUALS(p_data->HasErrorEstimates(), false);
+            TS_ASSERT_THROWS_THIS(p_data->rGetQoIErrorEstimates(),
+                                  "Error estimates have not been set on this parameter data point.");
+        }
+
+        // Assign some 'real' data with exp(x)
         for (unsigned i=0; i<rCorners.size(); i++)
         {
             std::vector<double> qoi;
