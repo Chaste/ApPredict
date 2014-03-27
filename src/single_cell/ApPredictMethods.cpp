@@ -248,9 +248,6 @@ void ApPredictMethods::CommonRunMethod()
                      "* number of plasma concentrations = " << mConcs.size() << "\n";// << std::flush;
     }
 
-    // This just stops the cell automatically resetting the CVODE solver before each call to Solve().
-    mpModel->SetAutoReset(false);
-
     // The following names are fixed and correspond to metadata tags.
     // We record the default parameter values that the model uses.
     // All the drug block models should include these parameter labels

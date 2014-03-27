@@ -75,7 +75,6 @@ public:
         boost::shared_ptr<AbstractStimulusFunction> p_stimulus;
         boost::shared_ptr<AbstractCvodeCell> p_model(new Celldavies_isap_2012FromCellMLCvode(p_solver, p_stimulus));
         boost::shared_ptr<RegularStimulus> p_default_stimulus = p_model->UseCellMLDefaultStimulus();
-        p_model->SetAutoReset(false);
         p_model->SetTolerances(1e-6, 1e-8); // To be consistent with AZ matlab.
 
         // Get the different dog parameters out of the data file.
