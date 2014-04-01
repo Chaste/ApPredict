@@ -74,12 +74,87 @@ public:
             TS_ASSERT_DELTA(apd90s[0], 301.4617, 1e-3);
             TS_ASSERT_DELTA(apd90s[1], 302.6703, 1e-3);
             TS_ASSERT_DELTA(apd90s[2], 311.2667, 1e-3);
+
+            TS_ASSERT_THROWS_THIS(methods.GetApd90CredibleRegions(),
+                "There was no Lookup Table available for credible interval calculations with these settings.");
+
         }
     }
 
     void TestWithConfidenceIntervalOutputs(void) throw(Exception)
     {
+        // Test a couple of Exceptions
+        {
+            CommandLineArgumentsMocker wrapper("--model 1 --plasma-concs 1 10 --pic50-ik1 4.5 --credible-intervals");
+            ApPredictMethods methods;
+            TS_ASSERT_THROWS_THIS(methods.Run(),
+                "Lookup table (for --credible-intervals) is currently only including IKr, IKs, INa and ICaL block, you have specified additional ones so quitting.");
+        }
 
+        {
+            CommandLineArgumentsMocker wrapper("--model 1 --plasma-concs 1 10 --pic50-herg 4.5 --credible-intervals");
+            ApPredictMethods methods;
+            TS_ASSERT_THROWS_THIS(methods.Run(),
+                "No argument --pic50-spread-herg has been provided. Cannot calculate credible intervals without this.");
+        }
+
+        // Test a simple hERG block with Shannon
+        {
+            CommandLineArgumentsMocker wrapper("--model 1 --plasma-concs 1 10 --pic50-herg 4.5 --pic50-spread-herg 0.15 --credible-intervals");
+
+            ApPredictMethods methods;
+            methods.Run();
+            std::vector<double> concs = methods.GetConcentrations();
+
+            TS_ASSERT_EQUALS(concs.size(),3u);
+            TS_ASSERT_DELTA(concs[0], 0.0,   1e-12);
+            TS_ASSERT_DELTA(concs[1], 1.0,   1e-12);
+            TS_ASSERT_DELTA(concs[2], 10.0,  1e-12);
+
+            std::vector<double> apd90s = methods.GetApd90s();
+            TS_ASSERT_EQUALS(apd90s.size(),3u);
+            TS_ASSERT_DELTA(apd90s[0], 211.9333, 1e-3);
+            TS_ASSERT_DELTA(apd90s[1], 213.9762, 1e-3);
+            TS_ASSERT_DELTA(apd90s[2], 229.7436, 1e-3);
+
+            std::vector<std::pair<double,double> > apd90_credible_regions = methods.GetApd90CredibleRegions();
+            TS_ASSERT_EQUALS(apd90_credible_regions.size(),3u);
+            TS_ASSERT_DELTA(apd90_credible_regions[0].first, 211.9333, 1e-3);
+            TS_ASSERT_DELTA(apd90_credible_regions[0].second, 211.9333, 1e-3);
+            TS_ASSERT_DELTA(apd90_credible_regions[1].first, 212.5283, 1e-3);
+            TS_ASSERT_DELTA(apd90_credible_regions[1].second, 219.0559, 1e-3);
+            TS_ASSERT_DELTA(apd90_credible_regions[2].first, 217.5297, 1e-3);
+            TS_ASSERT_DELTA(apd90_credible_regions[2].second, 259.3450, 1e-3);
+        }
+
+        // We should get much reduced credible regions with repeated pIC50 values
+        {
+            CommandLineArgumentsMocker wrapper("--model 1 --plasma-concs 1 10 --pic50-herg 4.5 4.4 4.6 4.5 --pic50-spread-herg 0.15 --credible-intervals");
+
+            ApPredictMethods methods;
+            methods.Run();
+            std::vector<double> concs = methods.GetConcentrations();
+
+            TS_ASSERT_EQUALS(concs.size(),3u);
+            TS_ASSERT_DELTA(concs[0], 0.0,   1e-12);
+            TS_ASSERT_DELTA(concs[1], 1.0,   1e-12);
+            TS_ASSERT_DELTA(concs[2], 10.0,  1e-12);
+
+            std::vector<double> apd90s = methods.GetApd90s();
+            TS_ASSERT_EQUALS(apd90s.size(),3u);
+            TS_ASSERT_DELTA(apd90s[0], 211.9333, 1e-3);
+            TS_ASSERT_DELTA(apd90s[1], 213.9501, 1e-3);
+            TS_ASSERT_DELTA(apd90s[2], 229.5418, 1e-3);
+
+            std::vector<std::pair<double,double> > apd90_credible_regions = methods.GetApd90CredibleRegions();
+            TS_ASSERT_EQUALS(apd90_credible_regions.size(),3u);
+            TS_ASSERT_DELTA(apd90_credible_regions[0].first, 211.9333, 1e-3);
+            TS_ASSERT_DELTA(apd90_credible_regions[0].second, 211.9333, 1e-3);
+            TS_ASSERT_DELTA(apd90_credible_regions[1].first, 213.1849, 1e-3);
+            TS_ASSERT_DELTA(apd90_credible_regions[1].second, 215.3668, 1e-3);
+            TS_ASSERT_DELTA(apd90_credible_regions[2].first, 223.2300, 1e-3);
+            TS_ASSERT_DELTA(apd90_credible_regions[2].second, 239.4459, 1e-3);
+        }
     }
 
 };

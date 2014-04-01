@@ -72,24 +72,24 @@ void TorsadePredictMethods::Run()
 
 void TorsadePredictMethods::MakeTorsadePredictions()
 {
-    if (mAPD90s.size()==0)
+    if (mApd90s.size()==0)
     {
         EXCEPTION("APDs do not appear to have been recorded.");
     }
-    mTorsadePredictions.reserve(mAPD90s.size());
+    mTorsadePredictions.reserve(mApd90s.size());
 
     // Work out the Measure
     std::vector<double> largest_percent_change;
     largest_percent_change.push_back(0.0); // First is always control
-    for (unsigned i=1; i<mAPD90s.size(); i++)
+    for (unsigned i=1; i<mApd90s.size(); i++)
     {
-        double percent = 100*(mAPD90s[i]-mAPD90s[0])/mAPD90s[0];
+        double percent = 100*(mApd90s[i]-mApd90s[0])/mApd90s[0];
         largest_percent_change.push_back(percent);
     }
 
     // Second pass to check for largest +ve effect at low dose...
     // This makes the measure "Largest Effect Dose" rather than just "dose".
-    for (unsigned i=1; i<mAPD90s.size(); i++)
+    for (unsigned i=1; i<mApd90s.size(); i++)
     {
         // Check over lower doses
         for (unsigned j=0; j<i; j++)
@@ -104,7 +104,7 @@ void TorsadePredictMethods::MakeTorsadePredictions()
 
     // Perform the LDA
     LinearDiscriminantAnalysis lda = LoadLdaFromDrugData();
-    for (unsigned i=0; i<mAPD90s.size(); i++)
+    for (unsigned i=0; i<mApd90s.size(); i++)
     {
         vector<double> test_point(1);
         test_point(0) = largest_percent_change[i];
@@ -130,8 +130,8 @@ void TorsadePredictMethods::WriteTorsadeResultsToFile()
     colours.push_back("Limegreen");
     for (unsigned i=0; i<mTorsadePredictions.size(); i++)
     {
-        if (!mSuppressOutput) std::cout << "Conc = " << mConcs[i] << "uM, APD90 = " << mAPD90s[i] << "ms, risk prediction =  " << mTorsadePredictions[i] << "\n";// << std::flush;
-        *torsade_results_file << "<tr style=\"background-color:" << colours[mTorsadePredictions[i]-2] << "\"><td>"<< mConcs[i] << "</td><td>" << mAPD90s[i] << "</td><td>" << mTorsadePredictions[i] << "</td></tr>\n";
+        if (!mSuppressOutput) std::cout << "Conc = " << mConcs[i] << "uM, APD90 = " << mApd90s[i] << "ms, risk prediction =  " << mTorsadePredictions[i] << "\n";// << std::flush;
+        *torsade_results_file << "<tr style=\"background-color:" << colours[mTorsadePredictions[i]-2] << "\"><td>"<< mConcs[i] << "</td><td>" << mApd90s[i] << "</td><td>" << mTorsadePredictions[i] << "</td></tr>\n";
     }
     *torsade_results_file << "</table>\n</body>\n</html>\n";
     torsade_results_file->close();

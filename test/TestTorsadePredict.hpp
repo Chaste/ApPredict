@@ -57,10 +57,10 @@ public:
             TS_ASSERT_THROWS_THIS(ap_methods.MakeTorsadePredictions(),
                                   "APDs do not appear to have been recorded.");
 
-            ap_methods.mAPD90s.push_back(282.493);
-            ap_methods.mAPD90s.push_back(290);
-            ap_methods.mAPD90s.push_back(312);
-            ap_methods.mAPD90s.push_back(333);
+            ap_methods.mApd90s.push_back(282.493);
+            ap_methods.mApd90s.push_back(290);
+            ap_methods.mApd90s.push_back(312);
+            ap_methods.mApd90s.push_back(333);
 
             ap_methods.MakeTorsadePredictions();
 
@@ -88,10 +88,10 @@ public:
         // Common sense checks - this one should be for low APD -> safer
         {
             TorsadePredictMethods ap_methods;
-            ap_methods.mAPD90s.push_back(282.493);
-            ap_methods.mAPD90s.push_back(280);
-            ap_methods.mAPD90s.push_back(275);
-            ap_methods.mAPD90s.push_back(270);
+            ap_methods.mApd90s.push_back(282.493);
+            ap_methods.mApd90s.push_back(280);
+            ap_methods.mApd90s.push_back(275);
+            ap_methods.mApd90s.push_back(270);
 
             ap_methods.MakeTorsadePredictions();
 
@@ -105,10 +105,10 @@ public:
         // Common sense checks - this one should be for very low APD -> very safe
         {
             TorsadePredictMethods ap_methods;
-            ap_methods.mAPD90s.push_back(282.493);
-            ap_methods.mAPD90s.push_back(260);
-            ap_methods.mAPD90s.push_back(235);
-            ap_methods.mAPD90s.push_back(230);
+            ap_methods.mApd90s.push_back(282.493);
+            ap_methods.mApd90s.push_back(260);
+            ap_methods.mApd90s.push_back(235);
+            ap_methods.mApd90s.push_back(230);
 
             ap_methods.MakeTorsadePredictions();
 
@@ -122,11 +122,11 @@ public:
         // Common sense checks - this one goes very high and then low again should be dodgy all the way up.
         {
             TorsadePredictMethods ap_methods;
-            ap_methods.mAPD90s.push_back(282.493);
-            ap_methods.mAPD90s.push_back(330);
-            ap_methods.mAPD90s.push_back(300);
-            ap_methods.mAPD90s.push_back(282.493);
-            ap_methods.mAPD90s.push_back(230);
+            ap_methods.mApd90s.push_back(282.493);
+            ap_methods.mApd90s.push_back(330);
+            ap_methods.mApd90s.push_back(300);
+            ap_methods.mApd90s.push_back(282.493);
+            ap_methods.mApd90s.push_back(230);
 
             ap_methods.MakeTorsadePredictions();
 

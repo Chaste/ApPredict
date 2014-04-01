@@ -46,7 +46,8 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 BayesianInferer::BayesianInferer(DoseResponseParameter parameter)
   : mParameter(parameter),
     mSigma(DOUBLE_UNSET),
-    mInferenceReady(false)
+    mInferenceReady(false),
+    mpData(NULL)
 {
     unsigned num_values = 1000000u; // it is very quick so put loads and loads of points in for nice smooth distributions.
     double max_value;
@@ -85,9 +86,10 @@ BayesianInferer::~BayesianInferer()
     }
 };
 
-void BayesianInferer::SetObservedData(std::vector<double>& rData)
+void BayesianInferer::SetObservedData(const std::vector<double>& rData)
 {
-    mpData = &(rData);
+    // Point directly to the 'const' data.
+    mpData = &rData;
 }
 
 void BayesianInferer::SetSpreadOfUnderlyingDistribution(double sigma)

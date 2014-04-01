@@ -34,6 +34,12 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include <fstream>
+#include <numeric> // for std::accumulate
+#include <sys/stat.h> // For system commands to download and unpack Lookup Table file.
+
+// Chaste source includes
+#include "CheckpointArchiveTypes.hpp"
+
 #include "ApPredictMethods.hpp"
 
 #include "Exception.hpp"
@@ -44,6 +50,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "AbstractDataStructure.hpp"
 #include "DoseCalculator.hpp"
 #include "ActionPotentialDownsampler.hpp"
+#include "BayesianInferer.hpp"
 
 #include "ZeroStimulus.hpp"
 #include "RegularStimulus.hpp"
@@ -51,7 +58,6 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "SetupModel.hpp"
 #include "SteadyStateRunner.hpp"
 #include "ProgressReporter.hpp"
-
 
 std::string ApPredictMethods::PrintArguments()
 {
@@ -67,7 +73,7 @@ std::string ApPredictMethods::PrintCommonArguments()
             "* --pacing-freq       Pacing frequency (Hz) (optional - defaults to 1Hz)\n"
             "* --pacing-max-time   Maximum time for which to pace the cell model in MINUTES (optional)\n"
             "*\n"
-            "* Specifying drug/ion-channel dose-response properties for each channel:\n"
+            "* SPECIFYING DRUG PROPERTIES dose-response properties for each channel:\n"
             "* Channels are named:\n"
             "* * herg (IKr current - hERG),\n"
             "* * na (fast sodium current - NaV1.5),\n"
@@ -76,17 +82,17 @@ std::string ApPredictMethods::PrintCommonArguments()
             "* * ik1 (IK1 current - KCNN4 a.k.a. KCa3.1),\n"
             "* * ito ([fast] Ito current - Kv4.3 + KChIP2.2).\n"
             "*\n"
-            "For each channel you specify drug affinity\n"
-            "*   EITHER with IC50 values (in uM), for example for 'herg':\n"
-            "* --ic50-herg     hERG   IC50    (optional - defaults to \"no affect\")\n"
+            "For each channel you specify dose-response parameters [multiple entries for repeat experiments]\n"
+            "*   EITHER with IC50 values (in uM), for example for 'hERG':\n"
+            "* --ic50-herg     hERG IC50    (optional - defaults to \"no affect\")\n"
             "*   OR with pIC50 values (in log M):\n"
-            "* --pic50-herg    hERG   pIC50    (optional - defaults to \"no affect\")\n"
+            "* --pic50-herg    hERG pIC50   (optional - defaults to \"no affect\")\n"
             "*     (you can use a mixture of these for different channels if you wish, \n"
             "*     e.g. --ic50-herg 16600 --pic50-na 5.3 )\n"
             "*   AND specify Hill coefficients (dimensionless):\n"
-            "* --hill-herg     hERG   Hill    (optional - defaults to \"1.0\")\n"
+            "* --hill-herg     hERG Hill    (optional - defaults to \"1.0\")\n"
             "*\n"
-            "* Specifying test concentrations:\n"
+            "* SPECIFYING CONCENTRATIONS:\n"
             "* --plasma-concs  A list of plasma concentrations at which to test (uM)\n"
             "* OR alternatively:\n"
             "* --plasma-conc-high  Highest plasma concentration to test (uM)\n"
@@ -97,54 +103,111 @@ std::string ApPredictMethods::PrintCommonArguments()
             "* --plasma-conc-count  Number of intermediate plasma concentrations to test \n"
             "*                                  (optional - defaults to 0 (for --plasma-concs) or 11 (for --plasma-conc-high)\n"
             "* --plasma-conc-logscale  Use a log spacing for the plasma concentrations \n"
-            "*                                  (optional - defaults to false)\n";
+            "*                                  (optional - defaults to false)\n"
+            "*\n"
+            "* UNCERTAINTY QUANTIFICATION:\n"
+            "* --credible-intervals  This flag must be present.\n"
+            "* Then to specify 'spread' parameters for assay variability - for use with Lookup Tables:\n"
+            "* --pic50-spread-herg      (for each channel that you are providing ic50/pic50 values for,\n"
+            "* --hill-spread-herg        herg is just given as an example)\n"
+            "*   (for details of what these spread parameters are see 'sigma' and '1/beta' in Table 1 of:\n"
+            "*    Elkins et al. 2013  Journal of Pharmacological and Toxicological \n"
+            "*    Methods, 68(1), 112-122. doi: 10.1016/j.vascn.2013.04.007 )\n"
+            "*\n";
+
     return message;
 }
 
-void ApPredictMethods::ReadInIC50AndHill(double& rIc50, double& rHill, const std::string& rChannel)
+void ApPredictMethods::ReadInIC50AndHill(std::vector<double>& rIc50s,
+                                         std::vector<double>& rHills,
+                                         const unsigned channelIdx)
 {
+    const std::string channel = mShortNames[channelIdx];
 	CommandLineArguments* p_args = CommandLineArguments::Instance();
-    if (p_args->OptionExists("--ic50-" + rChannel))
+	bool read_ic50s = false;
+	bool read_hills = false;
+
+	// Try loading any arguments given as IC50s
+    if (p_args->OptionExists("--ic50-" + channel))
     {
-        rIc50 = p_args->GetDoubleCorrespondingToOption("--ic50-" + rChannel);
-        if(p_args->OptionExists("--pic50-" + rChannel))
+        rIc50s = p_args->GetDoublesCorrespondingToOption("--ic50-" + channel);
+        if(p_args->OptionExists("--pic50-" + channel))
         {
-        	EXCEPTION("Duplicate arguments, you cannot specify both IC50 and pIC50 for " << rChannel << " channel.");
+        	EXCEPTION("Duplicate arguments, you cannot specify both IC50 and pIC50 for " << channel << " channel.");
         }
+        read_ic50s = true;
     }
-    else if(p_args->OptionExists("--pic50-" + rChannel))
+    // If those don't exist try loading pIC50s.
+    else if(p_args->OptionExists("--pic50-" + channel))
     {
-        rIc50 = pow(10,-p_args->GetDoubleCorrespondingToOption("--pic50-" + rChannel)+6);
-    }
-
-    if (p_args->OptionExists("--hill-" + rChannel))
-    {
-        rHill = p_args->GetDoubleCorrespondingToOption("--hill-" + rChannel);
-    }
-
-    if (!mSuppressOutput) std::cout << "* " << rChannel;
-    if (rIc50 > 0)
-    {
-        if (!mSuppressOutput) std::cout << " IC50 = " << rIc50 << " uM, ";
-        if (rHill > 0)
+        rIc50s.clear();
+        std::vector<double> pIC50s = p_args->GetDoublesCorrespondingToOption("--pic50-" + channel);
+        for (unsigned i=0; i<pIC50s.size(); i++)
         {
-            if (!mSuppressOutput) std::cout << "Hill = " << rHill << "\n";
+            rIc50s.push_back(pow(10,-pIC50s[i] + 6));
+        }
+        read_ic50s = true;
+    }
+
+    // Try loading any Hills
+    if (p_args->OptionExists("--hill-" + channel))
+    {
+        rHills = p_args->GetDoublesCorrespondingToOption("--hill-" + channel);
+        // But these must correspond to IC50s.
+        if (!(rHills.size()==rIc50s.size()))
+        {
+            EXCEPTION("If you enter Hill coefficients, there must be one corresponding to each [p]IC50 measurement.");
+        }
+        read_hills = true;
+    }
+
+    // Collect any spread parameter information that has been inputted.
+    if(p_args->OptionExists("--pic50-spread-" + channel))
+    {
+        mPic50Spreads[channelIdx] = p_args->GetDoubleCorrespondingToOption("--pic50-spread-" + channel);
+    }
+    if(p_args->OptionExists("--hill-spread-" + channel))
+    {
+        mHillSpreads[channelIdx] = p_args->GetDoubleCorrespondingToOption("--hill-spread-" + channel);
+    }
+
+    if (mSuppressOutput)
+    {
+        return;
+    }
+
+    // Print the data we read in to screen for provenance tracking.
+    std::cout << "* " << channel;
+    if (read_ic50s)
+    {
+        std::cout << " IC50s = ";
+        for (unsigned i=0; i<rIc50s.size(); i++)
+        {
+            std::cout << rIc50s[i] << " ";
+        }
+        std::cout << " uM, ";
+        if (read_hills)
+        {
+            std::cout << "Hills = ";
+            for (unsigned i=0; i<rHills.size(); i++)
+            {
+                std::cout << rHills[i] << " ";
+            }
+            std::cout << "\n";
         }
         else
         {
-            if (!mSuppressOutput) std::cout << "Hill = 1.0 (default) \n";
+            std::cout << "Hills = 1.0 (default) \n";
         }
     }
     else
     {
-        rHill = -1.0; // Override any values given here to replace with default if there is no channel block.
-        if (!mSuppressOutput) std::cout << ": no drug affect\n";
+        std::cout << ": no drug affect\n";
     }
 }
 
 void ApPredictMethods::ApplyDrugBlock(boost::shared_ptr<AbstractCvodeCell> pModel,
-                                      const std::string& rMetadataName,
-                                      const std::string& rShortName,
+                                      unsigned channel_index,
                                       const double default_conductance,
                                       const double concentration,
                                       const double iC50,
@@ -155,12 +218,12 @@ void ApPredictMethods::ApplyDrugBlock(boost::shared_ptr<AbstractCvodeCell> pMode
     const double conductance_factor = AbstractDataStructure::CalculateConductanceFactor(concentration, iC50,  hill);
 
     // Some screen output for info.
-    if (!mSuppressOutput) std::cout << "g_" << rShortName <<  " factor = " << conductance_factor << "\n";// << std::flush;
+    if (!mSuppressOutput) std::cout << "g_" << mShortNames[channel_index] <<  " factor = " << conductance_factor << "\n";// << std::flush;
 
     // Check the model has this parameter before we try and set it.
-    if (pModel->HasParameter(rMetadataName))
+    if (pModel->HasParameter(mMetadataNames[channel_index]))
     {
-        pModel->SetParameter(rMetadataName, default_conductance*conductance_factor);
+        pModel->SetParameter(mMetadataNames[channel_index], default_conductance*conductance_factor);
     }
     else // We haven't got that conductance parameter, or at least it isn't labelled.
     {
@@ -169,15 +232,292 @@ void ApPredictMethods::ApplyDrugBlock(boost::shared_ptr<AbstractCvodeCell> pMode
         {
             // If the model hasn't got this channel conductance labelled,
             // (but we are trying to change it) throw an error.
-            EXCEPTION(pModel->GetSystemName() << " does not have the current \"" << rMetadataName << "\" labelled, but you have requested a block on this channel.");
+            EXCEPTION(pModel->GetSystemName() << " does not have the current \"" << mMetadataNames[channel_index] << "\" labelled, but you have requested a block on this channel.");
         }
     }
 }
 
 ApPredictMethods::ApPredictMethods()
    : AbstractActionPotentialMethod(),
+     mLookupTableAvailable(false),
      mComplete(false)
 {
+    // Here we list the possible drug blocks that can be applied with ApPredict
+    mMetadataNames.push_back("membrane_fast_sodium_current_conductance");
+    mShortNames.push_back("na");
+
+    mMetadataNames.push_back("membrane_L_type_calcium_current_conductance");
+    mShortNames.push_back("cal");
+
+    mMetadataNames.push_back("membrane_rapid_delayed_rectifier_potassium_current_conductance");
+    mShortNames.push_back("herg");
+
+    mMetadataNames.push_back("membrane_slow_delayed_rectifier_potassium_current_conductance");
+    mShortNames.push_back("iks");
+
+    mMetadataNames.push_back("membrane_inward_rectifier_potassium_current_conductance");
+    mShortNames.push_back("ik1");
+
+    mMetadataNames.push_back("membrane_fast_transient_outward_current_conductance");
+    mShortNames.push_back("ito");
+
+    // We'll use DOUBLE_UNSET to start with for these spread parameters.
+    for (unsigned i=0; i<6u; i++)
+    {
+        mPic50Spreads.push_back(DOUBLE_UNSET);
+        mHillSpreads.push_back(DOUBLE_UNSET);
+    }
+
+    // There must be a 1:1 mapping between these...
+    assert(mMetadataNames.size()==mShortNames.size());
+}
+
+void ApPredictMethods::SetUpLookupTables()
+{
+    CommandLineArguments* p_args = CommandLineArguments::Instance();
+
+    if (!p_args->OptionExists("--credible-intervals"))
+    {
+        // The flag mLookupTableAvailable remains false, and we carry on as normal.
+        return;
+    }
+
+    // We've only generated (up to) 4D lookup tables for now,
+    // so don't bother if we are asking for ion channel blocks of other things
+    if (p_args->OptionExists("--ic50-ik1")  ||
+        p_args->OptionExists("--pic50-ik1") ||
+        p_args->OptionExists("--ic50-ito")  ||
+        p_args->OptionExists("--pic50-ito") )
+    {
+        EXCEPTION("Lookup table (for --credible-intervals) is currently only including IKr, IKs, INa and ICaL block, you have specified additional ones so quitting.");
+    }
+
+    // Here we will attempt to use any lookup table associated with this model and pacing rate.
+    std::stringstream lookup_table_archive_name;
+    lookup_table_archive_name << mpModel->GetSystemName() << "_4d_hERG_IKs_INa_ICaL_" <<  this->mHertz << "Hz_generator.arch";
+
+    // First see if there is a table available already in absolute or current working directory.
+    FileFinder archive_file(lookup_table_archive_name.str(), RelativeTo::AbsoluteOrCwd);
+
+    if (!archive_file.IsFile())
+    {
+        // If not, try and download and unpack one.
+        std::string lookup_table_URL = "http://www.cs.ox.ac.uk/people/gary.mirams/files/" + lookup_table_archive_name.str() + ".tgz";
+        try
+        {
+            std::cout << "\n\nAttempting to download an action potential lookup table from:\n" << lookup_table_URL << "\n\n";
+            EXPECT0(system, "wget " + lookup_table_URL);
+            std::cout << "Download succeeded, unpacking...\n";
+            EXPECT0(system, "tar xzf " + lookup_table_archive_name.str() + ".tgz");
+            std::cout << "Unpacking succeeded, removing archive...\n";
+            EXPECT0(system, "rm -f " + lookup_table_archive_name.str() + ".tgz");
+        }
+        catch (Exception &e)
+        {
+            std::cout << "Could not download and unpack the Lookup Table archive, continuing without it...\n";
+            return;
+        }
+    }
+
+    if (archive_file.IsFile())
+    {
+        std::cout << "Loading lookup table from file into memory, this can take a few seconds..." << std::flush;
+
+        // Create a pointer to the input archive
+        std::ifstream ifs((archive_file.GetAbsolutePath()).c_str(), std::ios::binary);
+        boost::archive::text_iarchive input_arch(ifs);
+
+        // restore from the archive
+        LookupTableGenerator<TABLE_DIM>* p_generator;
+        input_arch >> p_generator;
+
+        std::cout << " loaded.\nLookup table is available for generation of credible intervals.\n";
+
+        mpLookupTable.reset(p_generator);
+        mLookupTableAvailable = true;
+    }
+}
+
+void ApPredictMethods::CalculateDoseResponseParameterSamples(const std::vector<std::vector<double> >& rIC50s,
+                                                             const std::vector<std::vector<double> >& rHills)
+{
+    if (mLookupTableAvailable)
+    {
+        /*
+         * Prepare an inferred set of IC50s and Hill coefficients
+         * for use with the Lookup Table and credible interval calculations.
+         */
+        mSampledIc50s.resize(mMetadataNames.size());
+        mSampledHills.resize(mMetadataNames.size());
+
+        const unsigned num_samples = 1000u;
+
+        // Work out vectors of inferred IC50 and Hills
+        // Apply drug block on each channel
+        for (unsigned channel_idx = 0 ; channel_idx<mMetadataNames.size(); channel_idx++)
+        {
+            // First just decide whether there is 'no effect here'.
+            assert(rIC50s[channel_idx].size()>=1u);
+            if (rIC50s[channel_idx].size()==1 && rIC50s[channel_idx][0]==-1)
+            {
+                // No effect here, so just map that out to all random runs
+                for (unsigned i=0; i<num_samples; i++)
+                {
+                    mSampledIc50s[channel_idx].push_back(-1.0);
+                    mSampledHills[channel_idx].push_back(-1.0);
+                }
+                // To next channel
+                continue;
+            }
+
+            // Convert data to pIC50s
+            std::vector<double> pIC50s;
+            for (unsigned i=0; i<rIC50s[channel_idx].size(); i++)
+            {
+                pIC50s.push_back(AbstractDataStructure::ConvertIc50ToPic50(rIC50s[channel_idx][i]));
+            }
+
+            // Retrieve the Pic50 spread from the command line arguments.
+            if (mPic50Spreads[channel_idx] == DOUBLE_UNSET)
+            {
+                EXCEPTION("No argument --pic50-spread-" << mShortNames[channel_idx] << " has been provided. Cannot calculate credible intervals without this.");
+            }
+
+            // Infer pIC50 spread.
+            BayesianInferer ic50_inferer(PIC50);
+            ic50_inferer.SetObservedData(pIC50s);
+            ic50_inferer.SetSpreadOfUnderlyingDistribution(mPic50Spreads[channel_idx]);
+            ic50_inferer.PerformInference();
+
+            std::vector<double> inferred_pic50s = ic50_inferer.GetSampleMedianValue(num_samples); // Get 1000 inferred pIC50s
+            for (unsigned i=0; i<num_samples; i++)
+            {
+                // Convert pIC50 back to IC50 and store it.
+                mSampledIc50s[channel_idx].push_back(AbstractDataStructure::ConvertPic50ToIc50(inferred_pic50s[i]));
+            }
+
+            // If all Hill coefficient entries are positive, then we will use those for samples too.
+            // This long-winded bit of code is just counting how many are positive (must be a better way!).
+            bool all_hills_positive = false;
+            unsigned temp_counter = 0u;
+            for (unsigned i=0; i<rHills[channel_idx].size(); i++)
+            {
+                if (rHills[channel_idx][i] > 0.0)
+                {
+                    temp_counter++;
+                }
+            }
+            if (temp_counter == rHills[channel_idx].size())
+            {
+                all_hills_positive = true;
+            }
+
+            if (all_hills_positive)
+            {
+                // Retrieve Hill spread parameters from stored Command line args.
+                if (mHillSpreads[channel_idx] == DOUBLE_UNSET)
+                {
+                    EXCEPTION("No argument --hill-spread-" << mShortNames[channel_idx] << " has been provided. Cannot calculate credible intervals without this.");
+                }
+
+                // Infer Hill spread.
+                BayesianInferer hill_inferer(HILL);
+                hill_inferer.SetObservedData(rHills[channel_idx]);
+                // This works with the Beta parameter, not the 1/Beta. So do 1/1/Beta to get Beta back!
+                hill_inferer.SetSpreadOfUnderlyingDistribution(1.0/mHillSpreads[channel_idx]);
+                hill_inferer.PerformInference();
+
+                mSampledHills[channel_idx] = hill_inferer.GetSampleMedianValue(num_samples); // Get 1000 inferred Hills
+            }
+            else
+            {
+                // There have been not enough 'real' Hill coefficients specified,
+                // so assume they are all missing (otherwise inference would go mad
+                // with some positive and some negative).
+                for (unsigned i=0; i<num_samples; i++)
+                {
+                    // We aren't going to attempt to do inference on Hills,
+                    // just push back 'no measurement' for now.
+                    mSampledHills[channel_idx].push_back(-1.0);
+                }
+            }
+        }
+    }
+}
+
+void ApPredictMethods::InterpolateFromLookupTableForThisConcentration(const unsigned conc_index)
+{
+    // If we don't have a lookup table, we aren't going to do confidence intervals.
+    if (!mLookupTableAvailable)
+    {
+        return;
+    }
+
+    std::pair<double, double> confidence_interval;
+
+    // If this is the first concentration (control) say the percent change must be zero
+    // (or otherwise a small interpolation error will result).
+    if (conc_index==0u)
+    {
+        confidence_interval.first = mApd90s[conc_index];
+        confidence_interval.second = mApd90s[conc_index];
+        mApd90CredibleRegions[conc_index] = confidence_interval;
+        return;
+    }
+
+    // The first channel entry in mSampledIc50s will give us the number of random samples.
+    const unsigned num_samples = mSampledIc50s[0].size();
+
+    std::cout << "Calculating confidence intervals from Lookup Table...";
+    std::vector<c_vector<double,4u> > sampling_points;
+    for (unsigned rand_idx=0; rand_idx<num_samples; rand_idx++)
+    {
+        // In the lookup table the order of parameters is given in the filename:
+        // "4d_hERG_IKs_INa_ICaL_generator.arch"
+        c_vector<double,TABLE_DIM> sample_required_at;
+
+        // IKr
+        sample_required_at[0] = AbstractDataStructure::CalculateConductanceFactor(mConcs[conc_index],
+                                                                                  mSampledIc50s[2][rand_idx],
+                                                                                  mSampledHills[2][rand_idx]);
+        // IKs
+        sample_required_at[1] = AbstractDataStructure::CalculateConductanceFactor(mConcs[conc_index],
+                                                                                  mSampledIc50s[3][rand_idx],
+                                                                                  mSampledHills[3][rand_idx]);
+        // INa
+        sample_required_at[2] = AbstractDataStructure::CalculateConductanceFactor(mConcs[conc_index],
+                                                                                  mSampledIc50s[0][rand_idx],
+                                                                                  mSampledHills[0][rand_idx]);
+        // ICaL
+        sample_required_at[3] = AbstractDataStructure::CalculateConductanceFactor(mConcs[conc_index],
+                                                                                  mSampledIc50s[1][rand_idx],
+                                                                                  mSampledHills[1][rand_idx]);
+        sampling_points.push_back(sample_required_at);
+    }
+
+    std::vector<std::vector<double> > predictions = mpLookupTable->Interpolate(sampling_points);
+    assert(predictions.size()==mSampledIc50s[0].size());
+
+    /*
+     * Compile all the lookup table predictions into a vector that we can sort.
+     */
+    //std::vector<double> apd_50_predictions;
+    std::vector<double> apd_90_predictions;
+    for (unsigned rand_idx=0; rand_idx<num_samples; rand_idx++)
+    {
+        //apd_50_predictions.push_back(predictions[rand_idx][1]);
+        apd_90_predictions.push_back(predictions[rand_idx][0]);
+    }
+    std::sort(apd_90_predictions.begin(), apd_90_predictions.end());
+
+    // Now work out the confidence intervals, err on conservative side.
+    double credible_region = 95.0; // %
+    double tails = 0.01*(100 - credible_region)/2.0;
+    confidence_interval.first = apd_90_predictions[floor(tails*(double)(num_samples))];
+    confidence_interval.second = apd_90_predictions[ceil((1-tails)*(double)(num_samples))];
+
+    mApd90CredibleRegions[conc_index] = confidence_interval;
+    std::cout << "done.\n";
 }
 
 void ApPredictMethods::Run()
@@ -188,42 +528,26 @@ void ApPredictMethods::Run()
     SetupModel setup(this->mHertz); // This class will get model definition from command line.
     mpModel = setup.GetModel();
 
+    SetUpLookupTables();
+
     CommonRunMethod();
 }
 
 void ApPredictMethods::CommonRunMethod()
 {
     // Arguments that take default values
-    std::vector<double> IC50s;
-    std::vector<double> hills;
-    std::vector<std::string> metadata_names;
-    std::vector<std::string> short_names;
+    std::vector<std::vector<double> > IC50s;
+    std::vector<std::vector<double> > hills;
+
+    std::vector<double> unset;
+    unset.push_back(-1); // -1 is our code for 'unset'.
 
     // Set the initial values of these
-    for (unsigned i=0; i<6u; i++)
+    for (unsigned i=0; i<mMetadataNames.size(); i++)
     {
-        IC50s.push_back(-1); // These are our code for 'unset'.
-        hills.push_back(-1); // These are our code for 'unset'.
+        IC50s.push_back(unset);
+        hills.push_back(unset);
     }
-
-    metadata_names.push_back("membrane_fast_sodium_current_conductance");
-    metadata_names.push_back("membrane_L_type_calcium_current_conductance");
-    metadata_names.push_back("membrane_rapid_delayed_rectifier_potassium_current_conductance");
-    metadata_names.push_back("membrane_slow_delayed_rectifier_potassium_current_conductance");
-    metadata_names.push_back("membrane_inward_rectifier_potassium_current_conductance");
-    metadata_names.push_back("membrane_fast_transient_outward_current_conductance");
-
-    short_names.push_back("na");
-    short_names.push_back("cal");
-    short_names.push_back("herg");
-    short_names.push_back("iks");
-    short_names.push_back("ik1");
-    short_names.push_back("ito");
-
-    // Safety Checks
-    assert(metadata_names.size()==short_names.size());
-    assert(metadata_names.size()==IC50s.size());
-    assert(metadata_names.size()==hills.size());
 
     // Dose calculator asks for some arguments to do with plasma concentrations.
     DoseCalculator dose_calculator;
@@ -232,13 +556,13 @@ void ApPredictMethods::CommonRunMethod()
     // We check the desired parameters are present in the model, warn if not.
     // This method also changes some metadata names if the model has variants that will do, but aren't ideal
     // and warns if it does this.
-    ParameterWrapper(mpModel, metadata_names);
+    ParameterWrapper(mpModel, mMetadataNames);
 
     // Use a helper method to read in IC50 from either --ic50 or --pic50 arguments.
     // Note this is now in micro Molar (1x10^-6 Molar) as per most Pharma use.
-    for (unsigned i=0; i<metadata_names.size(); i++)
+    for (unsigned channel_idx=0; channel_idx<mMetadataNames.size(); channel_idx++)
     {
-        ReadInIC50AndHill(IC50s[i], hills[i], short_names[i]);
+        ReadInIC50AndHill(IC50s[channel_idx], hills[channel_idx], channel_idx);
     }
 
     if (!mSuppressOutput)
@@ -253,15 +577,17 @@ void ApPredictMethods::CommonRunMethod()
     // All the drug block models should include these parameter labels
     // But you only get a warning if not, so check the warnings...
     std::vector<double> default_conductances;
-    for (unsigned i=0; i<metadata_names.size(); i++)
+    for (unsigned channel_idx=0; channel_idx<mMetadataNames.size(); channel_idx++)
     {
         double default_value = 1.0;
-        if (mpModel->HasParameter(metadata_names[i]))
+        if (mpModel->HasParameter(mMetadataNames[channel_idx]))
         {
-            default_value = mpModel->GetParameter(metadata_names[i]);
+            default_value = mpModel->GetParameter(mMetadataNames[channel_idx]);
         }
         default_conductances.push_back(default_value);
     }
+
+    CalculateDoseResponseParameterSamples(IC50s, hills);
 
     boost::shared_ptr<const AbstractOdeSystemInformation> p_ode_info = mpModel->GetSystemInformation();
     std::string model_name = mpModel->GetSystemName();
@@ -281,7 +607,16 @@ void ApPredictMethods::CommonRunMethod()
     out_stream steady_voltage_results_file_html = mpFileHandler->OpenOutputFile("voltage_results.html");
 
     out_stream steady_voltage_results_file = mpFileHandler->OpenOutputFile("voltage_results.dat");
-    *steady_voltage_results_file << "Concentration(uM)\tUpstrokeVelocity(mV/ms)\tPeakVm(mV)\tAPD50(ms)\tAPD90(ms)\tdelta_APD90(%)\n";
+    *steady_voltage_results_file << "Concentration(uM)\tUpstrokeVelocity(mV/ms)\tPeakVm(mV)\tAPD50(ms)\tAPD90(ms)\t";
+    if (mLookupTableAvailable)
+    {
+        *steady_voltage_results_file << "delta_APD90_lower(%),delta_APD90(%),delta_APD90_upper(%)\n";
+    }
+    else
+    {
+        *steady_voltage_results_file << "delta_APD90(%)\n";
+    }
+
     *steady_voltage_results_file_html << "<html>\n<head><title>" << mProgramName << " results</title></head>\n";
     *steady_voltage_results_file_html << "<STYLE TYPE=\"text/css\">\n<!--\nTD{font-size: 12px;}\n--->\n</STYLE>\n";
     *steady_voltage_results_file_html << "<body>\n";
@@ -291,6 +626,7 @@ void ApPredictMethods::CommonRunMethod()
     /**
      * START LOOP OVER EACH CONCENTRATION TO TEST WITH
      */
+    mApd90CredibleRegions.resize(mConcs.size());
     double control_apd90 = 0;
     for (unsigned conc_index=0; conc_index<mConcs.size(); conc_index++)
     {
@@ -298,14 +634,27 @@ void ApPredictMethods::CommonRunMethod()
         std::cout << "Drug Conc = " << mConcs[conc_index] << " uM\n" ;//<< std::flush;
 
         // Apply drug block on each channel
-        for (unsigned i = 0 ; i<metadata_names.size(); i++)
+        for (unsigned channel_idx = 0 ; channel_idx<mMetadataNames.size(); channel_idx++)
         {
-            ApplyDrugBlock(mpModel, metadata_names[i], short_names[i],
-                    default_conductances[i], mConcs[conc_index], IC50s[i], hills[i]);
+            // Work out the mean IC50 and Hill in the dataset, and do simulation with this for now.
+            // (This will ensure identical behaviour to when there was just one entry)
+
+            double sum = std::accumulate(IC50s[channel_idx].begin(), IC50s[channel_idx].end(), 0.0);
+            double mean_ic50 = sum / IC50s[channel_idx].size();
+            sum = std::accumulate(hills[channel_idx].begin(), hills[channel_idx].end(), 0.0);
+            double mean_hill = sum / hills[channel_idx].size();
+
+            ApplyDrugBlock(mpModel, channel_idx, default_conductances[channel_idx],
+                           mConcs[conc_index], mean_ic50, mean_hill);
         }
 
         double apd90, apd50, upstroke, peak;
         OdeSolution solution = SteadyStatePacingExperiment(mpModel, apd90, apd50, upstroke, peak, 0.1 /*ms printing timestep*/, mConcs[conc_index]);
+
+        // Store some things as member variables for returning later (mainly for testing)
+        mApd90s.push_back(apd90); // This is used by TorsadePredict and following method for control.
+
+        InterpolateFromLookupTableForThisConcentration(conc_index);
 
         if (!DidErrorOccur())
         {
@@ -315,21 +664,51 @@ void ApPredictMethods::CommonRunMethod()
                 control_apd90 = apd90;
             }
             double delta_apd90 = 100*(apd90 - control_apd90)/control_apd90;
+            double lower_delta_apd90, upper_delta_apd90;
+            if (mLookupTableAvailable)
+            {
+                lower_delta_apd90 = 100*(mApd90CredibleRegions[conc_index].first - control_apd90)/control_apd90;
+                upper_delta_apd90 = 100*(mApd90CredibleRegions[conc_index].second - control_apd90)/control_apd90;
+            }
 
-            if (!mSuppressOutput) std::cout << mHertz << "Hz Upstroke velocity = " << upstroke << ", Peak mV = " << peak << ", APD50 = " << apd50 << ", APD90 = " << apd90 << ", percent change APD90 = " << delta_apd90 << "\n";// << std::flush;
+            if (!mSuppressOutput)
+            {
+                std::cout << mHertz << "Hz Upstroke velocity = " << upstroke << ", Peak mV = " << peak << ", APD50 = " << apd50 << ", APD90 = " << apd90 << ", percent change APD90 = ";
+                if (mLookupTableAvailable)
+                {
+                    std::cout << lower_delta_apd90 << "," << delta_apd90 << "," << upper_delta_apd90 << "\n";// << std::flush;
+                }
+                else
+                {
+                    std::cout << delta_apd90 << "\n";// << std::flush;
+                }
+            }
             *steady_voltage_results_file_html << "<tr><td>"<< mConcs[conc_index] << "</td><td>" << upstroke << "</td><td>" << peak << "</td><td>" << apd50 << "</td><td>" << apd90 << "</td><td>" << delta_apd90 << "</td></tr>\n";
-            *steady_voltage_results_file << mConcs[conc_index] << "\t" << upstroke << "\t" << peak << "\t" << apd50  << "\t" << apd90 << "\t" << delta_apd90 << "\n";
+            *steady_voltage_results_file << mConcs[conc_index] << "\t" << upstroke << "\t" << peak << "\t" << apd50  << "\t" << apd90 << "\t";
+            if (mLookupTableAvailable)
+            {
+                *steady_voltage_results_file << lower_delta_apd90 << "," << delta_apd90 << "," << upper_delta_apd90 << "\n";// << std::flush;
+            }
+            else
+            {
+                *steady_voltage_results_file << delta_apd90 << "\n";// << std::flush;
+            }
         }
         else
         {
             std::string error_code = GetErrorMessage();
             if (!mSuppressOutput) std::cout << mHertz << "Hz Upstroke velocity = " << error_code << ", Peak mV = " << error_code << ", APD50 = " << error_code << ", APD90 = " << error_code << ", percent change APD90 = " << error_code << "\n";// << std::flush;
             *steady_voltage_results_file_html << "<tr><td>"<< mConcs[conc_index] << "</td><td>" << error_code << "</td><td>" << error_code << "</td><td>" << error_code << "</td><td>" << error_code << "</td><td>" << error_code << "</td></tr>\n";
-            *steady_voltage_results_file << mConcs[conc_index] << "\t" << error_code << "\t" << error_code << "\t" << error_code  << "\t" << error_code << "\t" << error_code << "\n";
+            *steady_voltage_results_file << mConcs[conc_index] << "\t" << error_code << "\t" << error_code << "\t" << error_code  << "\t" << error_code << "\t";
+            if (mLookupTableAvailable)
+            {
+                *steady_voltage_results_file << error_code << "," << error_code << "," << error_code << "\n";
+            }
+            else
+            {
+                *steady_voltage_results_file << error_code << "\n";
+            }
         }
-
-        // Store some things as member variables for returning later (mainly for testing)
-        mAPD90s.push_back(apd90); // This is used by TorsadePredict
 
         // Create unique filename and write the voltage trace to file...
         std::stringstream filename;
@@ -387,24 +766,39 @@ std::vector<double> ApPredictMethods::GetApd90s(void)
     {
         EXCEPTION("Simulation has not been run - check arguments.");
     }
-    return mAPD90s;
+    return mApd90s;
+}
+
+std::vector<std::pair<double,double> > ApPredictMethods::GetApd90CredibleRegions(void)
+{
+    if (!mComplete )
+    {
+        EXCEPTION("Simulation has not been run - check arguments.");
+    }
+
+    if (!mLookupTableAvailable)
+    {
+        EXCEPTION("There was no Lookup Table available for credible interval calculations with these settings.");
+    }
+
+    return mApd90CredibleRegions;
 }
 
 void ApPredictMethods::ParameterWrapper(boost::shared_ptr<AbstractCvodeCell> pModel, std::vector<std::string>& rMetadataNames)
 {
-    for (unsigned i=0; i<rMetadataNames.size(); i++)
+    for (unsigned channel_idx=0; channel_idx<rMetadataNames.size(); channel_idx++)
     {
-        if (!pModel->HasParameter(rMetadataNames[i]))
+        if (!pModel->HasParameter(rMetadataNames[channel_idx]))
         {
-            WARNING(pModel->GetSystemName() << " does not have '" << rMetadataNames[i] << "' labelled, please tag it in the CellML file if it is present.");
+            WARNING(pModel->GetSystemName() << " does not have '" << rMetadataNames[channel_idx] << "' labelled, please tag it in the CellML file if it is present.");
 
             // Not all of the models have a distinct fast I_to component.
             // In this case we look for the complete I_to current instead.
-            if (rMetadataNames[i]=="membrane_fast_transient_outward_current_conductance" &&
+            if (rMetadataNames[channel_idx]=="membrane_fast_transient_outward_current_conductance" &&
                 pModel->HasParameter("membrane_transient_outward_current_conductance")     )
             {
                 WARNING(pModel->GetSystemName() << " does not have 'membrane_fast_transient_outward_current_conductance' labelled, using combined Ito (fast and slow) instead...");
-                rMetadataNames[i] = "membrane_transient_outward_current_conductance";
+                rMetadataNames[channel_idx] = "membrane_transient_outward_current_conductance";
             }
         }
     }

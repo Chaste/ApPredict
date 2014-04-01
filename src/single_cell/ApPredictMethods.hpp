@@ -39,12 +39,27 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "AbstractActionPotentialMethod.hpp"
 #include "AbstractCvodeCell.hpp"
 #include "OutputFileHandler.hpp"
+#include "LookupTableGenerator.hpp"
+
+const unsigned TABLE_DIM = 4u;
 
 /**
  * Common code to allow this to be run as a test via scons and also as a
  * executable application from the apps folder.
  *
- * The member variables are only used by the Torsade prediction methods.
+ * This class provides all of the functionality behind the ApPredict executable
+ * and is used to generate simple APD90 predictions fbased on conductance block
+ * of the ion channels specified in the constructor.
+ *
+ * The class can also use a Lookup Table to generate thousands of APD90 predictions
+ * very very quickly, to create Bayesian 'credible intervals' (a bit like confidence
+ * intervals) around the model APD90 predictions, at each concentration.
+ * These are based on the input data uncertainty, as characterised in the paper:
+ * Elkins et al. 2013  Journal of Pharmacological and Toxicological
+ * Methods, 68(1), 112-122. doi: 10.1016/j.vascn.2013.04.007
+ *
+ * For most details of using this class, please compile and run the ApPredict executable,
+ * and it will provide a 'help' style output of the command line arguments to use.
  */
 class ApPredictMethods : public AbstractActionPotentialMethod
 {
@@ -53,20 +68,80 @@ private:
      * A method to avoid lots of copying and pasting in the main drug block application method.
      *
      * @param pModel  The CVODE model.
-     * @param rMetadataName  The Oxford metadata name for the conductance we want to block.
-     * @param rShortName  The short version of the name for screen output.
+     * @param channel_index  The index of the channel (in mMetadataNames) that we are blocking here.
      * @param default_conductance  The default value of the conductance before we started messing.
      * @param concentration  The current drug concentration.
      * @param iC50  The IC50 for this channel.
      * @param hill  The Hill for this channel.
      */
     void ApplyDrugBlock(boost::shared_ptr<AbstractCvodeCell> pModel,
-                        const std::string& rMetadataName,
-                        const std::string& rShortName,
+                        unsigned channel_index,
                         const double default_conductance,
                         const double concentration,
                         const double iC50,
                         const double hill);
+
+    /**
+     * Takes the inputted IC50 and Hill coefficients
+     * and uses information on the spread of the particular assay
+     * to infer a probability distribution for the 'true' underlying
+     * median IC50 and Hill.
+     *
+     * Then stores samples from the inferred PDF in #mSampledIc50s
+     * and #mSampledHills.
+     *
+     * @param rIC50s  The IC50 values for each channel, and any repeated measurements (inner vec).
+     * @param rHills  The Hill coefficients for each channel, and any repeated measurements (inner vec).
+     */
+    void CalculateDoseResponseParameterSamples(const std::vector<std::vector<double> >& rIC50s,
+                                               const std::vector<std::vector<double> >& rHills);
+
+    /**
+     * Uses the lookup table and entries in mSampledIc50s and mSampledHills
+     * to generate a probability distribution of APD90 predictions. This is then
+     * stored in mAllApd90s, and mApd90CredibleRegions is populated.
+     *
+     * @param conc_index  The index of the concentration (in mConcs).
+     */
+    void InterpolateFromLookupTableForThisConcentration(const unsigned conc_index);
+
+    /** The Oxford metadata names of the conductances we may modify with this class */
+    std::vector<std::string> mMetadataNames;
+
+    /** Shortened versions of the names, corresponding to the input argument names */
+    std::vector<std::string> mShortNames;
+
+    /**
+     * The IC50 samples for credible interval calculations.
+     * The first index is for channel (corresponding to mMetadataNames)
+     * The second (inner) vector is for each random sample.
+     */
+    std::vector<std::vector<double> > mSampledIc50s;
+
+    /**
+     * The Hill coefficient samples for credible interval calculations.
+     * The first index is for channel (corresponding to mMetadataNames)
+     * The second (inner) vector is for each random sample.
+     */
+    std::vector<std::vector<double> > mSampledHills;
+
+    /** The inputted spread parameters - for pIC50 Logistic Distbn this is 'sigma' */
+    std::vector<double> mPic50Spreads;
+
+    /** The inputted spread parameters - for Hill Log-Logisitic this is '1/Beta' */
+    std::vector<double> mHillSpreads;
+
+    /** Whether there is a lookup table we can use for credible interval calculations */
+    bool mLookupTableAvailable;
+
+    /** A pointer to a lookup table */
+    boost::shared_ptr<LookupTableGenerator<TABLE_DIM> > mpLookupTable;
+
+    /**
+     * A vector of pairs used to store the credible regions for APD90s,
+     * calculated in the main method if a suitable Lookup Table is present.
+     */
+    std::vector<std::pair<double,double> > mApd90CredibleRegions;
 
 protected:
 
@@ -74,7 +149,8 @@ protected:
     bool mComplete;
 
     /** A vector used to store the APD90s calculated in the main method */
-    std::vector<double> mAPD90s;
+    std::vector<double> mApd90s;
+
 
     /** A vector used to store the Drug Concentrations at which APDs are calculated*/
     std::vector<double> mConcs;
@@ -95,11 +171,17 @@ protected:
      * Read any input arguments corresponding to a particular channel and calculate the IC50 value (in uM)
      * from either raw IC50 (in uM) or pIC50 (in M).
      *
-     * @param rIc50  a default IC50 value (usually -1), overwritten if argument is present to a value (assumed to be in uM).
-     * @param rHill  a default Hill coefficient (usually -1), overwritten if argument is present.
-     * @param rChannel  The name of the channel in the input arguments
+     * Also stores any 'spread' information (for credible interval calculations) in the mSampledIc50s and
+     * mSampledHills member variables.
+     *
+     * @param rIc50  default IC50 values (usually -1), overwritten if argument is present to a value
+     *               (assumed to be in uM).
+     * @param rHill  default Hill coefficients (usually -1), overwritten if argument is present.
+     * @param channelIdx  The index of the channel in mMetadataNames.
      */
-    void ReadInIC50AndHill(double& rIc50, double& rHill, const std::string& rChannel);
+    void ReadInIC50AndHill(std::vector<double>& rIc50,
+                           std::vector<double>& rHill,
+                           const unsigned channelIdx);
 
     /**
      * Write a log message to the messages.txt file that should be displayed alongside the results
@@ -133,6 +215,11 @@ protected:
      */
     void CommonRunMethod();
 
+    /**
+     * A method to look for / download and unarchive any lookup tables.
+     */
+    void SetUpLookupTables();
+
 public:
     /**
      * This constructor just sets some defaults.
@@ -160,6 +247,12 @@ public:
      * @return The APD90s that were evaluated at the concentrations given by GetConcentrations().
      */
     std::vector<double> GetApd90s(void);
+
+    /**
+     * @return The 95% credible regions that are associated with the APD90 predictions given by
+     * #GetApd90s().
+     */
+    std::vector<std::pair<double,double> > GetApd90CredibleRegions(void);
 
 };
 

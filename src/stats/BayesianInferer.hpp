@@ -77,7 +77,7 @@ public:
      *
      * @param rData the data points
      */
-    void SetObservedData(std::vector<double>& rData);
+    void SetObservedData(const std::vector<double>& rData);
 
     /**
      * Set the spread parameter ('sigma' for logistic or 'beta' for log-logistic)
@@ -136,7 +136,7 @@ private:
     bool mInferenceReady;
 
     /** The observed data we're working with */
-    std::vector<double>* mpData;
+    const std::vector<double>* mpData;
 
     /** The range of possible median values that we are considering (set in constructor) */
     std::vector<double> mPossibleMuValues;
