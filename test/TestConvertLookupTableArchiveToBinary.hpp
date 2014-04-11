@@ -76,7 +76,7 @@ public:
         mpBinaryArchiveFile.reset(new FileFinder("shannon_wang_puglisi_weber_bers_2004_model_updated_4d_hERG_IKs_INa_ICaL_1Hz_generator_BINARY.arch", RelativeTo::ChasteSourceRoot));
         mpCompressedArchiveFile.reset(new FileFinder("shannon_wang_puglisi_weber_bers_2004_model_updated_4d_hERG_IKs_INa_ICaL_1Hz_generator_COMPRESSED.arch", RelativeTo::ChasteSourceRoot));
 
-        if (mpAsciiArchiveFile->IsFile())
+        if (!mpAsciiArchiveFile->IsFile())
         {
             WARNING("Ascii archive is not present, not creating binary file!");
             return;
