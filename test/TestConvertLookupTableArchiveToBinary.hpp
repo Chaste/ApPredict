@@ -52,7 +52,14 @@ const unsigned TABLE_DIM = 4u;
 /**
  * Here we want to load an ascii archive file, then convert it into binary for this system.
  *
- * Finally we want to compare times for loading this file from disk.
+ * The ascii archive that is  required may be acquired by running the ApPredict executable with
+ * ./ApPredict --model 1 --credible-intervals [any drug options]
+ *
+ * or you can download it from
+ * http://www.cs.ox.ac.uk/people/gary.mirams/files/shannon_wang_puglisi_weber_bers_2004_model_updated_4d_hERG_IKs_INa_ICaL_1Hz_generator.arch.tgz
+ * (will require unpacking)
+ *
+ * Finally we want to compare times for loading the various archive files from disk.
  */
 class TestConvertLookupTableArchiveToBinary : public CxxTest::TestSuite
 {
