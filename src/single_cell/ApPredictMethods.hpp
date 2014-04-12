@@ -48,7 +48,7 @@ const unsigned TABLE_DIM = 4u;
  * executable application from the apps folder.
  *
  * This class provides all of the functionality behind the ApPredict executable
- * and is used to generate simple APD90 predictions fbased on conductance block
+ * and is used to generate simple APD90 predictions based on conductance block
  * of the ion channels specified in the constructor.
  *
  * The class can also use a Lookup Table to generate thousands of APD90 predictions
@@ -217,6 +217,13 @@ protected:
 
     /**
      * A method to look for / download and unarchive any lookup tables.
+     *
+     * This method contains the following logic:
+     *  1. See if a binary archive is available, if so use that.
+     *  2. See if an ascii archive is available, if so use that and make a binary one for next time.
+     *  3. If nothing is available then the ascii archive is downloaded from
+     *     http://www.cs.ox.ac.uk/people/gary.mirams/files/<model and pacing specific table>.tgz
+     *     is downloaded, unpacked, loaded and converted to binary for next time.
      */
     void SetUpLookupTables();
 

@@ -294,23 +294,63 @@ void ApPredictMethods::SetUpLookupTables()
 
     // Here we will attempt to use any lookup table associated with this model and pacing rate.
     std::stringstream lookup_table_archive_name;
-    lookup_table_archive_name << mpModel->GetSystemName() << "_4d_hERG_IKs_INa_ICaL_" <<  this->mHertz << "Hz_generator.arch";
+    lookup_table_archive_name << mpModel->GetSystemName() << "_4d_hERG_IKs_INa_ICaL_" <<  this->mHertz << "Hz_generator";
 
     // First see if there is a table available already in absolute or current working directory.
-    FileFinder archive_file(lookup_table_archive_name.str(), RelativeTo::AbsoluteOrCwd);
+    FileFinder ascii_archive_file(lookup_table_archive_name.str() + ".arch", RelativeTo::AbsoluteOrCwd);
+    FileFinder binary_archive_file(lookup_table_archive_name.str() + "_BINARY.arch", RelativeTo::AbsoluteOrCwd);
 
-    if (!archive_file.IsFile())
+    // First we try loading the binary version of the archive, if it exists.
+    if (binary_archive_file.IsFile())
     {
-        // If not, try and download and unpack one.
-        std::string lookup_table_URL = "http://www.cs.ox.ac.uk/people/gary.mirams/files/" + lookup_table_archive_name.str() + ".tgz";
+        std::cout << "Loading lookup table from binary archive into memory, this can take a few seconds..." << std::flush;
+        double start = MPI_Wtime();
+
+        // Create a pointer to the input archive
+        std::ifstream ifs((binary_archive_file.GetAbsolutePath()).c_str(), std::ios::binary);
+        boost::archive::binary_iarchive input_arch(ifs);
+
+        // restore from the archive
+        LookupTableGenerator<TABLE_DIM>* p_generator;
+        input_arch >> p_generator;
+
+        mpLookupTable.reset(p_generator);
+        mLookupTableAvailable = true;
+
+        double load_time = MPI_Wtime() - start;
+        std::cout << " loaded in " << load_time << " secs.\nLookup table is available for generation of credible intervals.\n";
+
+        // Since loading the binary archive works, we can try and get rid of the ascii one to clean up.
+        if (ascii_archive_file.IsFile())
+        {
+            try
+            {
+                // The ascii file is not in a testoutput folder so we need to over-ride our usual safety checks.
+                ascii_archive_file.DangerousRemove();
+                std::cout << "Ascii lookup tablermarchive file removed to tidy up, will use the binary one in future." << std::endl;
+            }
+            catch (Exception &e)
+            {
+                WARNING("Could not remove ascii lookup table archive, error was: " << e.GetMessage() << "\nSimulations continued anyway.");
+            }
+        }
+
+        // We have finished and loaded the generator.
+        return;
+    }
+
+    if (!ascii_archive_file.IsFile())
+    {
+        // If no archive exists, try to download and unpack one.
+        std::string lookup_table_URL = "http://www.cs.ox.ac.uk/people/gary.mirams/files/" + lookup_table_archive_name.str() + ".arch.tgz";
         try
         {
             std::cout << "\n\nAttempting to download an action potential lookup table from:\n" << lookup_table_URL << "\n\n";
             EXPECT0(system, "wget " + lookup_table_URL);
             std::cout << "Download succeeded, unpacking...\n";
-            EXPECT0(system, "tar xzf " + lookup_table_archive_name.str() + ".tgz");
-            std::cout << "Unpacking succeeded, removing archive...\n";
-            EXPECT0(system, "rm -f " + lookup_table_archive_name.str() + ".tgz");
+            EXPECT0(system, "tar xzf " + lookup_table_archive_name.str() + ".arch.tgz");
+            std::cout << "Unpacking succeeded, removing .tgz file...\n";
+            EXPECT0(system, "rm -f " + lookup_table_archive_name.str() + ".arch.tgz");
         }
         catch (Exception &e)
         {
@@ -319,22 +359,40 @@ void ApPredictMethods::SetUpLookupTables()
         }
     }
 
-    if (archive_file.IsFile())
+    // If there is no binary archive, then try loading the ascii version and creating a binary one for next time.
+    if (ascii_archive_file.IsFile())
     {
         std::cout << "Loading lookup table from file into memory, this can take a few seconds..." << std::flush;
+        double start = MPI_Wtime();
 
         // Create a pointer to the input archive
-        std::ifstream ifs((archive_file.GetAbsolutePath()).c_str(), std::ios::binary);
+        std::ifstream ifs((ascii_archive_file.GetAbsolutePath()).c_str(), std::ios::binary);
         boost::archive::text_iarchive input_arch(ifs);
 
         // restore from the archive
         LookupTableGenerator<TABLE_DIM>* p_generator;
         input_arch >> p_generator;
 
-        std::cout << " loaded.\nLookup table is available for generation of credible intervals.\n";
-
         mpLookupTable.reset(p_generator);
         mLookupTableAvailable = true;
+
+        double load_time = MPI_Wtime() - start;
+        std::cout << " loaded in " << load_time << " secs.\nLookup table is available for generation of credible intervals.\n";
+
+        try
+        {
+            std::cout << "Saving a binary version of the archive for faster loading next time..." << std::flush;
+            // Save a binary version to speed things up next time round.
+            LookupTableGenerator<TABLE_DIM>* const p_arch_generator = p_generator;
+            std::ofstream binary_ofs(binary_archive_file.GetAbsolutePath().c_str(), std::ios::binary);
+            boost::archive::binary_oarchive output_arch(binary_ofs);
+            output_arch << p_arch_generator;
+            std::cout << "done!\n";
+        }
+        catch (Exception &e)
+        {
+            WARNING("Did not manage to create binary lookup table archive. Error was: " << e.GetMessage() << "\nContinuing to use ascii archive.");
+        }
     }
 }
 
@@ -453,15 +511,16 @@ void ApPredictMethods::InterpolateFromLookupTableForThisConcentration(const unsi
         return;
     }
 
-    std::pair<double, double> confidence_interval;
+    std::pair<double, double> credible_interval;
 
     // If this is the first concentration (control) say the percent change must be zero
-    // (or otherwise a small interpolation error will result).
+    // or otherwise a small interpolation error will result
+    // (from potentially running to different steady state with --pacing-max-time <x> ).
     if (conc_index==0u)
     {
-        confidence_interval.first = mApd90s[conc_index];
-        confidence_interval.second = mApd90s[conc_index];
-        mApd90CredibleRegions[conc_index] = confidence_interval;
+        credible_interval.first = mApd90s[conc_index];
+        credible_interval.second = mApd90s[conc_index];
+        mApd90CredibleRegions[conc_index] = credible_interval;
         return;
     }
 
@@ -513,10 +572,10 @@ void ApPredictMethods::InterpolateFromLookupTableForThisConcentration(const unsi
     // Now work out the confidence intervals, err on conservative side.
     double credible_region = 95.0; // %
     double tails = 0.01*(100 - credible_region)/2.0;
-    confidence_interval.first = apd_90_predictions[floor(tails*(double)(num_samples))];
-    confidence_interval.second = apd_90_predictions[ceil((1-tails)*(double)(num_samples))];
+    credible_interval.first = apd_90_predictions[floor(tails*(double)(num_samples))];
+    credible_interval.second = apd_90_predictions[ceil((1-tails)*(double)(num_samples))];
 
-    mApd90CredibleRegions[conc_index] = confidence_interval;
+    mApd90CredibleRegions[conc_index] = credible_interval;
     std::cout << "done.\n";
 }
 
