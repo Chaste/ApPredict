@@ -327,7 +327,7 @@ void ApPredictMethods::SetUpLookupTables()
             {
                 // The ascii file is not in a testoutput folder so we need to over-ride our usual safety checks.
                 ascii_archive_file.DangerousRemove();
-                std::cout << "Ascii lookup tablermarchive file removed to tidy up, will use the binary one in future." << std::endl;
+                std::cout << "Ascii lookup table archive file removed to tidy up, will use the binary one in future." << std::endl;
             }
             catch (Exception &e)
             {
