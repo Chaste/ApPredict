@@ -38,9 +38,13 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <cxxtest/TestSuite.h>
 
+// This is defined in the hostconfig file,
+// enable it if boost_iostreams has been added to boost libraries.
+#ifdef CHASTE_BOOST_IOSTREAMS
 // For compressing output
 #include <boost/iostreams/filtering_stream.hpp>
 #include <boost/iostreams/filter/zlib.hpp>
+#endif
 
 #include "FileFinder.hpp"
 #include "CheckpointArchiveTypes.hpp"
@@ -123,6 +127,7 @@ public:
             output_arch << p_arch_generator;
         }
 
+#ifdef CHASTE_BOOST_IOSTREAMS
         // Now archive in compressed format?
         if (!mpCompressedAsciiArchiveFile->IsFile())
         {
@@ -188,6 +193,7 @@ public:
             boost::archive::binary_oarchive oa(out);
             oa << p_arch_generator;
         }
+#endif // CHASTE_BOOST_IOSTREAMS
     }
 
     void TestTimeLoadingFromEachArchive() throw (Exception)
@@ -236,6 +242,7 @@ public:
             WARNING("Binary archive is not present, not testing load speed!");
         }
 
+#ifdef CHASTE_BOOST_IOSTREAMS
         if (mpCompressedAsciiArchiveFile->IsFile())
         {
             std::cout << "Loading lookup table from compressed file into memory, this can take a few seconds..." << std::flush;
@@ -297,6 +304,7 @@ public:
         {
             WARNING("Compressed binary archive is not present, not testing load speed!");
         }
+#endif // CHASTE_BOOST_IOSTREAMS
     }
 };
 
