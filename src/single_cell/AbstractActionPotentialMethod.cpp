@@ -57,7 +57,7 @@ AbstractActionPotentialMethod::AbstractActionPotentialMethod()
     if (p_args->OptionExists("--pacing-max-time"))
     {
         // Max number of paces is equal to maximum pacing time (converted from minutes to seconds) x paces per second.
-        SetMaxNumPaces((unsigned)(60.0*mHertz*p_args->GetDoubleCorrespondingToOption("--pacing-max-time")));
+        SetMaxNumPaces((unsigned)(std::ceil(60.0*mHertz*p_args->GetDoubleCorrespondingToOption("--pacing-max-time"))));
     }
 }
 
