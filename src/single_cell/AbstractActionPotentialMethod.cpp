@@ -305,7 +305,7 @@ OdeSolution AbstractActionPotentialMethod::SteadyStatePacingExperiment(
             std::stringstream message;
             if (conc!=DOUBLE_UNSET)
             {
-                message << "At a concentration of " << conc << "uM:";
+                message << "At a concentration of " << conc << "uM: ";
             }
             message << "possible alternans detected, APD90s = " << apd90s[0] << ", " << apd90s[1] << " ms";
             std::string message_string = message.str();
@@ -317,7 +317,7 @@ OdeSolution AbstractActionPotentialMethod::SteadyStatePacingExperiment(
             std::stringstream message;
             if (conc!=DOUBLE_UNSET)
             {
-                message << "At a concentration of " << conc << "uM:";
+                message << "At a concentration of " << conc << "uM: ";
             }
             message << "only one action potential was recorded (" << apd90s[0] << " ms) for two paces of " << s1_period << "ms.";
             std::string message_string = message.str();
