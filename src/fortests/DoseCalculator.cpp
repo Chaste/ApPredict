@@ -50,6 +50,8 @@ DoseCalculator::DoseCalculator(const std::vector<double>& rPreciseDoses)
 	: mUseSpecifiedConcs(true),
 	  mLogScale(false),
 	  mNumSubConcentrations(0),
+	  mTopDose(DOUBLE_UNSET),
+	  mBottomDose(DOUBLE_UNSET),
 	  mConcentrations(rPreciseDoses)
 {
 }
@@ -57,11 +59,11 @@ DoseCalculator::DoseCalculator(const std::vector<double>& rPreciseDoses)
 DoseCalculator::DoseCalculator(double highDose, double lowDose)
 	: mUseSpecifiedConcs(false),
 	  mLogScale(false),
-	  mNumSubConcentrations(9)
+	  mNumSubConcentrations(9),
+	  mTopDose(highDose),
+	  mBottomDose(lowDose)
 {
 	mConcentrations.clear();
-	mBottomDose = lowDose;
-	mTopDose = highDose;
 
     // Sanity check
     if (mBottomDose > mTopDose)
@@ -134,7 +136,6 @@ DoseCalculator::DoseCalculator()
 //
 // GENERAL METHODS
 //
-
 std::vector<double> DoseCalculator::GetEquallySpacedBetween(double low, double high, bool includeTopDose)
 {
 	assert(high > low);
@@ -146,7 +147,7 @@ std::vector<double> DoseCalculator::GetEquallySpacedBetween(double low, double h
 		{
 			if (mLogScale)
 			{
-				assert(low>0);
+				assert(low>1e-12);
 				concs.push_back(pow(10,log10(low)+((double)(i)/(double)(mNumSubConcentrations+1))*(log10(high/low))));
 			}
 			else
@@ -182,7 +183,7 @@ std::vector<double> DoseCalculator::GetConcentrations(void)
 		}
 
 		// For all Log scale cases also check we have 1nM (1e-3 uM) included
-		if (mLogScale && fabs(concs[1]-control_for_logscale) > 1e-12)
+		if (mLogScale && concs[1]-control_for_logscale > 1e-12)
 		{
 			concs.push_back(control_for_logscale);
 			std::sort(concs.begin(), concs.end());
@@ -217,38 +218,31 @@ std::vector<double> DoseCalculator::GetConcentrations(void)
 		if (fabs(mBottomDose) > 1e-12)
 		{
 			concs.push_back(0);
-		}
 
-		// Put in the lowest dose (zero if no low dose specified).
-		concs.push_back(mBottomDose); // The GetEquallySpacedBetween() call below doesn't add the lowest dose.
-
-		// If we are using a log scale and the bottom dose is greater than 1nM we add 1nM too (1e-3 uM).
-		if (mLogScale && fabs(mBottomDose-control_for_logscale) > 1e-12)
-		{
-			concs.push_back(control_for_logscale);
-			if (mBottomDose <= control_for_logscale)
+			// If we are using a log scale and the bottom dose is greater than 1nM we add 1nM too (1e-3 uM).
+			if (mLogScale && (mBottomDose > control_for_logscale))
 			{
-				mBottomDose = control_for_logscale;
+			    concs.push_back(control_for_logscale);
 			}
-//			// This snippet of code puts spaced points from control (or 1nM in log) up to the bottom dose
-//			// I've decided this can be done better by setting control as bottom dose (or omitting bottom dose) if anyone wants this function.
-//			else
-//			{
-//				std::vector<double> concs_to_add = GetEquallySpacedBetween(control_for_logscale, mBottomDose, false);
-//
-//				for (unsigned i=0 ; i<concs_to_add.size() ;i++)
-//				{
-//					concs.push_back(concs_to_add[i]);
-//				}
-//			}
 		}
+		else
+		{   // mBottomDose is equal to zero
+		    // If we are using a log scale and the bottom dose == 0 change it up to control.
+		    if (mLogScale)
+		    {
+		        concs.push_back(0); // equally well could be mBottomDose but avoid confusion and explicitly set.
+		        mBottomDose = control_for_logscale;
+		    }
+		}
+
+		// Put in the lowest dose
+		concs.push_back(mBottomDose); // The GetEquallySpacedBetween() call below doesn't add the lowest dose.
 
 		// Add in entries between low dose (not included) and top dose (included)
 		std::vector<double> concs_to_add = GetEquallySpacedBetween(mBottomDose, mTopDose, true);
-		for (unsigned i=0 ; i<concs_to_add.size() ;i++)
-		{
-			concs.push_back(concs_to_add[i]);
-		}
+
+		// Append these values to the concentrations we want to use.
+		concs.insert(concs.end(), concs_to_add.begin(), concs_to_add.end());
 	}
 	std::sort(concs.begin(), concs.end());
 

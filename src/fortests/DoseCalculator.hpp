@@ -59,16 +59,16 @@ private:
 	 */
 	unsigned mNumSubConcentrations;
 
-	/**
-	 * The specified concentrations to return
-	 */
-	std::vector<double> mConcentrations;
-
 	/** Top of a specified concentration range */
 	double mTopDose;
 
 	/** Bottom of a specified concentration range */
 	double mBottomDose;
+
+    /**
+     * The specified concentrations to return
+     */
+    std::vector<double> mConcentrations;
 
 	/**
 	 * Generate a set of concentrations between two values (lowest is never included).

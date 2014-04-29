@@ -175,7 +175,7 @@ public:
 		}
 	}
 
-	void TestDoseCalculatorForSpreadOfValues(void) throw(Exception)
+	void TestForSpreadOfValues(void) throw(Exception)
 	{
 		TS_ASSERT_THROWS_THIS(DoseCalculator calc(0,1),
 				"Bottom test concentration cannot be larger than top test concentration.");
@@ -191,125 +191,151 @@ public:
 				TS_ASSERT_DELTA(result_concs[i], ((double)(i))*100, 1e-9);
 			}
 		}
-
-		// For equally spaced starting above zero
-		{
-			DoseCalculator calc(1000,500);
-			calc.SetNumSubdivisions(9u);
-			std::vector<double> result_concs = calc.GetConcentrations();
-
-			TS_ASSERT_EQUALS(result_concs.size(), 12u);
-
-			// Check it adds in a control
-			TS_ASSERT_DELTA(result_concs[0], 0.0, 1e-9);
-			for (unsigned i=1; i<result_concs.size(); i++)
-			{
-				TS_ASSERT_DELTA(result_concs[i], 500+(((double)(i))-1)*50, 1e-9);
-			}
-		}
-
-		// For log-spaced starting at zero
-		{
-			DoseCalculator calc(1000,0);
-			calc.SetLogScale(true);
-			calc.SetNumSubdivisions(5u);
-			std::vector<double> result_concs = calc.GetConcentrations();
-
-			// 8 = 5 subdivisions + top + bottom + one
-			TS_ASSERT_EQUALS(result_concs.size(), 8u);
-			TS_ASSERT_DELTA(result_concs[0], 0, 1e-9);
-			TS_ASSERT_DELTA(result_concs[1], 1e-3, 1e-9);
-			for (unsigned i=2; i<result_concs.size(); i++)
-			{
-				TS_ASSERT_DELTA(result_concs[i], pow(10,(((double)(i))-4)), 1e-9);
-			}
-		}
-
-		// For log-spaced starting at 1nM
-		{
-			DoseCalculator calc(1,1e-3);
-			calc.SetLogScale(true);
-			calc.SetNumSubdivisions(5u);
-			std::vector<double> result_concs = calc.GetConcentrations();
-
-			// 8 = 5 subdivisions + top + bottom + one
-			TS_ASSERT_EQUALS(result_concs.size(), 8u);
-			TS_ASSERT_DELTA(result_concs[0], 0, 1e-9);
-			TS_ASSERT_DELTA(result_concs[1], 1e-3, 1e-9);
-			for (unsigned i=2; i<result_concs.size(); i++)
-			{
-				TS_ASSERT_DELTA(result_concs[i], pow(10,((((double)(i))-1)/2) - 3), 1e-9);
-			}
-		}
-
-		// For log-spaced starting above 1nM
-		{
-			DoseCalculator calc(1000,100);
-			calc.SetLogScale(true);
-			calc.SetNumSubdivisions(1u);
-			std::vector<double> result_concs = calc.GetConcentrations();
-
-			// 5 = 2 subdivisions (one in range, one between bottom and one) + top + bottom + one nM + control
-			TS_ASSERT_EQUALS(result_concs.size(), 5u);
-			TS_ASSERT_DELTA(result_concs[0], 0,        1e-9);
-			TS_ASSERT_DELTA(result_concs[1], 1e-3,     1e-9);
-			TS_ASSERT_DELTA(result_concs[2], 100,      1e-9);
-			TS_ASSERT_DELTA(result_concs[3], 316.228,  1e-3);
-			TS_ASSERT_DELTA(result_concs[4], 1000,     1e-9);
-		}
-
-		// For log-spaced starting above 1nM with extra spacing in first position
-		{
-			DoseCalculator calc(10000,1);
-			calc.SetLogScale(true);
-			calc.SetNumSubdivisions(1u);
-			std::vector<double> result_concs = calc.GetConcentrations();
-
-			// 5 = 1 subdivisions (one in range) + top + bottom + one + control
-			TS_ASSERT_EQUALS(result_concs.size(), 5u);
-			TS_ASSERT_DELTA(result_concs[0], 0,         1e-9);
-			TS_ASSERT_DELTA(result_concs[1], 1e-3,      1e-9);
-			TS_ASSERT_DELTA(result_concs[2], 1,         1e-9);
-			TS_ASSERT_DELTA(result_concs[3], 100,       1e-4);
-			TS_ASSERT_DELTA(result_concs[4], 10000,     1e-9);
-		}
-
-		// For log-spaced starting above 1nM with extra spacing in first position
-		{
-			DoseCalculator calc(10000,1000);
-			calc.SetLogScale(true);
-			calc.SetNumSubdivisions(3u);
-			std::vector<double> result_concs = calc.GetConcentrations();
-
-			// 10 = 3x2 subdivisions (one in range, one between bottom and one) + top + bottom + one + control
-			TS_ASSERT_EQUALS(result_concs.size(), 7u);
-			TS_ASSERT_DELTA(result_concs[0], 0,         1e-9);
-			TS_ASSERT_DELTA(result_concs[1], 1e-3,      1e-9);
-			TS_ASSERT_DELTA(result_concs[2], 1000,      1e-9);
-			TS_ASSERT_DELTA(result_concs[3], 1778.28,   1e-2);
-			TS_ASSERT_DELTA(result_concs[4], 3162.28,   1e-2);
-			TS_ASSERT_DELTA(result_concs[5], 5623.41,   1e-2);
-			TS_ASSERT_DELTA(result_concs[6], 10000,     1e-9);
-		}
-
-		// For log-spaced starting above 1nM with extra spacing in first position
-		{
-			DoseCalculator calc(10,0.1);
-			calc.SetLogScale(true);
-			calc.SetNumSubdivisions(3u);
-			std::vector<double> result_concs = calc.GetConcentrations();
-
-			// 10 = 3x2 subdivisions (one in range, one between bottom and one) + top + bottom + one + control
-			TS_ASSERT_EQUALS(result_concs.size(), 7u);
-			TS_ASSERT_DELTA(result_concs[0], 0,         1e-9);
-			TS_ASSERT_DELTA(result_concs[1], 1e-3,      1e-9);
-			TS_ASSERT_DELTA(result_concs[2], 0.1,       1e-7);
-			TS_ASSERT_DELTA(result_concs[3], 0.316228,  1e-6);
-			TS_ASSERT_DELTA(result_concs[4], 1,         1e-4);
-			TS_ASSERT_DELTA(result_concs[5], 3.16228,   1e-2);
-			TS_ASSERT_DELTA(result_concs[6], 10,        1e-9);
-		}
 	}
+
+    void TestForSpreadStartingAboveZero(void) throw(Exception)
+    {
+        // For equally spaced starting above zero
+        DoseCalculator calc(1000,500);
+        calc.SetNumSubdivisions(9u);
+        std::vector<double> result_concs = calc.GetConcentrations();
+
+        TS_ASSERT_EQUALS(result_concs.size(), 12u);
+
+        // Check it adds in a control
+        TS_ASSERT_DELTA(result_concs[0], 0.0, 1e-9);
+        for (unsigned i=1; i<result_concs.size(); i++)
+        {
+            TS_ASSERT_DELTA(result_concs[i], 500+(((double)(i))-1)*50, 1e-9);
+        }
+    }
+
+
+	// For log-spaced starting at zero
+    void TestForLogSpacedStartingAtZero(void) throw(Exception)
+    {
+        DoseCalculator calc(1000,0);
+        calc.SetLogScale(true);
+        calc.SetNumSubdivisions(5u);
+        std::vector<double> result_concs = calc.GetConcentrations();
+
+        // 8 = 5 subdivisions + top + bottom + one
+        TS_ASSERT_EQUALS(result_concs.size(), 8u);
+        TS_ASSERT_DELTA(result_concs[0], 0, 1e-9);
+        TS_ASSERT_DELTA(result_concs[1], 1e-3, 1e-9);
+        for (unsigned i=2; i<result_concs.size(); i++)
+        {
+            TS_ASSERT_DELTA(result_concs[i], pow(10,(((double)(i))-4)), 1e-9);
+        }
+    }
+
+    // For log-spaced starting at 1nM
+    void TestForLogSpacedStartingAtOneNanoMolar(void) throw(Exception)
+    {
+        DoseCalculator calc(1,1e-3);
+        calc.SetLogScale(true);
+        calc.SetNumSubdivisions(5u);
+        std::vector<double> result_concs = calc.GetConcentrations();
+
+        // 8 = 5 subdivisions + top + bottom + one
+        TS_ASSERT_EQUALS(result_concs.size(), 8u);
+        TS_ASSERT_DELTA(result_concs[0], 0, 1e-9);
+        TS_ASSERT_DELTA(result_concs[1], 1e-3, 1e-9);
+        for (unsigned i=2; i<result_concs.size(); i++)
+        {
+            TS_ASSERT_DELTA(result_concs[i], pow(10,((((double)(i))-1)/2) - 3), 1e-9);
+        }
+    }
+
+    // For log-spaced starting above 1nM
+    void TestForLogSpacedStartingAboveOneNanoMolar(void) throw(Exception)
+    {
+        DoseCalculator calc(1000,100);
+        calc.SetLogScale(true);
+        calc.SetNumSubdivisions(1u);
+        std::vector<double> result_concs = calc.GetConcentrations();
+
+        // 5 = 2 subdivisions (one in range, one between bottom and one) + top + bottom + one nM + control
+        TS_ASSERT_EQUALS(result_concs.size(), 5u);
+        TS_ASSERT_DELTA(result_concs[0], 0,        1e-9);
+        TS_ASSERT_DELTA(result_concs[1], 1e-3,     1e-9);
+        TS_ASSERT_DELTA(result_concs[2], 100,      1e-9);
+        TS_ASSERT_DELTA(result_concs[3], 316.228,  1e-3);
+        TS_ASSERT_DELTA(result_concs[4], 1000,     1e-9);
+    }
+
+    // For log-spaced starting above 1nM with extra spacing in first position
+    void TestForLogSpacedStartingAtOneMicroMolarExtraSpacing(void) throw(Exception)
+    {
+        DoseCalculator calc(10000,1);
+        calc.SetLogScale(true);
+        calc.SetNumSubdivisions(1u);
+        std::vector<double> result_concs = calc.GetConcentrations();
+
+        // 5 = 1 subdivisions (one in range) + top + bottom + one + control
+        TS_ASSERT_EQUALS(result_concs.size(), 5u);
+        TS_ASSERT_DELTA(result_concs[0], 0,         1e-9);
+        TS_ASSERT_DELTA(result_concs[1], 1e-3,      1e-9);
+        TS_ASSERT_DELTA(result_concs[2], 1,         1e-9);
+        TS_ASSERT_DELTA(result_concs[3], 100,       1e-4);
+        TS_ASSERT_DELTA(result_concs[4], 10000,     1e-9);
+    }
+
+    // For log-spaced starting above 1nM with extra spacing in first position
+    void TestForLogSpacedStartingAboveOneNanoMolarExtraSpacing(void) throw(Exception)
+    {
+        DoseCalculator calc(10000,1000);
+        calc.SetLogScale(true);
+        calc.SetNumSubdivisions(3u);
+        std::vector<double> result_concs = calc.GetConcentrations();
+
+        // 10 = 3x2 subdivisions (one in range, one between bottom and one) + top + bottom + one + control
+        TS_ASSERT_EQUALS(result_concs.size(), 7u);
+        TS_ASSERT_DELTA(result_concs[0], 0,         1e-9);
+        TS_ASSERT_DELTA(result_concs[1], 1e-3,      1e-9);
+        TS_ASSERT_DELTA(result_concs[2], 1000,      1e-9);
+        TS_ASSERT_DELTA(result_concs[3], 1778.28,   1e-2);
+        TS_ASSERT_DELTA(result_concs[4], 3162.28,   1e-2);
+        TS_ASSERT_DELTA(result_concs[5], 5623.41,   1e-2);
+        TS_ASSERT_DELTA(result_concs[6], 10000,     1e-9);
+    }
+
+    // For log-spaced starting above 1nM with extra spacing in first position
+    void TestForLogSpaced100NanoMolar(void) throw(Exception)
+    {
+        DoseCalculator calc(10,0.1);
+        calc.SetLogScale(true);
+        calc.SetNumSubdivisions(3u);
+        std::vector<double> result_concs = calc.GetConcentrations();
+
+        // 10 = 3x2 subdivisions (one in range, one between bottom and one) + top + bottom + one + control
+        TS_ASSERT_EQUALS(result_concs.size(), 7u);
+        TS_ASSERT_DELTA(result_concs[0], 0,         1e-9);
+        TS_ASSERT_DELTA(result_concs[1], 1e-3,      1e-9);
+        TS_ASSERT_DELTA(result_concs[2], 0.1,       1e-7);
+        TS_ASSERT_DELTA(result_concs[3], 0.316228,  1e-6);
+        TS_ASSERT_DELTA(result_concs[4], 1,         1e-4);
+        TS_ASSERT_DELTA(result_concs[5], 3.16228,   1e-2);
+        TS_ASSERT_DELTA(result_concs[6], 10,        1e-9);
+    }
+
+    // For a corner-case Geoff found where bottom and top doses are
+    // set less than control on log scale (1nM).
+    void TestForLogSpacedVeryLowRange(void) throw(Exception)
+    {
+        // 0.0001 uM == 0.1nM which is < control of 1nM for log scale.
+        DoseCalculator calc(0.0002,0.0001);
+        calc.SetLogScale(true);
+        calc.SetNumSubdivisions(1u);
+        std::vector<double> result_concs = calc.GetConcentrations();
+
+        TS_ASSERT_EQUALS(result_concs.size(), 4u);
+        TS_ASSERT_DELTA(result_concs[0], 0,           1e-9);
+        TS_ASSERT_DELTA(result_concs[1], 0.0001,      1e-9);
+        TS_ASSERT_DELTA(result_concs[2], 0.000141421, 1e-9);
+        TS_ASSERT_DELTA(result_concs[3], 0.0002,      1e-6);
+    }
+
 };
 
 #endif // _TESTDOSECALCULATOR_HPP_
