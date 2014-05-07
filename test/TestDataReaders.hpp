@@ -113,6 +113,20 @@ public:
 
         TS_ASSERT_DELTA(AbstractDataStructure::ConvertIc50ToPic50(1000),3, 1e-9);
         TS_ASSERT_DELTA(AbstractDataStructure::ConvertPic50ToIc50(5),10, 1e-9);
+
+        // Below here we are going to test some exceptional value handling
+        // to deal with users doing strange things, for the web portal interface.
+        TS_ASSERT_DELTA(AbstractDataStructure::ConvertPic50ToIc50( DBL_MAX), 0,       1e-9);
+        TS_ASSERT_DELTA(AbstractDataStructure::ConvertPic50ToIc50(-DBL_MAX), DBL_MAX, 1e-9);
+
+        TS_ASSERT_DELTA(AbstractDataStructure::ConvertIc50ToPic50(DBL_MAX), -302.2547, 1e-3);
+        TS_ASSERT_DELTA(AbstractDataStructure::ConvertIc50ToPic50(0),        DBL_MAX,  1e-9);
+
+        // Zero concentration implies unchanged conductance
+        TS_ASSERT_DELTA(AbstractDataStructure::CalculateConductanceFactor(0.0,0.0,1.0), 1.0, 1e-9);
+
+        // Zero IC50 implies instantaneous block above here
+        TS_ASSERT_DELTA(AbstractDataStructure::CalculateConductanceFactor(0.001,0.0,1.0), 0.0, 1e-9);
     }
 };
 

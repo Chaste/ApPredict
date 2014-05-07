@@ -72,7 +72,7 @@ std::string ApPredictMethods::PrintCommonArguments()
             "* Specifying pacing frequency:\n"
             "* --pacing-freq       Pacing frequency (Hz) (optional - defaults to 1Hz)\n"
             "* --pacing-max-time   Maximum time for which to pace the cell model in MINUTES\n"
-            "*                     (optional - defaults to time for 10,000 paces at this frequency)\n"
+            "*                     (optional - defaults to time for 10,000 paces at this frequency)\n" // Set in AbstractSteadyStateRunner constructor!
             "*\n"
             "* SPECIFYING DRUG PROPERTIES dose-response properties for each channel:\n"
             "* Channels are named:\n"
@@ -145,7 +145,7 @@ void ApPredictMethods::ReadInIC50AndHill(std::vector<double>& rIc50s,
         std::vector<double> pIC50s = p_args->GetDoublesCorrespondingToOption("--pic50-" + channel);
         for (unsigned i=0; i<pIC50s.size(); i++)
         {
-            rIc50s.push_back(pow(10,-pIC50s[i] + 6));
+            rIc50s.push_back(AbstractDataStructure::ConvertPic50ToIc50(pIC50s[i]));
         }
         read_ic50s = true;
     }

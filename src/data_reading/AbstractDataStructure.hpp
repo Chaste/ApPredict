@@ -39,6 +39,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <fstream>
 #include <vector>
 
+#include "Exception.hpp"
 #include "UblasVectorInclude.hpp"
 #include "FileFinder.hpp"
 
@@ -100,19 +101,24 @@ public:
      */
     static double CalculateConductanceFactor(const double& rConc, const double& rIC50, double hill = 1.0, double saturation = 100)
     {
+        // To avoid divide-by-zero style stuff, if there is no drug, conductance must be unchanged.
+        if (rConc==0)
+        {
+            return 1.0;
+        }
+
         if (rIC50 < 0) // missing information ('-1'), or known-to-be-no-affect ('-2'), do not alter conductance.
         {
             return 1.0;
         }
-        else
+
+        // If the hill coefficient has not been set (defaults to a negative value) then use 1.0 instead.
+        if (hill < 0)
         {
-            // If the hill coefficient has not been set (defaults to a negative value) then use 1.0 instead.
-            if (hill < 0)
-            {
-                hill = 1.0;
-            }
-            return 1.0 - (saturation/100.0)*(1.0 - 1.0/(1.0 + pow((rConc/rIC50), hill)));
+            hill = 1.0;
         }
+
+        return 1.0 - (saturation/100.0)*(1.0 - 1.0/(1.0 + pow((rConc/rIC50), hill)));
     }
 
     /**
@@ -122,7 +128,13 @@ public:
      */
     static double ConvertIc50ToPic50(const double& rIc50)
     {
-        return -log10((1e-6)*rIc50);
+        double result = -log10((1e-6)*rIc50);
+        // Handle very small IC50 values gracefully (result = -Inf)
+        if (!std::isfinite(result))
+        {
+            result = DBL_MAX;
+        }
+        return result;
     }
 
     /**
@@ -132,7 +144,14 @@ public:
      */
     static double ConvertPic50ToIc50(const double& rPic50)
     {
-        return pow(10.0,6.0-rPic50);
+        double result = pow(10.0,6.0-rPic50);
+
+        // Handle large negative IC50 values gracefully (result = -Inf or Inf)
+        if (!std::isfinite(result))
+        {
+            result = DBL_MAX;
+        }
+        return result;
     }
 
 };
