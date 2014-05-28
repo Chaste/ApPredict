@@ -204,21 +204,35 @@ public:
                 }
             }
             std::cout << p_chaste_cell->GetSystemName() << std::endl << std::flush;
+            TS_ASSERT_EQUALS(p_chaste_cell->HasParameter("membrane_fast_sodium_current_conductance"), true);
+            TS_ASSERT_EQUALS(p_chaste_cell->HasParameter("membrane_L_type_calcium_current_conductance"), true);
+            TS_ASSERT_EQUALS(p_chaste_cell->HasParameter("membrane_rapid_delayed_rectifier_potassium_current_conductance"), true);
+            TS_ASSERT_EQUALS(p_chaste_cell->HasParameter("membrane_slow_delayed_rectifier_potassium_current_conductance"), true);
 
             const double default_a = p_chaste_cell->GetParameter("membrane_fast_sodium_current_conductance");
             const double default_b = p_chaste_cell->GetParameter("membrane_L_type_calcium_current_conductance");
             const double default_c = p_chaste_cell->GetParameter("membrane_rapid_delayed_rectifier_potassium_current_conductance");
             const double default_d = p_chaste_cell->GetParameter("membrane_slow_delayed_rectifier_potassium_current_conductance");
             double default_e;
-            if (model_index!=5u)
+            if (model_index==7u)
             {
+                TS_ASSERT_EQUALS(p_chaste_cell->HasParameter("membrane_fast_transient_outward_current_conductance"), true);
+                default_e = p_chaste_cell->GetParameter("membrane_fast_transient_outward_current_conductance");
+            }
+            else if (model_index!=5u)
+            {
+                TS_ASSERT_EQUALS(p_chaste_cell->HasParameter("membrane_transient_outward_current_conductance"), true);
                 default_e = p_chaste_cell->GetParameter("membrane_transient_outward_current_conductance");
             }
             p_chaste_cell->SetParameter("membrane_fast_sodium_current_conductance", default_a*a);
             p_chaste_cell->SetParameter("membrane_L_type_calcium_current_conductance", default_b*b);
             p_chaste_cell->SetParameter("membrane_rapid_delayed_rectifier_potassium_current_conductance", default_c*c);
             p_chaste_cell->SetParameter("membrane_slow_delayed_rectifier_potassium_current_conductance", default_d*d);
-            if (model_index!=5u)
+            if (model_index==7u)
+            {
+                p_chaste_cell->SetParameter("membrane_fast_transient_outward_current_conductance", default_e*e);
+            }
+            else if (model_index!=5u)
             {
                 p_chaste_cell->SetParameter("membrane_transient_outward_current_conductance", default_e*e);
             }
@@ -229,7 +243,11 @@ public:
             p_chaste_cell_opt->SetParameter("membrane_L_type_calcium_current_conductance", default_b*b);
             p_chaste_cell_opt->SetParameter("membrane_rapid_delayed_rectifier_potassium_current_conductance", default_c*c);
             p_chaste_cell_opt->SetParameter("membrane_slow_delayed_rectifier_potassium_current_conductance", default_d*d);
-            if (model_index!=5u)
+            if (model_index==7u)
+            {
+                p_chaste_cell_opt->SetParameter("membrane_fast_transient_outward_current_conductance", default_e*e);
+            }
+            else if (model_index!=5u)
             {
                 p_chaste_cell_opt->SetParameter("membrane_transient_outward_current_conductance", default_e*e);
             }
@@ -240,7 +258,11 @@ public:
             p_cvode_cell->SetParameter("membrane_L_type_calcium_current_conductance", default_b*b);
             p_cvode_cell->SetParameter("membrane_rapid_delayed_rectifier_potassium_current_conductance", default_c*c);
             p_cvode_cell->SetParameter("membrane_slow_delayed_rectifier_potassium_current_conductance", default_d*d);
-            if (model_index!=5u)
+            if (model_index==7u)
+            {
+                p_cvode_cell->SetParameter("membrane_fast_transient_outward_current_conductance", default_e*e);
+            }
+            else if (model_index!=5u)
             {
                 p_cvode_cell->SetParameter("membrane_transient_outward_current_conductance", default_e*e);
             }
@@ -251,7 +273,11 @@ public:
             p_cvode_cell_opt->SetParameter("membrane_L_type_calcium_current_conductance", default_b*b);
             p_cvode_cell_opt->SetParameter("membrane_rapid_delayed_rectifier_potassium_current_conductance", default_c*c);
             p_cvode_cell_opt->SetParameter("membrane_slow_delayed_rectifier_potassium_current_conductance", default_d*d);
-            if (model_index!=5u)
+            if (model_index==7u)
+            {
+                p_cvode_cell_opt->SetParameter("membrane_fast_transient_outward_current_conductance", default_e*e);
+            }
+            else if (model_index!=5u)
             {
                 p_cvode_cell_opt->SetParameter("membrane_transient_outward_current_conductance", default_e*e);
             }
