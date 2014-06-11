@@ -105,14 +105,21 @@ DoseCalculator::DoseCalculator()
 		mBottomDose = 0;
 	}
 
-	// Put on a logscale if asked for
+	// Put on a log scale as default now
+	mLogScale = true;
 	if (p_args->OptionExists("--plasma-conc-logscale"))
 	{
-		mLogScale = true;
-	}
-	else
-	{
-		mLogScale = false;
+		try
+		{
+			mLogScale = p_args->GetBoolCorrespondingToOption("--plasma-conc-logscale");
+		}
+		catch (Exception& e)
+		{
+			// In this case we are probably in 'legacy mode' and the argument without
+			// a following bool meant that we wanted true anyway,
+			// so carry on regardless.
+			mLogScale = true;
+		}
 	}
 
 	// Number of subdivisions to add to the range / precise values...

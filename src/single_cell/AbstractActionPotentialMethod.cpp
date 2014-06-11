@@ -44,7 +44,8 @@ AbstractActionPotentialMethod::AbstractActionPotentialMethod()
        mActionPotentialThreshold(-50),
        mSuppressOutput(false),
        mHertz(1.0), // default to 1 Hz, replaced by suitable command line argument if present.
-       mSuccessful(false)
+       mSuccessful(false),
+       mPeriodTwoBehaviour(false)
 {
     CommandLineArguments* p_args = CommandLineArguments::Instance();
 
@@ -290,6 +291,7 @@ OdeSolution AbstractActionPotentialMethod::SteadyStatePacingExperiment(
             if (!mSuppressOutput) std::cout << message.str() << std::endl << std::flush;
             WriteMessageToFile(message.str());
             mSuccessful = false;
+            mPeriodTwoBehaviour = true;
         }
         else
         {
@@ -310,6 +312,7 @@ OdeSolution AbstractActionPotentialMethod::SteadyStatePacingExperiment(
             message << "possible alternans detected, APD90s = " << apd90s[0] << ", " << apd90s[1] << " ms";
             std::string message_string = message.str();
             WriteMessageToFile(message_string);
+            mPeriodTwoBehaviour = true;
         }
 
         if (apd90s.size() < num_paces_to_analyze)
@@ -328,6 +331,7 @@ OdeSolution AbstractActionPotentialMethod::SteadyStatePacingExperiment(
                 mErrorMessage = "NoActionPotential_3";
                 mSuccessful = false;
             }
+            mPeriodTwoBehaviour = true;
         }
     }
 

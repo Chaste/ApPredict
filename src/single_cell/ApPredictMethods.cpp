@@ -103,8 +103,8 @@ std::string ApPredictMethods::PrintCommonArguments()
             "* both ways of specifying test concentrations have the following optional arguments\n"
             "* --plasma-conc-count  Number of intermediate plasma concentrations to test \n"
             "*                                  (optional - defaults to 0 (for --plasma-concs) or 11 (for --plasma-conc-high)\n"
-            "* --plasma-conc-logscale  Use a log spacing for the plasma concentrations \n"
-            "*                                  (optional - defaults to false)\n"
+            "* --plasma-conc-logscale <True/False>  Whether to use a log spacing for the plasma concentrations \n"
+            "*                                  (optional - defaults to True)\n"
             "*\n"
             "* UNCERTAINTY QUANTIFICATION:\n"
             "* --credible-intervals  This flag must be present.\n"
@@ -778,7 +778,12 @@ void ApPredictMethods::CommonRunMethod()
         double s1_period = p_default_stimulus->GetPeriod();
         double s_start = p_default_stimulus->GetStartTime();
         std::vector<double> voltages = solution.GetVariableAtIndex(mpModel->GetSystemInformation()->GetStateVariableIndex("membrane_voltage")); // Voltage should always be zero
-        ActionPotentialDownsampler(foldername, filename.str(), solution.rGetTimes(), voltages, s1_period, s_start);
+        double window = s1_period;
+        if (this->mPeriodTwoBehaviour)
+        {
+        	window *= 2.0;
+        }
+        ActionPotentialDownsampler(foldername, filename.str(), solution.rGetTimes(), voltages, window, s_start);
     }// Conc
 
     // Tidy up

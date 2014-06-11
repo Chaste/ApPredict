@@ -58,7 +58,7 @@ public:
     {
         // Test a simple hERG block with TT06
         {
-            CommandLineArgumentsMocker wrapper("--model 2 --plasma-concs 1 10 --pic50-herg 4.5");
+            CommandLineArgumentsMocker wrapper("--model 2 --plasma-concs 1 10 --pic50-herg 4.5 --plasma-conc-logscale false");
 
             ApPredictMethods methods;
             methods.Run();
@@ -85,14 +85,14 @@ public:
     {
         // Test a couple of Exceptions
         {
-            CommandLineArgumentsMocker wrapper("--model 1 --plasma-concs 1 10 --pic50-ik1 4.5 --credible-intervals");
+            CommandLineArgumentsMocker wrapper("--model 1 --plasma-concs 1 10 --pic50-ik1 4.5 --credible-intervals --plasma-conc-logscale false");
             ApPredictMethods methods;
             TS_ASSERT_THROWS_THIS(methods.Run(),
                 "Lookup table (for --credible-intervals) is currently only including IKr, IKs, INa and ICaL block, you have specified additional ones so quitting.");
         }
 
         {
-            CommandLineArgumentsMocker wrapper("--model 1 --plasma-concs 1 10 --pic50-herg 4.5 --credible-intervals");
+            CommandLineArgumentsMocker wrapper("--model 1 --plasma-concs 1 10 --pic50-herg 4.5 --credible-intervals --plasma-conc-logscale false");
             ApPredictMethods methods;
             TS_ASSERT_THROWS_THIS(methods.Run(),
                 "No argument --pic50-spread-herg has been provided. Cannot calculate credible intervals without this.");
@@ -100,7 +100,7 @@ public:
 
         // Test a simple hERG block with Shannon
         {
-            CommandLineArgumentsMocker wrapper("--model 1 --plasma-concs 1 10 --pic50-herg 4.5 --pic50-spread-herg 0.15 --credible-intervals");
+            CommandLineArgumentsMocker wrapper("--model 1 --plasma-concs 1 10 --pic50-herg 4.5 --pic50-spread-herg 0.15 --credible-intervals --plasma-conc-logscale false");
 
             ApPredictMethods methods;
             methods.Run();
@@ -129,7 +129,7 @@ public:
 
         // We should get much reduced credible regions with repeated pIC50 values
         {
-            CommandLineArgumentsMocker wrapper("--model 1 --plasma-concs 1 10 --pic50-herg 4.5 4.4 4.6 4.5 --pic50-spread-herg 0.15 --credible-intervals");
+            CommandLineArgumentsMocker wrapper("--model 1 --plasma-concs 1 10 --pic50-herg 4.5 4.4 4.6 4.5 --pic50-spread-herg 0.15 --credible-intervals --plasma-conc-logscale false");
 
             ApPredictMethods methods;
             methods.Run();
@@ -154,6 +154,30 @@ public:
             TS_ASSERT_DELTA(apd90_credible_regions[1].second, 215.3668, 1e-3);
             TS_ASSERT_DELTA(apd90_credible_regions[2].first, 223.2300, 1e-3);
             TS_ASSERT_DELTA(apd90_credible_regions[2].second, 239.4459, 1e-3);
+        }
+    }
+
+    void TestWithAModelInAlternans(void) throw (Exception)
+	{
+        // We should get much reduced credible regions with repeated pIC50 values
+        {
+            CommandLineArgumentsMocker wrapper("--model 3 --plasma-concs 1 10 --pacing-freq 5 --plasma-conc-logscale false");
+
+            ApPredictMethods methods;
+            methods.Run();
+            std::vector<double> concs = methods.GetConcentrations();
+
+            TS_ASSERT_EQUALS(concs.size(),3u);
+            TS_ASSERT_DELTA(concs[0], 0.0,   1e-12);
+            TS_ASSERT_DELTA(concs[1], 1.0,   1e-12);
+            TS_ASSERT_DELTA(concs[2], 10.0,  1e-12);
+
+            std::vector<double> apd90s = methods.GetApd90s();
+            TS_ASSERT_EQUALS(apd90s.size(),3u);
+            TS_ASSERT_DELTA(apd90s[0], 111.6094, 1e-3);
+            TS_ASSERT_DELTA(apd90s[1], 137.3714, 1e-3);
+            //TS_ASSERT_DELTA(apd90s[1], 111.6090, 1e-3);  ///\todo: These three should all be same if alternans is handled nicely.
+            TS_ASSERT_DELTA(apd90s[2], 111.6087, 1e-3);
         }
     }
 

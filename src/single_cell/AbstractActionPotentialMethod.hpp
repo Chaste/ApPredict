@@ -84,6 +84,9 @@ protected:
     /** Whether the run was successful */
     bool mSuccessful;
 
+    /** Whether anything happened on a period-2 basis rather than period 1, e.g. alternans, long APs etc. */
+    bool mPeriodTwoBehaviour;
+
     /**
      * This method conducts a steady-state single cell simulation on a model (using its internal stimulus,
      * which must be a RegularStimulus).
