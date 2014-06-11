@@ -109,17 +109,7 @@ DoseCalculator::DoseCalculator()
 	mLogScale = true;
 	if (p_args->OptionExists("--plasma-conc-logscale"))
 	{
-		try
-		{
-			mLogScale = p_args->GetBoolCorrespondingToOption("--plasma-conc-logscale");
-		}
-		catch (Exception& e)
-		{
-			// In this case we are probably in 'legacy mode' and the argument without
-			// a following bool meant that we wanted true anyway,
-			// so carry on regardless.
-			mLogScale = true;
-		}
+        mLogScale = p_args->GetBoolCorrespondingToOption("--plasma-conc-logscale");
 	}
 
 	// Number of subdivisions to add to the range / precise values...
