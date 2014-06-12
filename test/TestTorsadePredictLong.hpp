@@ -59,7 +59,7 @@ public:
         // Test a simple hERG block
         {
             // Torsade predict always uses the Grandi model, so no --model flag here.
-            CommandLineArgumentsMocker wrapper("--plasma-concs 1 10 --pic50-herg 5.1");
+            CommandLineArgumentsMocker wrapper("--plasma-concs 1 10 --pic50-herg 5.1 --plasma-conc-logscale false");
 
             TorsadePredictMethods methods;
             methods.Run();
