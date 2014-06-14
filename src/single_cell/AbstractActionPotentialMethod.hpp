@@ -74,6 +74,45 @@ private:
     /** The threshold for an action potential (defaults to -50) altered if model is run at control conc of drug */
     double mActionPotentialThreshold;
 
+    /** Whether to attempt to reanalyse one period further on */
+    bool mRepeat;
+
+    /**
+     * A helper method, only available to this class.
+     *
+     * @param pModel  A boost shared pointer to a cardiac cell model, with a RegularStimulus
+     * @param rApd90  double to populate with the postprocessed APD90 (ms)
+     * @param rApd50  double to populate with the postprocessed APD50 (ms)
+     * @param rUpstroke  double to populate with the postprocessed maximum upstroke velocity (mV/ms)
+     * @param rPeak  double to populate with the postprocessed peak voltage (mV)
+     * @param maximumTimeStep  The maximum CVODE time step to use (ms).
+     * @param printingTimeStep  the printing time step to use (defaults to 1ms).
+     * @param conc  [optional] concentration argument (only used for more helpful warning messages).
+     *
+     * @return the solution of the ODE.
+     */
+    OdeSolution PerformAnalysisOfTwoPaces(boost::shared_ptr<AbstractCvodeCell> pModel,
+										  double& rApd90,
+										  double& rApd50,
+										  double& rUpstroke,
+										  double& rPeak,
+										  const double s1_period,
+										  const double maximumTimeStep,
+										  const double printingTimeStep,
+										  const double conc);
+
+    /**
+     * A little method to 'push' cell model forward one S1 period, to get it 'in sync'
+     * if it is doing different alternans, or capturing the end of an AP in 2:1 pacing:AP.
+     *
+     * @param pModel  A boost shared pointer to a cardiac cell model, with a RegularStimulus
+     * @param pacingCycleLength  The period of the regular stimulus in this model
+     * @param maxTimeStep  The maximum CVODE time step to use in solving
+     */
+    void PushModelForwardOneS1Interval(boost::shared_ptr<AbstractCvodeCell> pModel,
+									   double pacingCycleLength,
+									   double maxTimeStep);
+
 protected:
     /** Whether to suppress output to std::cout */
     bool mSuppressOutput;

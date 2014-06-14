@@ -77,7 +77,7 @@ public:
         TS_ASSERT_DELTA(ap_prediction.GetApd90(),            301.4616,    1e-3);
         TS_ASSERT_DELTA(ap_prediction.GetApd50(),            273.2500,    1e-2);
         TS_ASSERT_DELTA(ap_prediction.GetPeakVoltage(),       37.3489,    1e-2);
-        TS_ASSERT_DELTA(ap_prediction.GetUpstrokeVelocity(), 307.6467,    1e-1); // Upstroke sensitive to different versions of CVODE
+        TS_ASSERT_DELTA(ap_prediction.GetUpstrokeVelocity(), 307.6467,    2e-1); // Upstroke sensitive to different versions of CVODE
     }
 
     void TestLookupTableMaker1d() throw (Exception)

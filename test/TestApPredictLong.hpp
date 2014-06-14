@@ -159,26 +159,42 @@ public:
 
     void TestWithAModelInAlternans(void) throw (Exception)
 	{
-        // We should get much reduced credible regions with repeated pIC50 values
-        {
-            CommandLineArgumentsMocker wrapper("--model 3 --plasma-concs 1 10 --pacing-freq 5 --plasma-conc-logscale false");
+        // We are trying to go so fast we get alternans, and then handle it nicely.
+		CommandLineArgumentsMocker wrapper("--model 3 --plasma-concs 1 10 --pacing-freq 5 --plasma-conc-logscale false");
 
-            ApPredictMethods methods;
-            methods.Run();
-            std::vector<double> concs = methods.GetConcentrations();
+		ApPredictMethods methods;
+		methods.Run();
+		std::vector<double> concs = methods.GetConcentrations();
 
-            TS_ASSERT_EQUALS(concs.size(),3u);
-            TS_ASSERT_DELTA(concs[0], 0.0,   1e-12);
-            TS_ASSERT_DELTA(concs[1], 1.0,   1e-12);
-            TS_ASSERT_DELTA(concs[2], 10.0,  1e-12);
+		TS_ASSERT_EQUALS(concs.size(),3u);
+		TS_ASSERT_DELTA(concs[0], 0.0,   1e-12);
+		TS_ASSERT_DELTA(concs[1], 1.0,   1e-12);
+		TS_ASSERT_DELTA(concs[2], 10.0,  1e-12);
 
-            std::vector<double> apd90s = methods.GetApd90s();
-            TS_ASSERT_EQUALS(apd90s.size(),3u);
-            TS_ASSERT_DELTA(apd90s[0], 111.6094, 1e-3);
-            TS_ASSERT_DELTA(apd90s[1], 137.3714, 1e-3);
-            //TS_ASSERT_DELTA(apd90s[1], 111.6090, 1e-3);  ///\todo: These three should all be same if alternans is handled nicely.
-            TS_ASSERT_DELTA(apd90s[2], 111.6087, 1e-3);
-        }
+		std::vector<double> apd90s = methods.GetApd90s();
+		TS_ASSERT_EQUALS(apd90s.size(),3u);
+		TS_ASSERT_DELTA(apd90s[0], 137.3714, 1e-2);
+		TS_ASSERT_DELTA(apd90s[1], 137.3714, 1e-2);
+		TS_ASSERT_DELTA(apd90s[2], 137.3714, 1e-2);
+    }
+
+    void TestWithAModelTwoToOneStimAp(void) throw (Exception)
+	{
+        // We should goo 'too fast' for O'Hara and see if we can get anything like sensible output.
+        CommandLineArgumentsMocker wrapper("--model 6 --plasma-concs 1 --pacing-freq 5 --plasma-conc-logscale false");
+
+		ApPredictMethods methods;
+		methods.Run();
+		std::vector<double> concs = methods.GetConcentrations();
+
+		TS_ASSERT_EQUALS(concs.size(),2u);
+		TS_ASSERT_DELTA(concs[0], 0.0,   1e-12);
+		TS_ASSERT_DELTA(concs[1], 1.0,   1e-12);
+
+		std::vector<double> apd90s = methods.GetApd90s();
+		TS_ASSERT_EQUALS(apd90s.size(),2u);
+		TS_ASSERT_DELTA(apd90s[0], 266.81, 1e-2);
+		TS_ASSERT_DELTA(apd90s[1], 266.81, 1e-2);
     }
 
 };
