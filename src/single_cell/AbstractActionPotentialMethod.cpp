@@ -368,19 +368,22 @@ OdeSolution AbstractActionPotentialMethod::PerformAnalysisOfTwoPaces(boost::shar
         assert(apd90s.size()>0u);
         if (apd90s.size() >= 2u && fabs(apd90s[0]-apd90s[1]) > alternans_threshold)
         {
-            std::stringstream message;
-            if (conc!=DOUBLE_UNSET)
-            {
-                message << "At a concentration of " << conc << "uM: ";
-            }
-            message << "possible alternans detected, APD90s = " << apd90s[0] << ", " << apd90s[1] << " ms";
-            std::string message_string = message.str();
-            WriteMessageToFile(message_string);
             mPeriodTwoBehaviour = true;
             if (apd90s[1] > apd90s[0])
             {
             	// Redo so that we always plot the longest AP first.
             	mRepeat = true;
+            }
+            else
+            {   // If we're going to repeat, we don't want this message twice.
+				std::stringstream message;
+				if (conc!=DOUBLE_UNSET)
+				{
+					message << "At a concentration of " << conc << "uM: ";
+				}
+				message << "possible alternans detected, APD90s = " << apd90s[0] << ", " << apd90s[1] << " ms";
+				std::string message_string = message.str();
+				WriteMessageToFile(message_string);
             }
         }
 
