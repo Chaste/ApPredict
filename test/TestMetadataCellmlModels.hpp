@@ -80,10 +80,10 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "decker_2009Opt.hpp"
 #include "decker_2009Cvode.hpp"
 #include "decker_2009CvodeOpt.hpp"
-#include "ohara_rudy_2011.hpp"
-#include "ohara_rudy_2011Opt.hpp"
-#include "ohara_rudy_2011Cvode.hpp"
-#include "ohara_rudy_2011CvodeOpt.hpp"
+#include "ohara_rudy_2011_endo.hpp"
+#include "ohara_rudy_2011_endoOpt.hpp"
+#include "ohara_rudy_2011_endoCvode.hpp"
+#include "ohara_rudy_2011_endoCvodeOpt.hpp"
 
 class TestMetadataCellmlModels : public CxxTest::TestSuite
 {
@@ -184,10 +184,10 @@ public:
                 }
                 case 9u:
                 {
-                    p_chaste_cell = new Cellohara_rudy_2011FromCellML(p_solver, p_stimulus);
-                    p_chaste_cell_opt = new Cellohara_rudy_2011FromCellMLOpt(p_solver, p_stimulus);
-                    p_cvode_cell = new Cellohara_rudy_2011FromCellMLCvode(p_solver, p_stimulus);
-                    p_cvode_cell_opt = new Cellohara_rudy_2011FromCellMLCvodeOpt(p_solver, p_stimulus);
+                    p_chaste_cell = new Cellohara_rudy_2011_endoFromCellML(p_solver, p_stimulus);
+                    p_chaste_cell_opt = new Cellohara_rudy_2011_endoFromCellMLOpt(p_solver, p_stimulus);
+                    p_cvode_cell = new Cellohara_rudy_2011_endoFromCellMLCvode(p_solver, p_stimulus);
+                    p_cvode_cell_opt = new Cellohara_rudy_2011_endoFromCellMLCvodeOpt(p_solver, p_stimulus);
                     break;
                 }
                 case 10u:

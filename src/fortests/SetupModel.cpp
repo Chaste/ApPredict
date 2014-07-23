@@ -47,7 +47,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "hund_rudy_2004Cvode.hpp"
 #include "mahajan_shiferaw_2008Cvode.hpp"
 #include "grandi_pasqualini_bers_2010_ssCvode.hpp"
-#include "ohara_rudy_2011Cvode.hpp"
+#include "ohara_rudy_2011_endoCvode.hpp"
 
 SetupModel::SetupModel(const double& rHertz, unsigned modelIndex)
 {
@@ -85,7 +85,7 @@ SetupModel::SetupModel(const double& rHertz, unsigned modelIndex)
             mpModel.reset(new Cellgrandi_pasqualini_bers_2010_ssFromCellMLCvode(p_solver, p_stimulus));
             break;
         case 6u:
-            mpModel.reset(new Cellohara_rudy_2011FromCellMLCvode(p_solver, p_stimulus));
+            mpModel.reset(new Cellohara_rudy_2011_endoFromCellMLCvode(p_solver, p_stimulus));
             break;
         default:
             EXCEPTION("No model matches this index");
