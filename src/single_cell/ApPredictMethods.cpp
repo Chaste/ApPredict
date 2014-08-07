@@ -58,6 +58,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "SetupModel.hpp"
 #include "SteadyStateRunner.hpp"
 #include "ProgressReporter.hpp"
+#include "Timer.hpp"
 
 std::string ApPredictMethods::PrintArguments()
 {
@@ -305,7 +306,7 @@ void ApPredictMethods::SetUpLookupTables()
     if (binary_archive_file.IsFile())
     {
         std::cout << "Loading lookup table from binary archive into memory, this can take a few seconds..." << std::flush;
-        double start = MPI_Wtime();
+        Timer::Reset();
 
         // Create a pointer to the input archive
         std::ifstream ifs((binary_archive_file.GetAbsolutePath()).c_str(), std::ios::binary);
@@ -318,8 +319,7 @@ void ApPredictMethods::SetUpLookupTables()
         mpLookupTable.reset(p_generator);
         mLookupTableAvailable = true;
 
-        double load_time = MPI_Wtime() - start;
-        std::cout << " loaded in " << load_time << " secs.\nLookup table is available for generation of credible intervals.\n";
+        std::cout << " loaded in " << Timer::GetElapsedTime() << " secs.\nLookup table is available for generation of credible intervals.\n";
 
         // Since loading the binary archive works, we can try and get rid of the ascii one to clean up.
         if (ascii_archive_file.IsFile())
@@ -364,7 +364,7 @@ void ApPredictMethods::SetUpLookupTables()
     if (ascii_archive_file.IsFile())
     {
         std::cout << "Loading lookup table from file into memory, this can take a few seconds..." << std::flush;
-        double start = MPI_Wtime();
+        Timer::Reset();
 
         // Create a pointer to the input archive
         std::ifstream ifs((ascii_archive_file.GetAbsolutePath()).c_str(), std::ios::binary);
@@ -377,8 +377,7 @@ void ApPredictMethods::SetUpLookupTables()
         mpLookupTable.reset(p_generator);
         mLookupTableAvailable = true;
 
-        double load_time = MPI_Wtime() - start;
-        std::cout << " loaded in " << load_time << " secs.\nLookup table is available for generation of credible intervals.\n";
+        std::cout << " loaded in " << Timer::GetElapsedTime() << " secs.\nLookup table is available for generation of credible intervals.\n";
 
         try
         {

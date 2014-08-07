@@ -46,6 +46,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/iostreams/filter/zlib.hpp>
 #endif
 
+#include "Timer.hpp"
 #include "FileFinder.hpp"
 #include "CheckpointArchiveTypes.hpp"
 
@@ -132,6 +133,7 @@ public:
         if (!mpCompressedAsciiArchiveFile->IsFile())
         {
             std::cout << "Loading lookup table from binary file into memory, this can take a few seconds..." << std::flush;
+            Timer::Reset();
 
             // Create a pointer to the input archive
             std::ifstream ifs((mpBinaryArchiveFile->GetAbsolutePath()).c_str(), std::ios::binary);
@@ -141,7 +143,8 @@ public:
             LookupTableGenerator<TABLE_DIM>* p_generator;
             input_arch >> p_generator;
 
-            std::cout << " loaded.\nConverting to compressed format.\n";
+            std::cout << " loaded. It took " << Timer::GetElapsedTime() << "s.\nConverting to compressed format...\n";
+            Timer::Reset();
 
             // Now archive in Compressed format
             LookupTableGenerator<TABLE_DIM>* const p_arch_generator = p_generator;
@@ -159,12 +162,15 @@ public:
             // As normal, but pass the filtering_ostream instead of the ostream.
             boost::archive::text_oarchive oa(out);
             oa << p_arch_generator;
+
+            std::cout << " done.\nIt took " << Timer::GetElapsedTime() << "s\n";
         }
 
         // Now archive in compressed binary format?
         if (!mpCompressedBinaryArchiveFile->IsFile())
         {
             std::cout << "Loading lookup table from binary file into memory, this can take a few seconds..." << std::flush;
+            Timer::Reset();
 
             // Create a pointer to the input archive
             std::ifstream ifs((mpBinaryArchiveFile->GetAbsolutePath()).c_str(), std::ios::binary);
@@ -174,7 +180,8 @@ public:
             LookupTableGenerator<TABLE_DIM>* p_generator;
             input_arch >> p_generator;
 
-            std::cout << " loaded.\nConverting to compressed format.\n";
+            std::cout << " loaded. It took " << Timer::GetElapsedTime() << "s.\nConverting to compressed format...\n";
+            Timer::Reset();
 
             // Now archive in Compressed format
             LookupTableGenerator<TABLE_DIM>* const p_arch_generator = p_generator;
@@ -192,6 +199,8 @@ public:
             // As normal, but pass the filtering_ostream instead of the ostream.
             boost::archive::binary_oarchive oa(out);
             oa << p_arch_generator;
+
+            std::cout << " done.\nIt took " << Timer::GetElapsedTime() << "s\n";
         }
 #endif // CHASTE_BOOST_IOSTREAMS
     }
@@ -201,8 +210,8 @@ public:
         if (mpAsciiArchiveFile->IsFile())
         {
             std::cout << "Loading lookup table from ascii file into memory, this can take a few seconds..." << std::flush;
+            Timer::Reset();
 
-            double start = MPI_Wtime();
             // Create a pointer to the input archive
             std::ifstream ifs((mpAsciiArchiveFile->GetAbsolutePath()).c_str(), std::ios::binary);
             boost::archive::text_iarchive input_arch(ifs);
@@ -211,9 +220,7 @@ public:
             LookupTableGenerator<TABLE_DIM>* p_generator;
             input_arch >> p_generator;
 
-            double load_time = MPI_Wtime() - start;
-
-            std::cout << " loaded.\nIt took " << load_time << "s\n";
+            std::cout << " loaded.\nIt took " << Timer::GetElapsedTime() << "s\n";
         }
         else
         {
@@ -223,8 +230,8 @@ public:
         if (mpBinaryArchiveFile->IsFile())
         {
             std::cout << "Loading lookup table from binary file into memory, this can take a few seconds..." << std::flush;
+            Timer::Reset();
 
-            double start = MPI_Wtime();
             // Create a pointer to the input archive
             std::ifstream ifs((mpBinaryArchiveFile->GetAbsolutePath()).c_str(), std::ios::binary);
             boost::archive::binary_iarchive input_arch(ifs);
@@ -233,9 +240,7 @@ public:
             LookupTableGenerator<TABLE_DIM>* p_generator;
             input_arch >> p_generator;
 
-            double load_time = MPI_Wtime() - start;
-
-            std::cout << " loaded.\nIt took " << load_time << "s\n";
+            std::cout << " loaded.\nIt took " << Timer::GetElapsedTime() << "s\n";
         }
         else
         {
@@ -246,8 +251,7 @@ public:
         if (mpCompressedAsciiArchiveFile->IsFile())
         {
             std::cout << "Loading lookup table from compressed file into memory, this can take a few seconds..." << std::flush;
-
-            double start = MPI_Wtime();
+            Timer::Reset();
 
             // Create a pointer to the input archive
             std::ifstream ifs((mpCompressedAsciiArchiveFile->GetAbsolutePath()).c_str(), std::ios::binary);
@@ -265,9 +269,7 @@ public:
             LookupTableGenerator<TABLE_DIM>* p_generator;
             input_arch >> p_generator;
 
-            double load_time = MPI_Wtime() - start;
-
-            std::cout << " loaded.\nIt took " << load_time << "s\n";
+            std::cout << " loaded.\nIt took " << Timer::GetElapsedTime() << "s\n";
         }
         else
         {
@@ -277,8 +279,7 @@ public:
         if (mpCompressedBinaryArchiveFile->IsFile())
         {
             std::cout << "Loading lookup table from compressed binary file into memory, this can take a few seconds..." << std::flush;
-
-            double start = MPI_Wtime();
+            Timer::Reset();
 
             // Create a pointer to the input archive
             std::ifstream ifs((mpCompressedBinaryArchiveFile->GetAbsolutePath()).c_str(), std::ios::binary);
@@ -296,9 +297,7 @@ public:
             LookupTableGenerator<TABLE_DIM>* p_generator;
             input_arch >> p_generator;
 
-            double load_time = MPI_Wtime() - start;
-
-            std::cout << " loaded.\nIt took " << load_time << "s\n";
+            std::cout << " loaded.\nIt took " << Timer::GetElapsedTime() << "s\n";
         }
         else
         {
