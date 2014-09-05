@@ -179,7 +179,7 @@ public:
 
     void TestWithAModelTwoToOneStimAp(void) throw (Exception)
 	{
-        // We should goo 'too fast' for O'Hara and see if we can get anything like sensible output.
+        // We should go 'too fast' for O'Hara and see if we can get anything like sensible output.
         CommandLineArgumentsMocker wrapper("--model 6 --plasma-concs 1 --pacing-freq 5 --plasma-conc-logscale false");
 
 		ApPredictMethods methods;
@@ -192,8 +192,8 @@ public:
 
 		std::vector<double> apd90s = methods.GetApd90s();
 		TS_ASSERT_EQUALS(apd90s.size(),2u);
-		TS_ASSERT_DELTA(apd90s[0], 266.81, 1e-2);
-		TS_ASSERT_DELTA(apd90s[1], 266.81, 1e-2);
+		TS_ASSERT_DELTA(apd90s[0], 266.81, 1e-1); // Very sensitive to compiler changes, so high tolerance.
+		TS_ASSERT_DELTA(apd90s[1], 266.81, 1e-1); // Very sensitive to compiler changes, so high tolerance.
     }
 
 };
