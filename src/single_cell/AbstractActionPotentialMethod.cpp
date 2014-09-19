@@ -53,6 +53,10 @@ AbstractActionPotentialMethod::AbstractActionPotentialMethod()
     if (p_args->OptionExists("--pacing-freq"))
     {
         mHertz = p_args->GetDoubleCorrespondingToOption("--pacing-freq");
+        if (mHertz <=0)
+        {
+            EXCEPTION("The pacing frequency set by '--pacing-freq' option must be a positive number.");
+        }
     }
     //if (!mSuppressOutput) std::cout << "* Pacing Frequency = " << mHertz << " Hz\n";
 

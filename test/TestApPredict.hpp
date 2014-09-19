@@ -60,15 +60,22 @@ public:
         {
             CommandLineArgumentsMocker wrapper("--plasma-concs 1 10 --pic50-herg 3");
 
-
             TS_ASSERT_THROWS_THIS(methods.Run(),
                     "Argument \"--model <index>\" is required");
         }
+
         {
             CommandLineArgumentsMocker wrapper("--model 2");
 
             TS_ASSERT_THROWS_THIS(methods.Run(),
                     "Argument \"--plasma-conc-high <concentration in uM>\" or \"--plasma-concs <concentrations in uM>\" is required");
+        }
+
+        {
+            CommandLineArgumentsMocker wrapper("--model 1 --pacing-freq 0 --plasma-concs 1 ");
+
+            TS_ASSERT_THROWS_THIS(methods.Run(),
+                                  "The pacing frequency set by '--pacing-freq' option must be a positive number.");
         }
     }
 
