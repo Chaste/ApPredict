@@ -52,21 +52,21 @@ AbstractActionPotentialMethod::AbstractActionPotentialMethod()
 
     if (p_args->OptionExists("--pacing-freq"))
     {
-        std::cout << "Pacing frequency argument given as " << p_args->GetDoubleCorrespondingToOption("--pacing-freq") << "\n";
         mHertz = p_args->GetDoubleCorrespondingToOption("--pacing-freq");
         if (mHertz <= 0 + DBL_MIN)
         {
-            EXCEPTION("The pacing frequency set by '--pacing-freq' option must be a positive number.");
+            EXCEPTION("The pacing frequency (" << mHertz << ") set by '--pacing-freq' option must be a positive number.");
         }
     }
-    if (!mSuppressOutput) std::cout << "* Pacing Frequency = " << mHertz << " Hz\n";
+    // mSuppressOutput is always set to false in this constructor, so suppress anyway!
+    //if (!mSuppressOutput) std::cout << "* Pacing Frequency = " << mHertz << " Hz\n";
 
     if (p_args->OptionExists("--pacing-max-time"))
     {
         // Max number of paces is equal to maximum pacing time (converted from minutes to seconds) x paces per second.
         unsigned max_num_paces = std::ceil(60.0*mHertz*p_args->GetDoubleCorrespondingToOption("--pacing-max-time"));
         SetMaxNumPaces(max_num_paces);
-        if (!mSuppressOutput) std::cout << "* Max Number of paces = " << max_num_paces << " Hz\n";
+        //if (!mSuppressOutput) std::cout << "* Max Number of paces = " << max_num_paces << " Hz\n";
     }
 }
 
