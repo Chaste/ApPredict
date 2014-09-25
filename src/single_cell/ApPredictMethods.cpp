@@ -39,7 +39,6 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 // Chaste source includes
 #include "CheckpointArchiveTypes.hpp"
-
 #include "ApPredictMethods.hpp"
 
 #include "Exception.hpp"
@@ -59,6 +58,23 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "SteadyStateRunner.hpp"
 #include "ProgressReporter.hpp"
 #include "Timer.hpp"
+
+/* Main Chaste citation */
+#include "Citations.hpp"
+static PetscBool TorsadeCite = PETSC_FALSE;
+const char TorsadeCitation[] = "@article{mirams2011simulation,\n"
+        "  title={Simulation of multiple ion channel block provides improved early "
+        "prediction of compounds’ clinical torsadogenic risk},\n"
+        "  author={Mirams, G.R. and Cui, Y. and Sher, A. and Fink, M. and "
+        "Cooper, J. and Heath, B.M. and McMahon, N.C. and Gavaghan, D.J. and Noble, D.},\n"
+        "  journal={Cardiovascular research},\n"
+        "  volume={91},\n"
+        "  number={1},\n"
+        "  pages={53--61},\n"
+        "  year={2011},\n"
+        "  publisher={Oxford University Press}\n"
+        "}";
+
 
 std::string ApPredictMethods::PrintArguments()
 {
@@ -272,6 +288,9 @@ ApPredictMethods::ApPredictMethods()
 
     // There must be a 1:1 mapping between these...
     assert(mMetadataNames.size()==mShortNames.size());
+
+    // Add the fact we're using this code to the citations register
+    Citations::Register(TorsadeCitation, &TorsadeCite);
 }
 
 void ApPredictMethods::SetUpLookupTables()
@@ -867,6 +886,5 @@ void ApPredictMethods::ParameterWrapper(boost::shared_ptr<AbstractCvodeCell> pMo
         }
     }
 }
-
 
 

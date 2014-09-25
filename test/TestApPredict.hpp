@@ -62,15 +62,16 @@ public:
             CommandLineArgumentsMocker wrapper("--plasma-concs 1 10 --pic50-herg 3");
 
             ApPredictMethods methods;
-            methods.SuppressOutput();
+
             TS_ASSERT_THROWS_THIS(methods.Run(),
                     "Argument \"--model <index>\" is required");
         }
 
         {
             CommandLineArgumentsMocker wrapper("--model 2");
+
             ApPredictMethods methods;
-            methods.SuppressOutput();
+
             TS_ASSERT_THROWS_THIS(methods.Run(),
                     "Argument \"--plasma-conc-high <concentration in uM>\" or \"--plasma-concs <concentrations in uM>\" is required");
         }

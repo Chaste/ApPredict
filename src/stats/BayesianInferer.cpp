@@ -43,12 +43,32 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "LogisticDistribution.hpp"
 #include "LogLogisticDistribution.hpp"
 
+// Add the citation for Elkins paper
+#include "Citations.hpp"
+static PetscBool ElkinsCite = PETSC_FALSE;
+const char ElkinsCitation[] = "@article{elkins2013variability,\n"
+"  title={Variability in high-throughput ion-channel screening data and "
+"consequences for cardiac safety assessment},\n"
+"  author={Elkins, Ryan C and Davies, Mark R and Brough, Stephen J and "
+"Gavaghan, David J and Cui, Yi and Abi-Gerges, Najah and Mirams, Gary R},\n"
+"  journal={Journal of pharmacological and toxicological methods},\n"
+"  volume={68},\n"
+" number={1},\n"
+"  pages={112--122},\n"
+"  year={2013},\n"
+"  publisher={Elsevier}\n"
+"}";
+
+
 BayesianInferer::BayesianInferer(DoseResponseParameter parameter)
   : mParameter(parameter),
     mSigma(DOUBLE_UNSET),
     mInferenceReady(false),
     mpData(NULL)
 {
+    // Record a reference for the calculations performed here, can be extracted with the '-citations' flag.
+    Citations::Register(ElkinsCitation, &ElkinsCite);
+
     unsigned num_values = 1000000u; // it is very quick so put loads and loads of points in for nice smooth distributions.
     double max_value;
     double min_value;
