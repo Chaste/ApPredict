@@ -1,6 +1,6 @@
 /*
 
-Copyright (c) 2005-2014, University of Oxford.
+Copyright (c) 2005-2015, University of Oxford.
 All rights reserved.
 
 University of Oxford means the Chancellor, Masters and Scholars of the
@@ -59,7 +59,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "ProgressReporter.hpp"
 #include "Timer.hpp"
 
-/* Main Chaste citation */
+/* Main citation */
 #include "Citations.hpp"
 static PetscBool TorsadeCite = PETSC_FALSE;
 const char TorsadeCitation[] = "@article{mirams2011simulation,\n"
@@ -67,13 +67,13 @@ const char TorsadeCitation[] = "@article{mirams2011simulation,\n"
         "prediction of compounds’ clinical torsadogenic risk},\n"
         "  author={Mirams, G.R. and Cui, Y. and Sher, A. and Fink, M. and "
         "Cooper, J. and Heath, B.M. and McMahon, N.C. and Gavaghan, D.J. and Noble, D.},\n"
-        "  journal={Cardiovascular research},\n"
+        "  journal={Cardiovascular Research},\n"
         "  volume={91},\n"
         "  number={1},\n"
         "  pages={53--61},\n"
         "  year={2011},\n"
-        "  publisher={Oxford University Press}\n"
-        "}";
+        "  doi={10.1093/cvr/CVR044},\n"
+        "}\n";
 
 
 std::string ApPredictMethods::PrintArguments()
