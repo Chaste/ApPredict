@@ -59,6 +59,23 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "ProgressReporter.hpp"
 #include "Timer.hpp"
 
+// A little helper method that can float around here for now.
+double MedianOfStdVectorDouble(std::vector<double> vec)
+{
+    assert(!vec.empty());
+
+    std::sort(vec.begin(), vec.end());
+
+    if(vec.size() % 2u == 0)
+    {
+        return (vec[vec.size()/2u - 1u] + vec[vec.size()/2u]) / 2.0;
+    }
+    else
+    {
+        return vec[vec.size()/2u];
+    }
+}
+
 /* Main citation */
 #include "Citations.hpp"
 static PetscBool TorsadeCite = PETSC_FALSE;
@@ -473,6 +490,7 @@ void ApPredictMethods::CalculateDoseResponseParameterSamples(const std::vector<s
                 mSampledIc50s[channel_idx].push_back(AbstractDataStructure::ConvertPic50ToIc50(inferred_pic50s[i]));
             }
 
+
             // If all Hill coefficient entries are positive, then we will use those for samples too.
             // This long-winded bit of code is just counting how many are positive (must be a better way!).
             bool all_hills_positive = false;
@@ -701,7 +719,47 @@ void ApPredictMethods::CommonRunMethod()
     *steady_voltage_results_file_html << "<table width=\"60%\" style=\"background-color:white\" border=\"1\" cellpadding=\"2\" cellspacing=\"0\">\n";
     *steady_voltage_results_file_html << "<tr><td>Concentration (uM)</td><td>Upstroke Velocity (mV/ms)</td><td>Peak membrane voltage (mV)</td><td>APD50 (ms)</td><td>APD90 (ms)</td><td>Change in APD90 (%)</td></tr>\n"; // Header line
 
-    /**
+    /*
+     * Work out the median IC50 and Hill to use if more than one were provided
+     */
+    std::vector<double> median_ic50; // vector is over channel indices
+    std::vector<double> median_hill; //               " "
+    for (unsigned channel_idx = 0 ; channel_idx<mMetadataNames.size(); channel_idx++)
+    {
+        // If we only have one IC50 and Hill value specified, then just use them and move on.
+        if (IC50s[channel_idx].size()==1u && hills[channel_idx].size()==1u)
+        {
+            median_ic50.push_back(IC50s[channel_idx][0]);
+            median_hill.push_back(hills[channel_idx][0]);
+        }
+        else
+        {
+            // Otherwise we have two scenarios
+            // 1. We know something about the spread and should take the median of the inferred distribution samples
+            //    This should ensure that the predicted line is at the 50th percentile of the credible interval predictions.
+            // 2. We know nothing about the spread, and should just take the mean of the multiple values.
+            if (mLookupTableAvailable)
+            {
+                // Work out the mean inferred IC50 and hill from the multiple values dataset, and do the simulation with those.
+                median_ic50.push_back(MedianOfStdVectorDouble(mSampledIc50s[channel_idx]));
+                median_hill.push_back(MedianOfStdVectorDouble(mSampledHills[channel_idx]));
+            }
+            else
+            {
+                // Work out the median pIC50 and Hill in the multiple values dataset, and do simulation with these.
+                // This is our best estimate of the above more accurate version when we have no other information.
+                std::vector<double> pIC50s;
+                for (unsigned i=0; i<IC50s[channel_idx].size(); i++)
+                {
+                    pIC50s.push_back(AbstractDataStructure::ConvertIc50ToPic50(IC50s[channel_idx][i]));
+                }
+                median_ic50.push_back(AbstractDataStructure::ConvertPic50ToIc50(MedianOfStdVectorDouble(pIC50s)));
+                median_hill.push_back(MedianOfStdVectorDouble(hills[channel_idx]));
+            }
+        }
+    }
+
+    /*
      * START LOOP OVER EACH CONCENTRATION TO TEST WITH
      */
     mApd90CredibleRegions.resize(mConcs.size());
@@ -714,16 +772,8 @@ void ApPredictMethods::CommonRunMethod()
         // Apply drug block on each channel
         for (unsigned channel_idx = 0 ; channel_idx<mMetadataNames.size(); channel_idx++)
         {
-            // Work out the mean IC50 and Hill in the dataset, and do simulation with this for now.
-            // (This will ensure identical behaviour to when there was just one entry)
-
-            double sum = std::accumulate(IC50s[channel_idx].begin(), IC50s[channel_idx].end(), 0.0);
-            double mean_ic50 = sum / IC50s[channel_idx].size();
-            sum = std::accumulate(hills[channel_idx].begin(), hills[channel_idx].end(), 0.0);
-            double mean_hill = sum / hills[channel_idx].size();
-
             ApplyDrugBlock(mpModel, channel_idx, default_conductances[channel_idx],
-                           mConcs[conc_index], mean_ic50, mean_hill);
+                           mConcs[conc_index], median_ic50[channel_idx], median_hill[channel_idx]);
         }
 
         double apd90, apd50, upstroke, peak;

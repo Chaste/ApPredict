@@ -142,8 +142,8 @@ public:
             std::vector<double> apd90s = methods.GetApd90s();
             TS_ASSERT_EQUALS(apd90s.size(),3u);
             TS_ASSERT_DELTA(apd90s[0], 211.9333, 1e-3);
-            TS_ASSERT_DELTA(apd90s[1], 213.9501, 1e-3);
-            TS_ASSERT_DELTA(apd90s[2], 229.5418, 1e-3);
+            TS_ASSERT_DELTA(apd90s[1], 213.9730, 1e-3);
+            TS_ASSERT_DELTA(apd90s[2], 229.7191, 1e-3);
 
             std::vector<std::pair<double,double> > apd90_credible_regions = methods.GetApd90CredibleRegions();
             TS_ASSERT_EQUALS(apd90_credible_regions.size(),3u);
@@ -153,6 +153,44 @@ public:
             TS_ASSERT_DELTA(apd90_credible_regions[1].second, 215.3668, 1e-3);
             TS_ASSERT_DELTA(apd90_credible_regions[2].first, 223.2300, 1e-3);
             TS_ASSERT_DELTA(apd90_credible_regions[2].second, 239.4459, 1e-3);
+        }
+
+        // This is a case Gef found that seems to get 'mean' predictions outside the credible region
+        // It turned out this was an error we had introduced by taking the mean IC50 value (instead of median PIC50),
+        // or even better the median of the inferred pIC50s from the credible interval pIC50 samples.
+        // (which is what we are doing now).
+        {
+            CommandLineArgumentsMocker wrapper("--model 1 --pacing-freq 0.5 "
+                    "--pic50-herg 4.86 4.45 0 4.1429 --hill-herg 3.22 1.57 1 1 "
+                    "--pic50-spread-herg 0.15 --hill-spread-herg 0.21 "
+                    "--credible-intervals --plasma-concs 30.0");
+
+            ApPredictMethods methods;
+            methods.Run();
+            std::vector<double> concs = methods.GetConcentrations();
+            std::vector<double> apd90s = methods.GetApd90s();
+            TS_ASSERT_EQUALS(concs.size(), apd90s.size());
+            TS_ASSERT_DELTA(apd90s[0], 219.604, 1e-1);
+            TS_ASSERT_DELTA(apd90s[1], 219.604, 1e-1);
+            TS_ASSERT_DELTA(apd90s[2], 247.4263, 1e-1);
+        }
+
+        // This is the same case as above but we say we have repeated IC50s but no spread info
+        // In this case all we can do is take the median of the PIC50s. This gives a slightly
+        // different hERG IC50 of 50.5301 uM
+        {
+            CommandLineArgumentsMocker wrapper("--model 1 --pacing-freq 0.5 "
+                    "--pic50-herg 4.86 4.45 0 4.1429 --hill-herg 3.22 1.57 1 1 "
+                    "--plasma-concs 30.0 ");
+
+            ApPredictMethods methods;
+            methods.Run();
+            std::vector<double> concs = methods.GetConcentrations();
+            std::vector<double> apd90s = methods.GetApd90s();
+            TS_ASSERT_EQUALS(concs.size(), apd90s.size());
+            TS_ASSERT_DELTA(apd90s[0], 219.604, 1e-1);
+            TS_ASSERT_DELTA(apd90s[1], 219.604, 1e-1);
+            TS_ASSERT_DELTA(apd90s[2], 250.522, 1e-1);
         }
     }
 
@@ -194,6 +232,28 @@ public:
 		TS_ASSERT_EQUALS(apd90s.size(),2u);
 		TS_ASSERT_DELTA(apd90s[0], 266.81, 1e-1); // Very sensitive to compiler changes, so high tolerance.
 		TS_ASSERT_DELTA(apd90s[1], 266.81, 1e-1); // Very sensitive to compiler changes, so high tolerance.
+    }
+
+    void TestTroublesomeApCalculation(void) throw (Exception)
+    {
+        // This is a case that Gef was having some trouble with. It does look as if something odd is going
+        // on, as it reports AP alternans, then tries to swap round the pacing and it has gone, at 10k paces.
+        CommandLineArgumentsMocker wrapper("--model 1 --pacing-freq 0.5 --pic50-cal 3.0 --hill-cal 1 "
+                "--pic50-herg 0 --hill-herg 1 "
+                "--pic50-na 4.561 --hill-na 1 "
+                "--plasma-concs 0 100.0");
+
+        ApPredictMethods methods;
+        methods.Run();
+        std::vector<double> concs = methods.GetConcentrations();
+
+        TS_ASSERT_EQUALS(concs.size(),3u);
+
+        std::vector<double> apd90s = methods.GetApd90s();
+        TS_ASSERT_EQUALS(apd90s.size(),3u);
+        TS_ASSERT_DELTA(apd90s[0], 219.60, 1e-1); // Very sensitive to compiler changes, so high tolerance.
+        TS_ASSERT_DELTA(apd90s[1], 219.60, 1e-1);
+        TS_ASSERT_DELTA(apd90s[2], 217.469, 1e-1);
     }
 
 };
