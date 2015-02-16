@@ -84,6 +84,10 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "ohara_rudy_2011_endoOpt.hpp"
 #include "ohara_rudy_2011_endoCvode.hpp"
 #include "ohara_rudy_2011_endoCvodeOpt.hpp"
+#include "paci_hyttinen_aaltosetala_severi_ventricularVersion.hpp"
+#include "paci_hyttinen_aaltosetala_severi_ventricularVersionOpt.hpp"
+#include "paci_hyttinen_aaltosetala_severi_ventricularVersionCvode.hpp"
+#include "paci_hyttinen_aaltosetala_severi_ventricularVersionCvodeOpt.hpp"
 
 class TestMetadataCellmlModels : public CxxTest::TestSuite
 {
@@ -108,7 +112,7 @@ public:
         double d = 0.6;
         double e = 0.5;
 
-        for (unsigned model_index = 1u; model_index <= 10u ; model_index++)
+        for (unsigned model_index = 1u; model_index <= 11u ; model_index++)
         {
             AbstractCardiacCell* p_chaste_cell;
             AbstractCardiacCell* p_chaste_cell_opt;
@@ -196,6 +200,14 @@ public:
                     p_chaste_cell_opt = new Celldavies_isap_2012FromCellMLOpt(p_solver, p_stimulus);
                     p_cvode_cell = new Celldavies_isap_2012FromCellMLCvode(p_solver, p_stimulus);
                     p_cvode_cell_opt = new Celldavies_isap_2012FromCellMLCvodeOpt(p_solver, p_stimulus);
+                    break;
+                }
+                case 11u:
+                {
+                    p_chaste_cell = new Cellpaci_hyttinen_aaltosetala_severi_ventricularVersionFromCellML(p_solver, p_stimulus);
+                    p_chaste_cell_opt = new Cellpaci_hyttinen_aaltosetala_severi_ventricularVersionFromCellMLOpt(p_solver, p_stimulus);
+                    p_cvode_cell = new Cellpaci_hyttinen_aaltosetala_severi_ventricularVersionFromCellMLCvode(p_solver, p_stimulus);
+                    p_cvode_cell_opt = new Cellpaci_hyttinen_aaltosetala_severi_ventricularVersionFromCellMLCvodeOpt(p_solver, p_stimulus);
                     break;
                 }
                 default:

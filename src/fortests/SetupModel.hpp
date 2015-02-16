@@ -66,7 +66,8 @@ public:
      *
      * If this is not present it uses sensible defaults.
      *
-     * @param model_index  1 = Shannon, 2=TenTusscher, 3 = Mahajan, 4 = Hund-Rudy, 5 = Grandi, 6 = O'Hara-Rudy
+     * @param model_index  1 = Shannon, 2=TenTusscher, 3 = Mahajan, 4 = Hund-Rudy, 5 = Grandi,
+     *        6 = O'Hara-Rudy, 7 = Paci ventricular
      * @param hertz  The frequency of the regular stimulus that this model should use.
      */
     SetupModel(const double& rHertz, unsigned model_index = UNSIGNED_UNSET);
@@ -79,8 +80,9 @@ public:
     static std::string PrintArguments()
     {
         return "* --model\n"
-                "    options: 1 = Shannon, 2 = TenTusscher, 3 = Mahajan,\n"
-                "             4 = HundRudy, 5 = Grandi, 6 = O'Hara-Rudy.\n";
+               "*   options: 1 = Shannon, 2 = TenTusscher (06), 3 = Mahajan,\n"
+               "*            4 = Hund-Rudy, 5 = Grandi, 6 = O'Hara-Rudy,\n"
+               "*            7 = Paci (ventricular).\n";
     }
 
     /**
