@@ -56,7 +56,7 @@ public:
         // Get a full action potential trace (large file) out of one stored in the repository...
         {
            std::ifstream indata; // indata is like cin
-           indata.open("projects/GaryM/test/data/full_voltage_trace.dat"); // opens the file
+           indata.open("projects/ApPredict/test/data/full_voltage_trace.dat"); // opens the file
            assert(indata.good());
 
            bool top_line_read = false; // There is a row of header info we need to skip.
@@ -96,7 +96,7 @@ public:
         ActionPotentialDownsampler sampler(output_folder, output_filename, times, voltages, window, stim_time);
 
         FileFinder generated_file("TestActionPotentialDownsampler/sample_action_potential.txt", RelativeTo::ChasteTestOutput);
-        FileFinder reference_file("projects/GaryM/test/data/reduced_voltage_trace.dat", RelativeTo::ChasteSourceRoot);
+        FileFinder reference_file("projects/ApPredict/test/data/reduced_voltage_trace.dat", RelativeTo::ChasteSourceRoot);
         TS_ASSERT(generated_file.IsFile());
         TS_ASSERT(reference_file.IsFile());
 

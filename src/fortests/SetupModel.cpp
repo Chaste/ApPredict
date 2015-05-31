@@ -114,6 +114,7 @@ SetupModel::SetupModel(const double& rHertz, unsigned modelIndex)
         s1_period = mpModel->GetAttribute("SuggestedCycleLength");
         //std::cout << "s1 period = " << s1_period << std::endl;
     }
+
     // We always use this so graphs look nice.
     double s_start = 1.0;            // ms
     boost::shared_ptr<RegularStimulus> p_regular_stimulus(new RegularStimulus(s_magnitude, s_duration, s1_period, s_start));
