@@ -65,6 +65,9 @@ const unsigned TABLE_DIM = 4u;
  * (will require unpacking)
  *
  * Finally we want to compare times for loading the various archive files from disk.
+ *
+ * If you upgrade boost, then the binary archive might become corrupt for your new version.
+ * In this case, simply delete it, and this test will make it again with the new system boost.
  */
 class TestConvertLookupTableArchiveToBinary : public CxxTest::TestSuite
 {

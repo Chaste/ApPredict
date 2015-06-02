@@ -31,22 +31,21 @@ HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
 LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
 OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-*/
+ */
 
 #include "AbstractActionPotentialMethod.hpp"
 
 AbstractActionPotentialMethod::AbstractActionPotentialMethod()
-     : mMaxNumPacesSet(false),
-       mRunYet(false),
-       mMaxNumPaces(UNSIGNED_UNSET),
-       mErrorMessage(""),
-       mNoOneToOneCorrespondenceIsError(false),
-       mActionPotentialThreshold(-50),
-       mRepeat(false),
-       mSuppressOutput(false),
-       mHertz(1.0), // default to 1 Hz, replaced by suitable command line argument if present.
-       mSuccessful(false),
-       mPeriodTwoBehaviour(false)
+: mRunYet(false),
+  mMaxNumPaces(UNSIGNED_UNSET),
+  mErrorMessage(""),
+  mNoOneToOneCorrespondenceIsError(false),
+  mActionPotentialThreshold(-50),
+  mRepeat(false),
+  mSuppressOutput(false),
+  mHertz(1.0), // default to 1 Hz, replaced by suitable command line argument if present.
+  mSuccessful(false),
+  mPeriodTwoBehaviour(false)
 {
     CommandLineArguments* p_args = CommandLineArguments::Instance();
 
@@ -75,7 +74,6 @@ void AbstractActionPotentialMethod::SetMaxNumPaces(unsigned numPaces)
     if (numPaces != UNSIGNED_UNSET)
     {
         mMaxNumPaces = numPaces;
-        mMaxNumPacesSet = true;
     }
 }
 
@@ -125,13 +123,13 @@ void AbstractActionPotentialMethod::SuppressOutput(bool suppress)
 
 
 OdeSolution AbstractActionPotentialMethod::SteadyStatePacingExperiment(
-                                     boost::shared_ptr<AbstractCvodeCell> pModel,
-                                     double& rApd90,
-                                     double& rApd50,
-                                     double& rUpstroke,
-                                     double& rPeak,
-                                     const double printingTimeStep,
-                                     const double conc)
+        boost::shared_ptr<AbstractCvodeCell> pModel,
+        double& rApd90,
+        double& rApd50,
+        double& rUpstroke,
+        double& rPeak,
+        const double printingTimeStep,
+        const double conc)
 {
     mRunYet = true;
 
@@ -154,7 +152,7 @@ OdeSolution AbstractActionPotentialMethod::SteadyStatePacingExperiment(
     }
 
     boost::shared_ptr<RegularStimulus> p_default_stimulus =
-                         boost::static_pointer_cast<RegularStimulus>(pModel->GetStimulusFunction());
+            boost::static_pointer_cast<RegularStimulus>(pModel->GetStimulusFunction());
     unsigned voltage_index = pModel->GetSystemInformation()->GetStateVariableIndex("membrane_voltage");
 
     double s1_period = p_default_stimulus->GetPeriod();
@@ -171,7 +169,7 @@ OdeSolution AbstractActionPotentialMethod::SteadyStatePacingExperiment(
 
     const unsigned num_paces_to_analyze = 2u;
 
-    // In this block we just do one complete action potential
+    // In this block we just do one/two complete action potentials
     // to see if the model 'fires off' an action potential properly.
     // If it doesn't we don't bother pursuing this concentration and we skip running to steady state.
     {
@@ -210,7 +208,7 @@ OdeSolution AbstractActionPotentialMethod::SteadyStatePacingExperiment(
         catch (Exception& e)
         {
             if (e.GetShortMessage()=="AP did not occur, never exceeded threshold voltage." ||
-                e.GetShortMessage()=="No full action potential was recorded")
+                    e.GetShortMessage()=="No full action potential was recorded")
             {
                 skip_steady_state_calculation = true;
                 //EXCEPTION("No action potential on first pace - model/parameter choice is dodgy\n");
@@ -222,153 +220,156 @@ OdeSolution AbstractActionPotentialMethod::SteadyStatePacingExperiment(
         }
     }
 
-    // This method tries to detect a steady state if we are happy we're producing APs...
-    if (!skip_steady_state_calculation)
+    // The mMaxNumPaces is based on the total we want to do, so the steady state runner
+    // should go for fewer, as some are analysed before this, and some after.
+    const unsigned num_paces_analysed_elsewhere = 2u*num_paces_to_analyze;
+
+    if (!skip_steady_state_calculation && mMaxNumPaces > num_paces_analysed_elsewhere)
     {
-        SteadyStateRunner steady_runner(pModel, true); // The true denotes a 'two pace scan' which will catch alternans too.
-        if (mMaxNumPacesSet)
+        // This method tries to detect a steady state if we are happy we're producing APs...
+        SteadyStateRunner steady_runner(pModel, true); // The true denotes a 'two pace scan', which will catch alternans too.
+        if (mMaxNumPaces != UNSIGNED_UNSET)
         {
-            steady_runner.SetMaxNumPaces(mMaxNumPaces);
+            steady_runner.SetMaxNumPaces(mMaxNumPaces - num_paces_analysed_elsewhere);
         }
         steady_runner.RunToSteadyState();
     }
 
     OdeSolution solution = PerformAnalysisOfTwoPaces( pModel,
-													  rApd90,
-													  rApd50,
-													  rUpstroke,
-													  rPeak,
-													  s1_period,
-													  maximum_time_step,
-													  printingTimeStep,
-													  conc);
+                                                      rApd90,
+                                                      rApd50,
+                                                      rUpstroke,
+                                                      rPeak,
+                                                      s1_period,
+                                                      maximum_time_step,
+                                                      printingTimeStep,
+                                                      conc);
 
     if (mRepeat)
     {
-    	// If we might benefit from pushing forward one period and re-analysing...
-    	PushModelForwardOneS1Interval(pModel, s1_period, maximum_time_step);
+        // If we might benefit from pushing forward one period and re-analysing...
+        PushModelForwardOneS1Interval(pModel, s1_period, maximum_time_step);
 
-		solution = PerformAnalysisOfTwoPaces( pModel,
-											  rApd90,
-											  rApd50,
-											  rUpstroke,
-											  rPeak,
-											  s1_period,
-											  maximum_time_step,
-											  printingTimeStep,
-											  conc);
+        solution = PerformAnalysisOfTwoPaces( pModel,
+                                              rApd90,
+                                              rApd50,
+                                              rUpstroke,
+                                              rPeak,
+                                              s1_period,
+                                              maximum_time_step,
+                                              printingTimeStep,
+                                              conc);
     }
-
 
     return solution;
 }
 
 void AbstractActionPotentialMethod::PushModelForwardOneS1Interval(boost::shared_ptr<AbstractCvodeCell> pModel,
-		                                                          double pacingCycleLength,
-		                                                          double maxTimeStep)
+                                                                  double pacingCycleLength,
+                                                                  double maxTimeStep)
 {
-	 pModel->Solve(0, pacingCycleLength, maxTimeStep);
+    pModel->Solve(0, pacingCycleLength, maxTimeStep);
 }
 
 OdeSolution AbstractActionPotentialMethod::PerformAnalysisOfTwoPaces(boost::shared_ptr<AbstractCvodeCell> pModel,
-															  double& rApd90,
-															  double& rApd50,
-															  double& rUpstroke,
-															  double& rPeak,
-															  const double s1_period,
-															  const double maximumTimeStep,
-															  const double printingTimeStep,
-															  const double conc)
+                                                                     double& rApd90,
+                                                                     double& rApd50,
+                                                                     double& rUpstroke,
+                                                                     double& rPeak,
+                                                                     const double s1_period,
+                                                                     const double maximumTimeStep,
+                                                                     const double printingTimeStep,
+                                                                     const double conc)
 {
-	const unsigned num_paces_to_analyze = 2u;
-	mRepeat = false;
-	const double alternans_threshold = 0.5; //ms in APD90.
+    const unsigned num_paces_to_analyze = 2u;
+    mRepeat = false;
+    const double alternans_threshold = 0.5; //ms in APD90.
 
-	pModel->SetMaxSteps(num_paces_to_analyze*100000);
-	OdeSolution solution = pModel->Solve(0,num_paces_to_analyze*s1_period, maximumTimeStep, printingTimeStep); // Get plenty of detail on these two paces for analysis.
+    pModel->SetMaxSteps(num_paces_to_analyze*100000);
+    OdeSolution solution = pModel->Solve(0,num_paces_to_analyze*s1_period, maximumTimeStep, printingTimeStep); // Get plenty of detail on these two paces for analysis.
 
-	// Get voltage properties
-	double threshold = -50; // Threshold for AP is above -50ish.
+    // Get voltage properties
+    double threshold = -50; // Threshold for AP is above -50ish.
     unsigned voltage_index = pModel->GetSystemInformation()->GetStateVariableIndex("membrane_voltage");
-	std::vector<double> voltages = solution.GetVariableAtIndex(voltage_index);
-	CellProperties voltage_properties(voltages, solution.rGetTimes(), threshold);
+    std::vector<double> voltages = solution.GetVariableAtIndex(voltage_index);
+    CellProperties voltage_properties(voltages, solution.rGetTimes(), threshold);
 
-	std::vector<double> apd90s;
-	try
-	{
-		apd90s = voltage_properties.GetAllActionPotentialDurations(90);
-		if (!mSuppressOutput)
-		{
-			std::cout << "Last " << apd90s.size() << " AP duration(s) = ";//<< std::flush;
-			for (unsigned i=0; i<apd90s.size(); i++)
-			{
-				std::cout << apd90s[i] << ",\t";
-			}
-			std::cout << std::endl ;//<< std::flush;
-		}
+    std::vector<double> apd90s;
+    try
+    {
+        apd90s = voltage_properties.GetAllActionPotentialDurations(90);
+        if (!mSuppressOutput)
+        {
+            std::cout << "Last " << apd90s.size() << " AP duration(s) = ";//<< std::flush;
+            for (unsigned i=0; i<apd90s.size(); i++)
+            {
+                std::cout << apd90s[i] << ",\t";
+            }
+            std::cout << std::endl ;//<< std::flush;
+        }
 
-		if (apd90s.size() >= 2u && fabs(apd90s[0]-apd90s[1]) > alternans_threshold)
-		{
-			// We suspect alternans, and analyse the first of the two APs
-			rApd90 = voltage_properties.GetAllActionPotentialDurations(90)[0];
-			rApd50 = voltage_properties.GetAllActionPotentialDurations(50)[0];
-			rUpstroke = voltage_properties.GetMaxUpstrokeVelocities()[0];
-			rPeak = voltage_properties.GetPeakPotentials()[0];
-		}
-		else
-		{
-			// Return the last as it is more likely to be the steady state one.
-			rApd90 = voltage_properties.GetLastActionPotentialDuration(90);
-			rApd50 = voltage_properties.GetLastActionPotentialDuration(50);
-			rUpstroke = voltage_properties.GetLastCompleteMaxUpstrokeVelocity();
-			rPeak = voltage_properties.GetLastCompletePeakPotential();
-		}
-		mSuccessful = true;
-	}
-	catch (Exception& e)
-	{
-		if (e.GetShortMessage()=="AP did not occur, never exceeded threshold voltage." ||
-			e.GetShortMessage()=="No full action potential was recorded" ||
-			e.GetShortMessage()=="No MaxUpstrokeVelocity matching a full action potential was recorded.")
-		{
-			std::stringstream message;
-			if (conc!=DOUBLE_UNSET)
-			{
-				message << "At a concentration of " << conc << "uM: ";
-			}
-			message << "no action potentials were recorded, cell did not ";
+        if (apd90s.size() >= 2u && fabs(apd90s[0]-apd90s[1]) > alternans_threshold)
+        {
+            // We suspect alternans, and analyse the first of the two APs
+            rApd90 = voltage_properties.GetAllActionPotentialDurations(90)[0];
+            rApd50 = voltage_properties.GetAllActionPotentialDurations(50)[0];
+            rUpstroke = voltage_properties.GetMaxUpstrokeVelocities()[0];
+            rPeak = voltage_properties.GetPeakPotentials()[0];
+        }
+        else
+        {
+            // Return the last as it is more likely to be the steady state one.
+            rApd90 = voltage_properties.GetLastActionPotentialDuration(90);
+            rApd50 = voltage_properties.GetLastActionPotentialDuration(50);
+            rUpstroke = voltage_properties.GetLastCompleteMaxUpstrokeVelocity();
+            rPeak = voltage_properties.GetLastCompletePeakPotential();
+        }
+        mSuccessful = true;
+    }
+    catch (Exception& e)
+    {
+        if (e.GetShortMessage()=="AP did not occur, never exceeded threshold voltage." ||
+                e.GetShortMessage()=="No full action potential was recorded" ||
+                e.GetShortMessage()=="No MaxUpstrokeVelocity matching a full action potential was recorded.")
+        {
+            std::stringstream message;
+            if (conc!=DOUBLE_UNSET)
+            {
+                message << "At a concentration of " << conc << "uM: ";
+            }
+            message << "no action potentials were recorded, cell did not ";
 
-			// Work out whether most of the time was spent above or below threshold
-			double mean_voltage = 0.0;
-			for (unsigned i=0; i<voltages.size(); i++)
-			{
-				mean_voltage += voltages[i];
-			}
-			mean_voltage /= ((double)(voltages.size()));
+            // Work out whether most of the time was spent above or below threshold
+            double mean_voltage = 0.0;
+            for (unsigned i=0; i<voltages.size(); i++)
+            {
+                mean_voltage += voltages[i];
+            }
+            mean_voltage /= ((double)(voltages.size()));
 
-			if (mean_voltage > threshold)
-			{
-				mErrorMessage = "NoActionPotential_2";
-				message << "repolarise.";
-			}
-			else
-			{
-				mErrorMessage = "NoActionPotential_1";
-				message << "depolarise.";
-			}
-			//std::cout << message.str() << std::endl << std::flush;
-			if (!mSuppressOutput) std::cout << message.str() << std::endl << std::flush;
-			WriteMessageToFile(message.str());
-			mSuccessful = false;
-			mPeriodTwoBehaviour = true;
-			// Redo the analysis in case being 'in sync' on period 2 orbit allows us to get an APD.
-			mRepeat = true;
-		}
-		else
-		{
-			throw e;
-		}
-	}
+            if (mean_voltage > threshold)
+            {
+                mErrorMessage = "NoActionPotential_2";
+                message << "repolarise.";
+            }
+            else
+            {
+                mErrorMessage = "NoActionPotential_1";
+                message << "depolarise.";
+            }
+            //std::cout << message.str() << std::endl << std::flush;
+            if (!mSuppressOutput) std::cout << message.str() << std::endl << std::flush;
+            WriteMessageToFile(message.str());
+            mSuccessful = false;
+            mPeriodTwoBehaviour = true;
+            // Redo the analysis in case being 'in sync' on period 2 orbit allows us to get an APD.
+            mRepeat = true;
+        }
+        else
+        {
+            throw e;
+        }
+    }
 
     if (mSuccessful)
     {
@@ -378,19 +379,19 @@ OdeSolution AbstractActionPotentialMethod::PerformAnalysisOfTwoPaces(boost::shar
             mPeriodTwoBehaviour = true;
             if (apd90s[1] > apd90s[0])
             {
-            	// Redo so that we always plot the longest AP first.
-            	mRepeat = true;
+                // Redo so that we always plot the longest AP first.
+                mRepeat = true;
             }
             else
             {   // If we're going to repeat, we don't want this message twice.
-				std::stringstream message;
-				if (conc!=DOUBLE_UNSET)
-				{
-					message << "At a concentration of " << conc << "uM: ";
-				}
-				message << "possible alternans detected, APD90s = " << apd90s[0] << ", " << apd90s[1] << " ms";
-				std::string message_string = message.str();
-				WriteMessageToFile(message_string);
+                std::stringstream message;
+                if (conc!=DOUBLE_UNSET)
+                {
+                    message << "At a concentration of " << conc << "uM: ";
+                }
+                message << "possible alternans detected, APD90s = " << apd90s[0] << ", " << apd90s[1] << " ms";
+                std::string message_string = message.str();
+                WriteMessageToFile(message_string);
             }
         }
 
@@ -414,7 +415,7 @@ OdeSolution AbstractActionPotentialMethod::PerformAnalysisOfTwoPaces(boost::shar
         }
     }
 
-	return solution;
+    return solution;
 }
 
 

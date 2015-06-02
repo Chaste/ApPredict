@@ -31,7 +31,7 @@ HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
 LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
 OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-*/
+ */
 
 #ifndef ABSTRACTACTIONPOTENTIALMETHOD_HPP_
 #define ABSTRACTACTIONPOTENTIALMETHOD_HPP_
@@ -53,15 +53,14 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 class AbstractActionPotentialMethod
 {
 private:
-    /** Whether we should limit the maximum number of paces that a steady state run can take. */
-    bool mMaxNumPacesSet;
 
     /** Whether we have run a simulation */
     bool mRunYet;
 
     /**
      * The limit on the maximum number of paces to take
-     * (we actually take a couple more to assess AP after reaching steady state).
+     *
+     * Value is UNSIGNED_UNSET if this has not been set.
      */
     unsigned mMaxNumPaces;
 
@@ -92,14 +91,14 @@ private:
      * @return the solution of the ODE.
      */
     OdeSolution PerformAnalysisOfTwoPaces(boost::shared_ptr<AbstractCvodeCell> pModel,
-										  double& rApd90,
-										  double& rApd50,
-										  double& rUpstroke,
-										  double& rPeak,
-										  const double s1_period,
-										  const double maximumTimeStep,
-										  const double printingTimeStep,
-										  const double conc);
+                                          double& rApd90,
+                                          double& rApd50,
+                                          double& rUpstroke,
+                                          double& rPeak,
+                                          const double s1_period,
+                                          const double maximumTimeStep,
+                                          const double printingTimeStep,
+                                          const double conc);
 
     /**
      * A little method to 'push' cell model forward one S1 period, to get it 'in sync'
@@ -110,8 +109,8 @@ private:
      * @param maxTimeStep  The maximum CVODE time step to use in solving
      */
     void PushModelForwardOneS1Interval(boost::shared_ptr<AbstractCvodeCell> pModel,
-									   double pacingCycleLength,
-									   double maxTimeStep);
+                                       double pacingCycleLength,
+                                       double maxTimeStep);
 
 protected:
     /** Whether to suppress output to std::cout */
@@ -152,12 +151,12 @@ protected:
      * @return the solution of the ODE.
      */
     OdeSolution SteadyStatePacingExperiment(boost::shared_ptr<AbstractCvodeCell> pModel,
-                                     double& rApd90,
-                                     double& rApd50,
-                                     double& rUpstroke,
-                                     double& rPeak,
-                                     const double printingTimeStep=1,//ms
-                                     const double conc=DOUBLE_UNSET);
+                                            double& rApd90,
+                                            double& rApd50,
+                                            double& rUpstroke,
+                                            double& rPeak,
+                                            const double printingTimeStep=1,//ms
+                                            const double conc=DOUBLE_UNSET);
 
     /**
      * This method just passes any message into the WARNINGS macro.
