@@ -81,7 +81,7 @@ double MedianOfStdVectorDouble(std::vector<double> vec)
 static PetscBool TorsadeCite = PETSC_FALSE;
 const char TorsadeCitation[] = "@article{mirams2011simulation,\n"
         "  title={Simulation of multiple ion channel block provides improved early "
-        "prediction of compounds’ clinical torsadogenic risk},\n"
+        "prediction of compounds' clinical torsadogenic risk},\n"
         "  author={Mirams, G.R. and Cui, Y. and Sher, A. and Fink, M. and "
         "Cooper, J. and Heath, B.M. and McMahon, N.C. and Gavaghan, D.J. and Noble, D.},\n"
         "  journal={Cardiovascular Research},\n"
@@ -148,6 +148,9 @@ std::string ApPredictMethods::PrintCommonArguments()
             "*   (for details of what these spread parameters are see 'sigma' and '1/beta' in Table 1 of:\n"
             "*    Elkins et al. 2013  Journal of Pharmacological and Toxicological \n"
             "*    Methods, 68(1), 112-122. doi: 10.1016/j.vascn.2013.04.007 )\n"
+            "* OTHER OPTIONS:\n"
+            "* --no-downsampling  By default, we print downsampled output to create small action potential\n"
+            "*                    traces, but you can switch this off by calling this option.\n"
             "*\n";
 
     return message;

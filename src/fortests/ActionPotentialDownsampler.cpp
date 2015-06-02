@@ -38,6 +38,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "ActionPotentialDownsampler.hpp"
 #include "OutputFileHandler.hpp"
+#include "CommandLineArguments.hpp"
 #include "Exception.hpp"
 
 ActionPotentialDownsampler::ActionPotentialDownsampler(const std::string& rFoldername,
@@ -64,23 +65,26 @@ ActionPotentialDownsampler::ActionPotentialDownsampler(const std::string& rFolde
         { // Only output the first action potential.
             break;
         }
-        // A new bit of code to downsample the output so flot doesn't timeout loading large datasets
-        // We want to plot the first point, but not necessarily the last if we are repolarized.
-        if (i>0 && (i<rVoltages.size() || rVoltages[i] < -50)) // if we aren't at the beginning or the end of the trace
+        if (!CommandLineArguments::Instance()->OptionExists("--no-downsampling"))
         {
-            if (fabs(rVoltages[i] - last_voltage_printed) < 1.0)
-            {   // Only output a point if the voltage has changed by 1 mV.
-                printed_last = false;
-                continue;
+            // A new bit of code to downsample the output so flot doesn't timeout loading large datasets
+            // We want to plot the first point, but not necessarily the last if we are repolarized.
+            if (i>0 && (i<rVoltages.size() || rVoltages[i] < -50)) // if we aren't at the beginning or the end of the trace
+            {
+                if (fabs(rVoltages[i] - last_voltage_printed) < 1.0)
+                {   // Only output a point if the voltage has changed by 1 mV.
+                    printed_last = false;
+                    continue;
+                }
             }
-        }
-        if(!printed_last) // We want the point before printing too, to avoid large interpolations.
-        {
-            *output_file << rTimes[i-1] - start_time_for_this_pace << "\t" << rVoltages[i-1] << "\n";
+            if(!printed_last) // We want the point before printing too, to avoid large interpolations.
+            {
+                *output_file << rTimes[i-1] - start_time_for_this_pace << "\t" << rVoltages[i-1] << "\n";
+            }
+            printed_last = true;
+            last_voltage_printed = rVoltages[i];
         }
         *output_file << rTimes[i] - start_time_for_this_pace << "\t" << rVoltages[i] << "\n";
-        printed_last = true;
-        last_voltage_printed = rVoltages[i];
     }
     output_file->close();
 }

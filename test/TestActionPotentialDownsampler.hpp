@@ -41,6 +41,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "FileComparison.hpp"
 #include "FileFinder.hpp"
 #include "AbstractDataReader.hpp"
+#include "CommandLineArgumentsMocker.hpp"
 
 class TestActionPotentialDownsampler : public CxxTest::TestSuite
 {
@@ -49,7 +50,6 @@ public:
     {
         std::string output_folder = "TestActionPotentialDownsampler";
         std::string output_filename = "sample_action_potential.txt";
-
 
         std::vector<double> times;
         std::vector<double> voltages;
@@ -93,15 +93,36 @@ public:
         double window = 500; //ms
         double stim_time = 5; //ms
 
-        ActionPotentialDownsampler sampler(output_folder, output_filename, times, voltages, window, stim_time);
+        // Test with downsampling switched on (default)
+        {
+			ActionPotentialDownsampler sampler(output_folder, output_filename, times, voltages, window, stim_time);
 
-        FileFinder generated_file("TestActionPotentialDownsampler/sample_action_potential.txt", RelativeTo::ChasteTestOutput);
-        FileFinder reference_file("projects/ApPredict/test/data/reduced_voltage_trace.dat", RelativeTo::ChasteSourceRoot);
-        TS_ASSERT(generated_file.IsFile());
-        TS_ASSERT(reference_file.IsFile());
+			FileFinder generated_file("TestActionPotentialDownsampler/sample_action_potential.txt", RelativeTo::ChasteTestOutput);
+			FileFinder reference_file("projects/ApPredict/test/data/reduced_voltage_trace.dat", RelativeTo::ChasteSourceRoot);
+			TS_ASSERT(generated_file.IsFile());
+			TS_ASSERT(reference_file.IsFile());
 
-        FileComparison comparer(generated_file,reference_file);
-        TS_ASSERT(comparer.CompareFiles());
+			FileComparison comparer(generated_file,reference_file);
+			TS_ASSERT(comparer.CompareFiles());
+        }
+
+        // Test with downsampling switched off
+        CommandLineArgumentsMocker wrapper("--no-downsampling");
+
+        // These are altered just so we can directly compare with the full_voltage_trace of input data.
+        stim_time = 0; //ms
+        window = 2000; //ms
+        {
+			ActionPotentialDownsampler sampler(output_folder, output_filename, times, voltages, window, stim_time);
+
+			FileFinder generated_file("TestActionPotentialDownsampler/sample_action_potential.txt", RelativeTo::ChasteTestOutput);
+			FileFinder reference_file("projects/ApPredict/test/data/full_voltage_trace.dat", RelativeTo::ChasteSourceRoot);
+			TS_ASSERT(generated_file.IsFile());
+			TS_ASSERT(reference_file.IsFile());
+
+			FileComparison comparer(generated_file,reference_file);
+			TS_ASSERT(comparer.CompareFiles());
+        }
     }
 };
 
