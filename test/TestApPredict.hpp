@@ -42,6 +42,8 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/shared_ptr.hpp>
 #include "CommandLineArgumentsMocker.hpp"
 #include "ApPredictMethods.hpp"
+#include "FileComparison.hpp"
+#include "FileFinder.hpp"
 
 class TestApPredict : public CxxTest::TestSuite
 {
@@ -103,6 +105,41 @@ public:
         }
         ApPredictMethods methods; // No Torsade predictions.
         methods.Run();
+    }
+
+
+    void TestChangingSimulusDuration(void) throw (Exception)
+    {
+        {
+            CommandLineArgumentsMocker wrapper("--model 4 --pacing-freq 1 --plasma-concs 0 --pacing-max-time 0.2 --no-downsampling");
+
+            ApPredictMethods methods;
+
+            methods.Run();
+
+            FileFinder generated_file("ApPredict_output/conc_0_voltage_trace.dat", RelativeTo::ChasteTestOutput);
+            FileFinder reference_file("projects/ApPredict/test/data/hund_rudy_default_stimulus.dat", RelativeTo::ChasteSourceRoot);
+            TS_ASSERT(generated_file.IsFile());
+            TS_ASSERT(reference_file.IsFile());
+
+            FileComparison comparer(generated_file,reference_file);
+            TS_ASSERT(comparer.CompareFiles());
+        }
+       {
+           CommandLineArgumentsMocker wrapper("--model 4 --pacing-freq 1 --plasma-concs 0 --pacing-max-time 0.2 --no-downsampling --pacing-stim-duration 5 --pacing-stim-magnitude -16");
+
+           ApPredictMethods methods;
+
+           methods.Run();
+
+           FileFinder generated_file("ApPredict_output/conc_0_voltage_trace.dat", RelativeTo::ChasteTestOutput);
+           FileFinder reference_file("projects/ApPredict/test/data/hund_rudy_modified_stimulus.dat", RelativeTo::ChasteSourceRoot);
+           TS_ASSERT(generated_file.IsFile());
+           TS_ASSERT(reference_file.IsFile());
+
+           FileComparison comparer(generated_file,reference_file);
+           TS_ASSERT(comparer.CompareFiles());
+       }
     }
 
 };

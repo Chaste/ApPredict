@@ -59,8 +59,9 @@ SetupModel::SetupModel(const double& rHertz,
  : mpHandler(pHandler)
 {
     /// Cvode cells use a CVODE solver regardless of which standard solver is passed in.
-    boost::shared_ptr<AbstractIvpOdeSolver> p_solver;
     boost::shared_ptr<AbstractStimulusFunction> p_stimulus;
+    boost::shared_ptr<AbstractIvpOdeSolver> p_solver;
+
 
     // If modelIndex is specified, then we have to use that, and ignore command line.
     if (modelIndex == UNSIGNED_UNSET && CommandLineArguments::Instance()->OptionExists("--cellml"))
@@ -131,7 +132,7 @@ SetupModel::SetupModel(const double& rHertz,
     {
         boost::shared_ptr<RegularStimulus> p_reg_stim = mpModel->UseCellMLDefaultStimulus();
         s_magnitude = p_reg_stim->GetMagnitude();
-        s_duration = p_reg_stim->GetDuration();
+        s_duration= p_reg_stim->GetDuration();
     }
     else if(mpModel->HasAttribute("SuggestedCycleLength"))
     {
@@ -140,6 +141,17 @@ SetupModel::SetupModel(const double& rHertz,
         s1_period = mpModel->GetAttribute("SuggestedCycleLength");
         //std::cout << "s1 period = " << s1_period << std::endl;
     }
+
+    if (CommandLineArguments::Instance()->OptionExists("--pacing-stim-duration"))
+    {
+        s_duration = CommandLineArguments::Instance()->GetDoubleCorrespondingToOption("--pacing-stim-duration");
+    }
+
+    if (CommandLineArguments::Instance()->OptionExists("--pacing-stim-magnitude"))
+    {
+        s_magnitude = CommandLineArguments::Instance()->GetDoubleCorrespondingToOption("--pacing-stim-magnitude");
+    }
+
 
     // We always use this so graphs look nice.
     double s_start = 1.0;            // ms

@@ -103,10 +103,14 @@ std::string ApPredictMethods::PrintArguments()
 std::string ApPredictMethods::PrintCommonArguments()
 {
     std::string message = "*\n"
-            "* Specifying pacing frequency:\n"
-            "* --pacing-freq       Pacing frequency (Hz) (optional - defaults to 1Hz)\n"
-            "* --pacing-max-time   Maximum time for which to pace the cell model in MINUTES\n"
-            "*                     (optional - defaults to time for 10,000 paces at this frequency)\n" // Set in AbstractSteadyStateRunner constructor!
+            "* Specifying pacing:\n"
+            "* --pacing-freq            Pacing frequency (Hz) (optional - defaults to 1Hz)\n"
+            "* --pacing-max-time        Maximum time for which to pace the cell model in MINUTES\n"
+            "*                          (optional - defaults to time for 10,000 paces at this frequency)\n" // Set in AbstractSteadyStateRunner constructor!
+            "* --pacing-stim-duration   Duration of the square wave stimulus pulse applied (ms)\n"
+            "*                          (optional - defaults to stimulus duration from CellML)\n"
+            "* --pacing-stim-magnitude  Height of the square wave stimulus pulse applied (uA/cm^2)\n"
+            "*                          (optional - defaults to stimulus magnitude from CellML)\n"
             "*\n"
             "* SPECIFYING DRUG PROPERTIES dose-response properties for each channel:\n"
             "* Channels are named:\n"
@@ -117,7 +121,7 @@ std::string ApPredictMethods::PrintCommonArguments()
             "* * ik1 (IK1 current - KCNN4 a.k.a. KCa3.1),\n"
             "* * ito ([fast] Ito current - Kv4.3 + KChIP2.2).\n"
             "*\n"
-            "For each channel you specify dose-response parameters [multiple entries for repeat experiments]\n"
+            "*For each channel you specify dose-response parameters [multiple entries for repeat experiments]\n"
             "*   EITHER with IC50 values (in uM), for example for 'hERG':\n"
             "* --ic50-herg     hERG IC50    (optional - defaults to \"no effect\")\n"
             "*   OR with pIC50 values (in log M):\n"
