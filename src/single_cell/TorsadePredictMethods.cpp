@@ -54,6 +54,8 @@ void TorsadePredictMethods::Run()
 {
     mProgramName = "Torsade PreDiCT";
     mOutputFolder = "TorsadePredict_output";
+    // Make and clean the above directories.
+    mpFileHandler.reset(new OutputFileHandler(mOutputFolder));
 
     SetupModel setup(this->mHertz, 5u); // Hardcoded to Grandi model.
     mpModel = setup.GetModel();

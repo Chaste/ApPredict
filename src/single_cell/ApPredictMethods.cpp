@@ -623,8 +623,11 @@ void ApPredictMethods::Run()
 {
     mProgramName = "Action Potential PreDiCT";
     mOutputFolder = "ApPredict_output/";
+    // Make and clean the above directories.
+    mpFileHandler.reset(new OutputFileHandler(mOutputFolder));
 
-    SetupModel setup(this->mHertz); // This class will get model definition from command line.
+    // This class will get model definition from command line, so we don't pass in model index.
+    SetupModel setup(this->mHertz, UNSIGNED_UNSET, mpFileHandler);
     mpModel = setup.GetModel();
 
     SetUpLookupTables();
@@ -692,14 +695,8 @@ void ApPredictMethods::CommonRunMethod()
     std::string model_name = mpModel->GetSystemName();
     boost::static_pointer_cast<RegularStimulus>(mpModel->GetStimulusFunction())->SetStartTime(5.0);
 
-    // Set up foldernames for each model and protocol set.
-    std::string foldername = mOutputFolder;
-
-    // Make and clean the above directories.
-    mpFileHandler.reset(new OutputFileHandler(foldername));
-
     // Print out a progress file for monitoring purposes.
-    ProgressReporter progress_reporter(foldername, 0.0, (double)(mConcs.size()));
+    ProgressReporter progress_reporter(mOutputFolder, 0.0, (double)(mConcs.size()));
     progress_reporter.PrintInitialising();
 
     // Open files and write headers
@@ -854,7 +851,7 @@ void ApPredictMethods::CommonRunMethod()
         {
         	window *= 2.0;
         }
-        ActionPotentialDownsampler(foldername, filename.str(), solution.rGetTimes(), voltages, window, s_start);
+        ActionPotentialDownsampler(mOutputFolder, filename.str(), solution.rGetTimes(), voltages, window, s_start);
     }// Conc
 
     // Tidy up

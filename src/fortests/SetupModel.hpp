@@ -37,7 +37,9 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define SETUPMODEL_HPP_
 
 #include <boost/shared_ptr.hpp>
+#include <boost/make_shared.hpp>
 
+#include "OutputFileHandler.hpp"
 #include "AbstractCvodeCell.hpp"
 
 /**
@@ -51,6 +53,9 @@ class SetupModel
 private:
     /** Private default constructor to stop this being called and point in the direction of the other constructor */
     SetupModel(){};
+
+    /** OutputFileHander to specify a directory to use when autogenerating CellML */
+    boost::shared_ptr<OutputFileHandler> mpHandler;
 
     /** The cell model (in CVODE format) */
     boost::shared_ptr<AbstractCvodeCell> mpModel;
@@ -69,8 +74,12 @@ public:
      * @param model_index  1 = Shannon, 2=TenTusscher, 3 = Mahajan, 4 = Hund-Rudy, 5 = Grandi,
      *        6 = O'Hara-Rudy, 7 = Paci ventricular
      * @param hertz  The frequency of the regular stimulus that this model should use.
+     * @param pHandler  An optional pointer to use as a working directory when
+     *                  generating code on the fly from CellML (defaults to empty pointer).
      */
-    SetupModel(const double& rHertz, unsigned model_index = UNSIGNED_UNSET);
+    SetupModel(const double& rHertz,
+               unsigned model_index = UNSIGNED_UNSET,
+               boost::shared_ptr<OutputFileHandler> pHandler = boost::shared_ptr<OutputFileHandler>());
 
     /**
      * Print the option and possible arguments that this class takes.
@@ -79,10 +88,11 @@ public:
      */
     static std::string PrintArguments()
     {
-        return "* --model\n"
+        return "* EITHER --model\n"
                "*   options: 1 = Shannon, 2 = TenTusscher (06), 3 = Mahajan,\n"
                "*            4 = Hund-Rudy, 5 = Grandi, 6 = O'Hara-Rudy,\n"
-               "*            7 = Paci (ventricular).\n";
+               "*            7 = Paci (ventricular).\n"
+               "* OR --cellml <file>\n";
     }
 
     /**

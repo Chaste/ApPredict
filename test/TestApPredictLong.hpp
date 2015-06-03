@@ -56,8 +56,19 @@ public:
     void TestSomeFavouriteCompounds(void) throw (Exception)
     {
         // Test a simple hERG block with TT06
+        // loop over hardcoded and dynamically loaded.
+        for (unsigned i=0; i<2; i++)
         {
-            CommandLineArgumentsMocker wrapper("--model 2 --plasma-concs 1 10 --pic50-herg 4.5 --plasma-conc-logscale false");
+            std::string model_option;
+            if (i==0)
+            {
+                model_option = "--model 2";
+            }
+            else
+            {
+                model_option = "--cellml projects/ApPredict/src/cellml/ten_tusscher_model_2006_epi.cellml";
+            }
+            CommandLineArgumentsMocker wrapper(model_option + " --plasma-concs 1 10 --pic50-herg 4.5 --plasma-conc-logscale false");
 
             ApPredictMethods methods;
             methods.Run();
@@ -76,7 +87,6 @@ public:
 
             TS_ASSERT_THROWS_THIS(methods.GetApd90CredibleRegions(),
                 "There was no Lookup Table available for credible interval calculations with these settings.");
-
         }
     }
 
