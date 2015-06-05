@@ -315,6 +315,9 @@ ApPredictMethods::ApPredictMethods()
 
     // Add the fact we're using this code to the citations register
     Citations::Register(TorsadeCitation, &TorsadeCite);
+
+    mProgramName = "Action Potential PreDiCT";
+    mOutputFolder = "ApPredict_output/";
 }
 
 void ApPredictMethods::SetUpLookupTables()
@@ -625,8 +628,7 @@ void ApPredictMethods::InterpolateFromLookupTableForThisConcentration(const unsi
 
 void ApPredictMethods::Run()
 {
-    mProgramName = "Action Potential PreDiCT";
-    mOutputFolder = "ApPredict_output/";
+
     // Make and clean the above directories.
     mpFileHandler.reset(new OutputFileHandler(mOutputFolder));
 
@@ -939,6 +941,11 @@ void ApPredictMethods::ParameterWrapper(boost::shared_ptr<AbstractCvodeCell> pMo
             }
         }
     }
+}
+
+void ApPredictMethods::SetOutputDirectory(const std::string& rOuputDirectory)
+{
+    mOutputFolder = rOuputDirectory;
 }
 
 

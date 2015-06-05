@@ -239,6 +239,13 @@ public:
     virtual void Run();
 
     /**
+     * Set the output directory
+     *
+     * @param rOuputDirectory  The directory to write results to - WILL BE WIPED!
+     */
+    void SetOutputDirectory(const std::string& rOuputDirectory);
+
+    /**
      * This is a helper method to print out the available arguments.
      *
      * @return the arguments this class takes

@@ -48,12 +48,12 @@ std::string TorsadePredictMethods::PrintArguments()
 TorsadePredictMethods::TorsadePredictMethods()
  : ApPredictMethods()
 {
+    mProgramName = "Torsade PreDiCT";
+    mOutputFolder = "TorsadePredict_output";
 }
 
 void TorsadePredictMethods::Run()
 {
-    mProgramName = "Torsade PreDiCT";
-    mOutputFolder = "TorsadePredict_output";
     // Make and clean the above directories.
     mpFileHandler.reset(new OutputFileHandler(mOutputFolder));
 
