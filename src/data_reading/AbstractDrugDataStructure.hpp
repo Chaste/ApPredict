@@ -41,6 +41,8 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /**
  * A class which is designed to read in data on drugs from a text file,
  * subclassed for particular formats.
+ *
+ * This is for any text file with a drug on each line.
  */
 template<unsigned NUM_CHANNELS>
 class AbstractDrugDataStructure : public AbstractDataStructure
