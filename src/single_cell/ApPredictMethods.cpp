@@ -95,7 +95,9 @@ const char TorsadeCitation[] = "@article{mirams2011simulation,\n"
 
 std::string ApPredictMethods::PrintArguments()
 {
-	std::string message = "ApPredict::Please provide these inputs:\n" + SetupModel::PrintArguments();
+	std::string message =
+	        "\n***********************************************************************************************\n"
+	        "* ApPredict::Please provide some of these inputs:\n*\n" + SetupModel::PrintArguments();
 	message += PrintCommonArguments();
 	return message;
 }
@@ -103,7 +105,7 @@ std::string ApPredictMethods::PrintArguments()
 std::string ApPredictMethods::PrintCommonArguments()
 {
     std::string message = "*\n"
-            "* Specifying pacing:\n"
+            "* SPECIFYING PACING:\n"
             "* --pacing-freq            Pacing frequency (Hz) (optional - defaults to 1Hz)\n"
             "* --pacing-max-time        Maximum time for which to pace the cell model in MINUTES\n"
             "*                          (optional - defaults to time for 10,000 paces at this frequency)\n" // Set in AbstractSteadyStateRunner constructor!
@@ -121,7 +123,7 @@ std::string ApPredictMethods::PrintCommonArguments()
             "* * ik1 (IK1 current - KCNN4 a.k.a. KCa3.1),\n"
             "* * ito ([fast] Ito current - Kv4.3 + KChIP2.2).\n"
             "*\n"
-            "*For each channel you specify dose-response parameters [multiple entries for repeat experiments]\n"
+            "* For each channel you specify dose-response parameters [multiple entries for repeat experiments]\n"
             "*   EITHER with IC50 values (in uM), for example for 'hERG':\n"
             "* --ic50-herg     hERG IC50    (optional - defaults to \"no effect\")\n"
             "*   OR with pIC50 values (in log M):\n"
@@ -140,18 +142,19 @@ std::string ApPredictMethods::PrintCommonArguments()
             "*\n"
             "* both ways of specifying test concentrations have the following optional arguments\n"
             "* --plasma-conc-count  Number of intermediate plasma concentrations to test \n"
-            "*                         (optional - defaults to 0 (for --plasma-concs) or 11 (for --plasma-conc-high))\n"
-            "* --plasma-conc-logscale <True/False>  Whether to use a log spacing for the plasma concentrations \n"
+            "*                 (optional - defaults to 0 (for --plasma-concs) or 11 (for --plasma-conc-high))\n"
+            "* --plasma-conc-logscale <True/False> Whether to use log spacing for the plasma concentrations \n"
             "*                         (optional - defaults to True)\n"
             "*\n"
             "* UNCERTAINTY QUANTIFICATION:\n"
-            "* --credible-intervals  This flag must be present.\n"
+            "* --credible-intervals  This flag must be present to do uncertainty calculations.\n"
             "* Then to specify 'spread' parameters for assay variability - for use with Lookup Tables:\n"
             "* --pic50-spread-herg      (for each channel that you are providing ic50/pic50 values for,\n"
             "* --hill-spread-herg        herg is just given as an example)\n"
             "*   (for details of what these spread parameters are see 'sigma' and '1/beta' in Table 1 of:\n"
             "*    Elkins et al. 2013  Journal of Pharmacological and Toxicological \n"
             "*    Methods, 68(1), 112-122. doi: 10.1016/j.vascn.2013.04.007 )\n"
+            "*\n"
             "* OTHER OPTIONS:\n"
             "* --no-downsampling  By default, we print downsampled output to create small action potential\n"
             "*                    traces, but you can switch this off by calling this option.\n"
