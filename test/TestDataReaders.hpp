@@ -80,12 +80,12 @@ public:
 
         TS_ASSERT_EQUALS(drug_data.HasClinicalDoseRange(verapamil), true);
 
-        // We want a "no affect drug" to return DBL_MAX, which the CalculateConductanceFactor() method handles nicely (see below).
+        // We want a "no effect drug" to return DBL_MAX, which the CalculateConductanceFactor() method handles nicely (see below).
         unsigned chlorpromazine = drug_data.GetDrugIndex("Chlorpromazine");
         TS_ASSERT_EQUALS(drug_data.GetDrugName(chlorpromazine),"Chlorpromazine");
         TS_ASSERT_DELTA(drug_data.GetIC50Value(chlorpromazine,1), -2, 1e-9);
 
-        // Check how it deals with a "NA" (No affect) entry - should return DBL_MAX for the IC50.
+        // Check how it deals with a "NA" (No effect) entry - should return DBL_MAX for the IC50.
         // (i.e. a positive value which won't affect conductance so that analysis will run)
         TS_ASSERT_EQUALS(drug_data.GetDrugName(tedisamil), "Tedisamil");
         TS_ASSERT_DELTA(drug_data.GetIC50Value(tedisamil,0), 20000, 1e-9);
@@ -108,8 +108,11 @@ public:
         TS_ASSERT_DELTA(AbstractDataStructure::CalculateConductanceFactor(1.0,1.0,2.0,50), 0.75, 1e-9);
         TS_ASSERT_DELTA(AbstractDataStructure::CalculateConductanceFactor(0.0,1.0,2.0,90), 1.0, 1e-9);
         TS_ASSERT_DELTA(AbstractDataStructure::CalculateConductanceFactor(0.0,1.0,2.0,50), 1.0, 1e-9);
-        TS_ASSERT_DELTA(AbstractDataStructure::CalculateConductanceFactor(DBL_MAX,1.0,2.0,90), 0.1, 1e-9);
+
+        // Saturation level (4th argument)
+        TS_ASSERT_DELTA(AbstractDataStructure::CalculateConductanceFactor(DBL_MAX,1.0,2.0,10), 0.1, 1e-9);
         TS_ASSERT_DELTA(AbstractDataStructure::CalculateConductanceFactor(DBL_MAX,1.0,2.0,50), 0.5, 1e-9);
+        TS_ASSERT_DELTA(AbstractDataStructure::CalculateConductanceFactor(DBL_MAX,1.0,2.0,90), 0.9, 1e-9);
 
         TS_ASSERT_DELTA(AbstractDataStructure::ConvertIc50ToPic50(1000),3, 1e-9);
         TS_ASSERT_DELTA(AbstractDataStructure::ConvertPic50ToIc50(5),10, 1e-9);
@@ -127,6 +130,25 @@ public:
 
         // Zero IC50 implies instantaneous block above here
         TS_ASSERT_DELTA(AbstractDataStructure::CalculateConductanceFactor(0.001,0.0,1.0), 0.0, 1e-9);
+
+        // Check that we get the also right response if we call CalculateConductanceFactor
+        // with positive saturation - for agonists (activators) rather than antagonists (inhibitors).
+
+        // Arguments are concentration, IC50, Hill, Saturation (defaults to 0 (%)).
+        double saturation = 0.0;
+
+        // Check usual inhibitor
+        TS_ASSERT_DELTA(AbstractDataStructure::CalculateConductanceFactor(1.0,1.0,1.0), 0.5, 1e-9);
+        TS_ASSERT_DELTA(AbstractDataStructure::CalculateConductanceFactor(1.0,1.0,1.0,saturation), 0.5, 1e-9);
+
+        // Now do an agonist
+        saturation = 150.0;
+
+        TS_ASSERT_DELTA(AbstractDataStructure::CalculateConductanceFactor(1.0,1.0,1.0,saturation), 1.25, 1e-9);
+
+        saturation = 125.0;
+        TS_ASSERT_DELTA(AbstractDataStructure::CalculateConductanceFactor(1.0,1.0,1.0,saturation), 1.125, 1e-9);
+        TS_ASSERT_DELTA(AbstractDataStructure::CalculateConductanceFactor(DBL_MAX,1.0,1.0,saturation), 1.25, 1e-9);
     }
 };
 

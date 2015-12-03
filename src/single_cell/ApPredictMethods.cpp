@@ -76,8 +76,9 @@ double MedianOfStdVectorDouble(std::vector<double> vec)
     }
 }
 
-/* Main citation */
+/* Citations */
 #include "Citations.hpp"
+
 static PetscBool TorsadeCite = PETSC_FALSE;
 const char TorsadeCitation[] = "@article{mirams2011simulation,\n"
         "  title={Simulation of multiple ion channel block provides improved early "
@@ -90,6 +91,17 @@ const char TorsadeCitation[] = "@article{mirams2011simulation,\n"
         "  pages={53--61},\n"
         "  year={2011},\n"
         "  doi={10.1093/cvr/CVR044},\n"
+        "}\n";
+
+static PetscBool ApPredictCite = PETSC_FALSE;
+const char ApPredictCitation[] = "@article{Williams2015,\n"
+        "  author = {Williams, Geoff and Mirams, Gary R},\n"
+        "  doi = {10.1016/j.vascn.2015.05.002},\n"
+        "  journal = {Journal of pharmacological and toxicological methods},\n"
+        "  pages = {10--6},\n"
+        "  title = {A web portal for in-silico action potential predictions},\n"
+        "  volume = {75},\n"
+        "  year = {2015},\n"
         "}\n";
 
 
@@ -132,6 +144,8 @@ std::string ApPredictMethods::PrintCommonArguments()
             "*     e.g. --ic50-herg 16600 --pic50-na 5.3 )\n"
             "*   AND specify Hill coefficients (dimensionless):\n"
             "* --hill-herg     hERG Hill    (optional - defaults to \"1.0\")\n"
+            "*   AND specify the saturation effect of the drug on peak conductance (%):\n"
+            "* --saturation-herg   saturation level effect of drug (optional - defaults to 0%)\n"
             "*\n"
             "* SPECIFYING CONCENTRATIONS:\n"
             "* --plasma-concs  A list of (space separated) plasma concentrations at which to test (uM)\n"
@@ -163,16 +177,18 @@ std::string ApPredictMethods::PrintCommonArguments()
     return message;
 }
 
-void ApPredictMethods::ReadInIC50AndHill(std::vector<double>& rIc50s,
-                                         std::vector<double>& rHills,
-                                         const unsigned channelIdx)
+void ApPredictMethods::ReadInIC50HillAndSaturation(std::vector<double>& rIc50s,
+                                                   std::vector<double>& rHills,
+                                                   std::vector<double>& rSaturations,
+                                                   const unsigned channelIdx)
 {
     const std::string channel = mShortNames[channelIdx];
-	CommandLineArguments* p_args = CommandLineArguments::Instance();
-	bool read_ic50s = false;
-	bool read_hills = false;
+    CommandLineArguments* p_args = CommandLineArguments::Instance();
+    bool read_ic50s = false;
+    bool read_hills = false;
+    bool read_saturations = false;
 
-	// Try loading any arguments given as IC50s
+    // Try loading any arguments given as IC50s
     if (p_args->OptionExists("--ic50-" + channel))
     {
         rIc50s = p_args->GetDoublesCorrespondingToOption("--ic50-" + channel);
@@ -206,14 +222,35 @@ void ApPredictMethods::ReadInIC50AndHill(std::vector<double>& rIc50s,
         read_hills = true;
     }
 
+    // Try loading any saturations
+    if (p_args->OptionExists("--saturation-" + channel))
+    {
+        rSaturations = p_args->GetDoublesCorrespondingToOption("--saturation-" + channel);
+        // But these must correspond to IC50s.
+        if (!(rSaturations.size()==rIc50s.size()))
+        {
+            EXCEPTION("If you enter Saturation levels, there must be one corresponding to each [p]IC50 measurement.");
+        }
+
+        if (rSaturations.size()>1u)
+        {
+            WARNING("We haven't yet coded up inference with multiple saturation levels, just going to use the median value.");
+        }
+        read_saturations = true;
+    }
+
     // Collect any spread parameter information that has been inputted.
-    if(p_args->OptionExists("--pic50-spread-" + channel))
+    if (p_args->OptionExists("--pic50-spread-" + channel))
     {
         mPic50Spreads[channelIdx] = p_args->GetDoubleCorrespondingToOption("--pic50-spread-" + channel);
     }
-    if(p_args->OptionExists("--hill-spread-" + channel))
+    if (p_args->OptionExists("--hill-spread-" + channel))
     {
         mHillSpreads[channelIdx] = p_args->GetDoubleCorrespondingToOption("--hill-spread-" + channel);
+    }
+    if (p_args->OptionExists("--saturation-spread-" + channel))
+    {
+        EXCEPTION("Haven't yet coded up a method to deal with the spread of values on saturation levels.");
     }
 
     if (mSuppressOutput)
@@ -236,18 +273,30 @@ void ApPredictMethods::ReadInIC50AndHill(std::vector<double>& rIc50s,
             std::cout << "Hills = ";
             for (unsigned i=0; i<rHills.size(); i++)
             {
-                std::cout << rHills[i] << " ";
+                std::cout << rHills[i] << ", ";
             }
-            std::cout << "\n";
         }
         else
         {
-            std::cout << "Hills = 1.0 (default) \n";
+            std::cout << "Hills = 1.0 (default), ";
+        }
+        if (read_saturations)
+        {
+            std::cout << "Saturation levels = ";
+            for (unsigned i=0; i<rSaturations.size(); i++)
+            {
+                std::cout << rSaturations[i] << " ";
+            }
+            std::cout << " %.\n";
+        }
+        else
+        {
+            std::cout << "Saturation level = 0% (default).\n";
         }
     }
     else
     {
-        std::cout << ": no drug affect\n";
+        std::cout << ": no drug effect\n";
     }
 }
 
@@ -256,11 +305,12 @@ void ApPredictMethods::ApplyDrugBlock(boost::shared_ptr<AbstractCvodeCell> pMode
                                       const double default_conductance,
                                       const double concentration,
                                       const double iC50,
-                                      const double hill)
+                                      const double hill,
+                                      const double saturation)
 {
     // Here we calculate the proportion of the different channels which are still active
     // (at this concentration of this drug)
-    const double conductance_factor = AbstractDataStructure::CalculateConductanceFactor(concentration, iC50,  hill);
+    const double conductance_factor = AbstractDataStructure::CalculateConductanceFactor(concentration, iC50,  hill, saturation);
 
     // Some screen output for info.
     if (!mSuppressOutput) std::cout << "g_" << mShortNames[channel_index] <<  " factor = " << conductance_factor << "\n";// << std::flush;
@@ -318,6 +368,7 @@ ApPredictMethods::ApPredictMethods()
 
     // Add the fact we're using this code to the citations register
     Citations::Register(TorsadeCitation, &TorsadeCite);
+    Citations::Register(ApPredictCitation, &ApPredictCite);
 
     mProgramName = "Action Potential PreDiCT";
     mOutputFolder = "ApPredict_output/";
@@ -448,112 +499,115 @@ void ApPredictMethods::SetUpLookupTables()
 void ApPredictMethods::CalculateDoseResponseParameterSamples(const std::vector<std::vector<double> >& rIC50s,
                                                              const std::vector<std::vector<double> >& rHills)
 {
-    if (mLookupTableAvailable)
+    if (!mLookupTableAvailable)
     {
-        /*
-         * Prepare an inferred set of IC50s and Hill coefficients
-         * for use with the Lookup Table and credible interval calculations.
-         */
-        mSampledIc50s.resize(mMetadataNames.size());
-        mSampledHills.resize(mMetadataNames.size());
+        return;
+    }
 
-        const unsigned num_samples = 1000u;
+    /*
+     * Prepare an inferred set of IC50s and Hill coefficients
+     * for use with the Lookup Table and credible interval calculations.
+     */
+    mSampledIc50s.resize(mMetadataNames.size());
+    mSampledHills.resize(mMetadataNames.size());
 
-        // Work out vectors of inferred IC50 and Hills
-        // Apply drug block on each channel
-        for (unsigned channel_idx = 0 ; channel_idx<mMetadataNames.size(); channel_idx++)
+    const unsigned num_samples = 1000u;
+
+    // Work out vectors of inferred IC50 and Hills
+    // Apply drug block on each channel
+    for (unsigned channel_idx = 0 ; channel_idx<mMetadataNames.size(); channel_idx++)
+    {
+        // First just decide whether there is 'no effect here'.
+        assert(rIC50s[channel_idx].size()>=1u);
+        if (rIC50s[channel_idx].size()==1 && rIC50s[channel_idx][0]==-1)
         {
-            // First just decide whether there is 'no effect here'.
-            assert(rIC50s[channel_idx].size()>=1u);
-            if (rIC50s[channel_idx].size()==1 && rIC50s[channel_idx][0]==-1)
-            {
-                // No effect here, so just map that out to all random runs
-                for (unsigned i=0; i<num_samples; i++)
-                {
-                    mSampledIc50s[channel_idx].push_back(-1.0);
-                    mSampledHills[channel_idx].push_back(-1.0);
-                }
-                // To next channel
-                continue;
-            }
-
-            // Convert data to pIC50s
-            std::vector<double> pIC50s;
-            for (unsigned i=0; i<rIC50s[channel_idx].size(); i++)
-            {
-                pIC50s.push_back(AbstractDataStructure::ConvertIc50ToPic50(rIC50s[channel_idx][i]));
-            }
-
-            // Retrieve the Pic50 spread from the command line arguments.
-            if (mPic50Spreads[channel_idx] == DOUBLE_UNSET)
-            {
-                EXCEPTION("No argument --pic50-spread-" << mShortNames[channel_idx] << " has been provided. Cannot calculate credible intervals without this.");
-            }
-
-            // Infer pIC50 spread.
-            BayesianInferer ic50_inferer(PIC50);
-            ic50_inferer.SetObservedData(pIC50s);
-            ic50_inferer.SetSpreadOfUnderlyingDistribution(mPic50Spreads[channel_idx]);
-            ic50_inferer.PerformInference();
-
-            std::vector<double> inferred_pic50s = ic50_inferer.GetSampleMedianValue(num_samples); // Get 1000 inferred pIC50s
+            // No effect here, so just map that out to all random runs
             for (unsigned i=0; i<num_samples; i++)
             {
-                // Convert pIC50 back to IC50 and store it.
-                mSampledIc50s[channel_idx].push_back(AbstractDataStructure::ConvertPic50ToIc50(inferred_pic50s[i]));
+                mSampledIc50s[channel_idx].push_back(-1.0);
+                mSampledHills[channel_idx].push_back(-1.0);
+            }
+            // To next channel
+            continue;
+        }
+
+        // Convert data to pIC50s
+        std::vector<double> pIC50s;
+        for (unsigned i=0; i<rIC50s[channel_idx].size(); i++)
+        {
+            pIC50s.push_back(AbstractDataStructure::ConvertIc50ToPic50(rIC50s[channel_idx][i]));
+        }
+
+        // Retrieve the Pic50 spread from the command line arguments.
+        if (mPic50Spreads[channel_idx] == DOUBLE_UNSET)
+        {
+            EXCEPTION("No argument --pic50-spread-" << mShortNames[channel_idx] << " has been provided. Cannot calculate credible intervals without this.");
+        }
+
+        // Infer pIC50 spread.
+        BayesianInferer ic50_inferer(PIC50);
+        ic50_inferer.SetObservedData(pIC50s);
+        ic50_inferer.SetSpreadOfUnderlyingDistribution(mPic50Spreads[channel_idx]);
+        ic50_inferer.PerformInference();
+
+        std::vector<double> inferred_pic50s = ic50_inferer.GetSampleMedianValue(num_samples); // Get 1000 inferred pIC50s
+        for (unsigned i=0; i<num_samples; i++)
+        {
+            // Convert pIC50 back to IC50 and store it.
+            mSampledIc50s[channel_idx].push_back(AbstractDataStructure::ConvertPic50ToIc50(inferred_pic50s[i]));
+        }
+
+        // If all Hill coefficient entries are positive, then we will use those for samples too.
+        // This long-winded bit of code is just counting how many are positive (must be a better way!).
+        bool all_hills_positive = false;
+        unsigned temp_counter = 0u;
+        for (unsigned i=0; i<rHills[channel_idx].size(); i++)
+        {
+            if (rHills[channel_idx][i] > 0.0)
+            {
+                temp_counter++;
+            }
+        }
+        if (temp_counter == rHills[channel_idx].size())
+        {
+            all_hills_positive = true;
+        }
+
+        if (all_hills_positive)
+        {
+            // Retrieve Hill spread parameters from stored Command line args.
+            if (mHillSpreads[channel_idx] == DOUBLE_UNSET)
+            {
+                EXCEPTION("No argument --hill-spread-" << mShortNames[channel_idx] << " has been provided. Cannot calculate credible intervals without this.");
             }
 
+            // Infer Hill spread.
+            BayesianInferer hill_inferer(HILL);
+            hill_inferer.SetObservedData(rHills[channel_idx]);
+            // This works with the Beta parameter, not the 1/Beta. So do 1/1/Beta to get Beta back!
+            hill_inferer.SetSpreadOfUnderlyingDistribution(1.0/mHillSpreads[channel_idx]);
+            hill_inferer.PerformInference();
 
-            // If all Hill coefficient entries are positive, then we will use those for samples too.
-            // This long-winded bit of code is just counting how many are positive (must be a better way!).
-            bool all_hills_positive = false;
-            unsigned temp_counter = 0u;
-            for (unsigned i=0; i<rHills[channel_idx].size(); i++)
+            mSampledHills[channel_idx] = hill_inferer.GetSampleMedianValue(num_samples); // Get 1000 inferred Hills
+        }
+        else
+        {
+            // There have been not enough 'real' Hill coefficients specified,
+            // so assume they are all missing (otherwise inference would go mad
+            // with some positive and some negative).
+            for (unsigned i=0; i<num_samples; i++)
             {
-                if (rHills[channel_idx][i] > 0.0)
-                {
-                    temp_counter++;
-                }
-            }
-            if (temp_counter == rHills[channel_idx].size())
-            {
-                all_hills_positive = true;
-            }
-
-            if (all_hills_positive)
-            {
-                // Retrieve Hill spread parameters from stored Command line args.
-                if (mHillSpreads[channel_idx] == DOUBLE_UNSET)
-                {
-                    EXCEPTION("No argument --hill-spread-" << mShortNames[channel_idx] << " has been provided. Cannot calculate credible intervals without this.");
-                }
-
-                // Infer Hill spread.
-                BayesianInferer hill_inferer(HILL);
-                hill_inferer.SetObservedData(rHills[channel_idx]);
-                // This works with the Beta parameter, not the 1/Beta. So do 1/1/Beta to get Beta back!
-                hill_inferer.SetSpreadOfUnderlyingDistribution(1.0/mHillSpreads[channel_idx]);
-                hill_inferer.PerformInference();
-
-                mSampledHills[channel_idx] = hill_inferer.GetSampleMedianValue(num_samples); // Get 1000 inferred Hills
-            }
-            else
-            {
-                // There have been not enough 'real' Hill coefficients specified,
-                // so assume they are all missing (otherwise inference would go mad
-                // with some positive and some negative).
-                for (unsigned i=0; i<num_samples; i++)
-                {
-                    // We aren't going to attempt to do inference on Hills,
-                    // just push back 'no measurement' for now.
-                    mSampledHills[channel_idx].push_back(-1.0);
-                }
+                // We aren't going to attempt to do inference on Hills,
+                // just push back 'no measurement' for now.
+                mSampledHills[channel_idx].push_back(-1.0);
             }
         }
     }
+
 }
 
-void ApPredictMethods::InterpolateFromLookupTableForThisConcentration(const unsigned conc_index)
+void ApPredictMethods::InterpolateFromLookupTableForThisConcentration(const unsigned concIndex,
+                                                                      const std::vector<double>& rMedianSaturationLevels)
 {
     // If we don't have a lookup table, we aren't going to do confidence intervals.
     if (!mLookupTableAvailable)
@@ -566,11 +620,11 @@ void ApPredictMethods::InterpolateFromLookupTableForThisConcentration(const unsi
     // If this is the first concentration (control) say the percent change must be zero
     // or otherwise a small interpolation error will result
     // (from potentially running to different steady state with --pacing-max-time <x> ).
-    if (conc_index==0u)
+    if (concIndex==0u)
     {
-        credible_interval.first = mApd90s[conc_index];
-        credible_interval.second = mApd90s[conc_index];
-        mApd90CredibleRegions[conc_index] = credible_interval;
+        credible_interval.first = mApd90s[concIndex];
+        credible_interval.second = mApd90s[concIndex];
+        mApd90CredibleRegions[concIndex] = credible_interval;
         return;
     }
 
@@ -586,21 +640,25 @@ void ApPredictMethods::InterpolateFromLookupTableForThisConcentration(const unsi
         c_vector<double,TABLE_DIM> sample_required_at;
 
         // IKr
-        sample_required_at[0] = AbstractDataStructure::CalculateConductanceFactor(mConcs[conc_index],
+        sample_required_at[0] = AbstractDataStructure::CalculateConductanceFactor(mConcs[concIndex],
                                                                                   mSampledIc50s[2][rand_idx],
-                                                                                  mSampledHills[2][rand_idx]);
+                                                                                  mSampledHills[2][rand_idx],
+                                                                                  rMedianSaturationLevels[2]);
         // IKs
-        sample_required_at[1] = AbstractDataStructure::CalculateConductanceFactor(mConcs[conc_index],
+        sample_required_at[1] = AbstractDataStructure::CalculateConductanceFactor(mConcs[concIndex],
                                                                                   mSampledIc50s[3][rand_idx],
-                                                                                  mSampledHills[3][rand_idx]);
+                                                                                  mSampledHills[3][rand_idx],
+                                                                                  rMedianSaturationLevels[3]);
         // INa
-        sample_required_at[2] = AbstractDataStructure::CalculateConductanceFactor(mConcs[conc_index],
+        sample_required_at[2] = AbstractDataStructure::CalculateConductanceFactor(mConcs[concIndex],
                                                                                   mSampledIc50s[0][rand_idx],
-                                                                                  mSampledHills[0][rand_idx]);
+                                                                                  mSampledHills[0][rand_idx],
+                                                                                  rMedianSaturationLevels[0]);
         // ICaL
-        sample_required_at[3] = AbstractDataStructure::CalculateConductanceFactor(mConcs[conc_index],
+        sample_required_at[3] = AbstractDataStructure::CalculateConductanceFactor(mConcs[concIndex],
                                                                                   mSampledIc50s[1][rand_idx],
-                                                                                  mSampledHills[1][rand_idx]);
+                                                                                  mSampledHills[1][rand_idx],
+                                                                                  rMedianSaturationLevels[1]);
         sampling_points.push_back(sample_required_at);
     }
 
@@ -625,7 +683,7 @@ void ApPredictMethods::InterpolateFromLookupTableForThisConcentration(const unsi
     credible_interval.first = apd_90_predictions[floor(tails*(double)(num_samples))];
     credible_interval.second = apd_90_predictions[ceil((1-tails)*(double)(num_samples))];
 
-    mApd90CredibleRegions[conc_index] = credible_interval;
+    mApd90CredibleRegions[concIndex] = credible_interval;
     std::cout << "done.\n";
 }
 
@@ -649,6 +707,7 @@ void ApPredictMethods::CommonRunMethod()
     // Arguments that take default values
     std::vector<std::vector<double> > IC50s;
     std::vector<std::vector<double> > hills;
+    std::vector<std::vector<double> > saturations;
 
     std::vector<double> unset;
     unset.push_back(-1); // -1 is our code for 'unset'.
@@ -658,6 +717,7 @@ void ApPredictMethods::CommonRunMethod()
     {
         IC50s.push_back(unset);
         hills.push_back(unset);
+        saturations.push_back(unset);
     }
 
     // Dose calculator asks for some arguments to do with plasma concentrations.
@@ -673,7 +733,10 @@ void ApPredictMethods::CommonRunMethod()
     // Note this is now in micro Molar (1x10^-6 Molar) as per most Pharma use.
     for (unsigned channel_idx=0; channel_idx<mMetadataNames.size(); channel_idx++)
     {
-        ReadInIC50AndHill(IC50s[channel_idx], hills[channel_idx], channel_idx);
+        ReadInIC50HillAndSaturation(IC50s[channel_idx],
+                                    hills[channel_idx],
+                                    saturations[channel_idx],
+                                    channel_idx);
     }
 
     if (!mSuppressOutput)
@@ -729,10 +792,11 @@ void ApPredictMethods::CommonRunMethod()
     *steady_voltage_results_file_html << "<tr><td>Concentration (uM)</td><td>Upstroke Velocity (mV/ms)</td><td>Peak membrane voltage (mV)</td><td>APD50 (ms)</td><td>APD90 (ms)</td><td>Change in APD90 (%)</td></tr>\n"; // Header line
 
     /*
-     * Work out the median IC50 and Hill to use if more than one were provided
+     * Work out the median IC50, Hill and saturation to use if more than one were provided
      */
-    std::vector<double> median_ic50; // vector is over channel indices
-    std::vector<double> median_hill; //               " "
+    std::vector<double> median_ic50;        // vector is over channel indices
+    std::vector<double> median_hill;        //               ""
+    std::vector<double> median_saturation;  //               ""
     for (unsigned channel_idx = 0 ; channel_idx<mMetadataNames.size(); channel_idx++)
     {
         // If we only have one IC50 and Hill value specified, then just use them and move on.
@@ -740,18 +804,22 @@ void ApPredictMethods::CommonRunMethod()
         {
             median_ic50.push_back(IC50s[channel_idx][0]);
             median_hill.push_back(hills[channel_idx][0]);
+            median_saturation.push_back(saturations[channel_idx][0]);
         }
         else
         {
             // Otherwise we have two scenarios
             // 1. We know something about the spread and should take the median of the inferred distribution samples
             //    This should ensure that the predicted line is at the 50th percentile of the credible interval predictions.
-            // 2. We know nothing about the spread, and should just take the mean of the multiple values.
+            // 2. We know nothing about the spread, and should just take the median of the multiple values.
             if (mLookupTableAvailable)
             {
-                // Work out the mean inferred IC50 and hill from the multiple values dataset, and do the simulation with those.
+                // Work out the median inferred IC50 and hill from the multiple values dataset, and do the simulation with those.
                 median_ic50.push_back(MedianOfStdVectorDouble(mSampledIc50s[channel_idx]));
                 median_hill.push_back(MedianOfStdVectorDouble(mSampledHills[channel_idx]));
+
+                // TODO: Clever way to do inference on saturation levels too. No data analysed to work out
+                // their distributions yet, so we'll just use the median for now as below.
             }
             else
             {
@@ -765,6 +833,9 @@ void ApPredictMethods::CommonRunMethod()
                 median_ic50.push_back(AbstractDataStructure::ConvertPic50ToIc50(MedianOfStdVectorDouble(pIC50s)));
                 median_hill.push_back(MedianOfStdVectorDouble(hills[channel_idx]));
             }
+
+            // We've no clever way of dealing with this yet, just take median of saturation levels and use that all the time.
+            median_saturation.push_back(MedianOfStdVectorDouble(saturations[channel_idx]));
         }
     }
 
@@ -781,8 +852,13 @@ void ApPredictMethods::CommonRunMethod()
         // Apply drug block on each channel
         for (unsigned channel_idx = 0 ; channel_idx<mMetadataNames.size(); channel_idx++)
         {
-            ApplyDrugBlock(mpModel, channel_idx, default_conductances[channel_idx],
-                           mConcs[conc_index], median_ic50[channel_idx], median_hill[channel_idx]);
+            ApplyDrugBlock(mpModel,
+                           channel_idx,
+                           default_conductances[channel_idx],
+                           mConcs[conc_index],
+                           median_ic50[channel_idx],
+                           median_hill[channel_idx],
+                           median_saturation[channel_idx]);
         }
 
         double apd90, apd50, upstroke, peak;
@@ -791,7 +867,7 @@ void ApPredictMethods::CommonRunMethod()
         // Store some things as member variables for returning later (mainly for testing)
         mApd90s.push_back(apd90); // This is used by TorsadePredict and following method for control.
 
-        InterpolateFromLookupTableForThisConcentration(conc_index);
+        InterpolateFromLookupTableForThisConcentration(conc_index, median_saturation);
 
         if (!DidErrorOccur())
         {

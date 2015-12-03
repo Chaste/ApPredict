@@ -109,7 +109,10 @@ public:
     double GetHillCoefficient(unsigned drugIndex, unsigned channelIndex);
 
     /**
-     * Return the saturation levels associates with this channel's dose-response curve
+     * Return the saturation levels associates with this channel's dose-response curve.
+     * Defined relative to 100% - no drug effect. So a value of zero is a drug which can
+     * fully block a channel (usually the default),
+     * and a value of 150% could activate the channel by an extra 50%.
      *
      * @param drugIndex  The index of the drug (in drug_data.dat file)
      * @param channelIndex  The index of the channel we are interested in.

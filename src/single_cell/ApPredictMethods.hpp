@@ -73,13 +73,15 @@ private:
      * @param concentration  The current drug concentration.
      * @param iC50  The IC50 for this channel.
      * @param hill  The Hill for this channel.
+     * @param saturation  The saturation level for this channel and drug (e.g. 0% = full block, 150% = 50% activator).
      */
     void ApplyDrugBlock(boost::shared_ptr<AbstractCvodeCell> pModel,
                         unsigned channel_index,
                         const double default_conductance,
                         const double concentration,
                         const double iC50,
-                        const double hill);
+                        const double hill,
+                        const double saturation);
 
     /**
      * Takes the inputted IC50 and Hill coefficients
@@ -101,9 +103,11 @@ private:
      * to generate a probability distribution of APD90 predictions. This is then
      * stored in mAllApd90s, and mApd90CredibleRegions is populated.
      *
-     * @param conc_index  The index of the concentration (in mConcs).
+     * @param concIndex  The index of the concentration (in mConcs).
+     * @param rMedianSaturationLevels  The saturation levels for each channel to assume in all samples.
      */
-    void InterpolateFromLookupTableForThisConcentration(const unsigned conc_index);
+    void InterpolateFromLookupTableForThisConcentration(const unsigned concIndex,
+                                                        const std::vector<double>& rMedianSaturationLevels);
 
     /** The Oxford metadata names of the conductances we may modify with this class */
     std::vector<std::string> mMetadataNames;
@@ -177,11 +181,13 @@ protected:
      * @param rIc50  default IC50 values (usually -1), overwritten if argument is present to a value
      *               (assumed to be in uM).
      * @param rHill  default Hill coefficients (usually -1), overwritten if argument is present.
+     * @param rSaturation  default saturation levels (usually -1), overwritten if argument is present.
      * @param channelIdx  The index of the channel in mMetadataNames.
      */
-    void ReadInIC50AndHill(std::vector<double>& rIc50,
-                           std::vector<double>& rHill,
-                           const unsigned channelIdx);
+    void ReadInIC50HillAndSaturation(std::vector<double>& rIc50,
+                                     std::vector<double>& rHill,
+                                     std::vector<double>& rSaturation,
+                                     const unsigned channelIdx);
 
     /**
      * Write a log message to the messages.txt file that should be displayed alongside the results

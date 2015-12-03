@@ -77,8 +77,8 @@ double AbstractDrugDataStructure<NUM_CHANNELS>::GetIC50Value(unsigned drugIndex,
 
     /**
      * If an IC50 value takes the value
-     *  -1 in the data file that means "affect unknown" - we return a negative IC50 (-1) to show this
-     *  -2 in the data file means "known to have no affect" - we return (-2) so that we know to apply no channel block.
+     *  -1 in the data file that means "effect unknown" - we return a negative IC50 (-1) to show this
+     *  -2 in the data file means "known to have no effect" - we return (-2) so that we know to apply no channel block.
      */
 
     return ic50;
@@ -105,8 +105,8 @@ double AbstractDrugDataStructure<NUM_CHANNELS>::GetSaturationLevel(unsigned drug
     double sat = mSaturationLevels[drugIndex](channelIndex);
 
     if (sat < 0)
-    {   // Should default to 100
-        sat = 100.0;
+    {   // Should default to 0%
+        sat = 0.0;
     }
     return sat;
 }

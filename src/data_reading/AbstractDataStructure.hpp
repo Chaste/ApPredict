@@ -95,19 +95,28 @@ public:
      * @param rConc  concentration of the drug.
      * @param rIC50  IC50 value for this drug and channel (note if saturation is less than 100 this parameter is not IC50, but 50% of max  response)
      * @param hill  Hill coefficient for this drug dependent inactivation curve (defaults to 1).
-     * @param saturation  The saturation level for this drug (defaults to 100).
+     * @param saturation  The saturation level for this drug (defaults to 0), relative to unchanged channel conductance at 100%.
      *
      * @return proportion of channels which are still active at this drug concentration
      */
-    static double CalculateConductanceFactor(const double& rConc, const double& rIC50, double hill = 1.0, double saturation = 100)
+    static double CalculateConductanceFactor(const double& rConc,
+                                             const double& rIC50,
+                                             double hill = 1.0,
+                                             double saturation = 0)
     {
+        if (saturation < 0)
+        {
+            // default is a full inhibitor - saturates at zero conductance.
+            saturation = 0.0;
+        }
+
         // To avoid divide-by-zero style stuff, if there is no drug, conductance must be unchanged.
         if (rConc==0)
         {
             return 1.0;
         }
 
-        if (rIC50 < 0) // missing information ('-1'), or known-to-be-no-affect ('-2'), do not alter conductance.
+        if (rIC50 < 0) // missing information ('-1'), or known-to-be-no-effect ('-2'), do not alter conductance.
         {
             return 1.0;
         }
@@ -118,7 +127,7 @@ public:
             hill = 1.0;
         }
 
-        return 1.0 - (saturation/100.0)*(1.0 - 1.0/(1.0 + pow((rConc/rIC50), hill)));
+        return 1.0 - ((100.0-saturation)/100.0)*(1.0 - 1.0/(1.0 + pow((rConc/rIC50), hill)));
     }
 
     /**
