@@ -165,7 +165,7 @@ std::vector<double> DoseCalculator::GetEquallySpacedBetween(double low, double h
 std::vector<double> DoseCalculator::GetConcentrations(void)
 {
 	std::vector<double> concs;
-    double control_for_logscale = 1e-3;
+    const double control_for_logscale = 1e-3;
 
 	if (mUseSpecifiedConcs)
 	{   // The exact concentrations to test have been input
