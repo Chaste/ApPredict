@@ -45,6 +45,8 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /**
  * A class which is designed to read in data from a text file, subclassed for particular formats.
+ *
+ * Also provides some helper methods for calculating conductance block and converting from pIC50 to IC50s.
  */
 class AbstractDataStructure
 {

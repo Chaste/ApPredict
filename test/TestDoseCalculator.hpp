@@ -38,8 +38,8 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <cxxtest/TestSuite.h>
 
+#include "CommandLineArgumentsMocker.hpp"
 #include "DoseCalculator.hpp"
-
 
 class TestDoseCalculator : public CxxTest::TestSuite
 {
@@ -336,6 +336,13 @@ public:
         TS_ASSERT_DELTA(result_concs[3], 0.0002,      1e-6);
     }
 
+    // Same as above, but only the top dose is specified.
+    void TestForAReallySmallTopDose(void) throw(Exception)
+    {
+        CommandLineArgumentsMocker cmd_line("--plasma-conc-high 0.0008");
+        DoseCalculator dose_calculator;
+        dose_calculator.GetConcentrations();
+    }
 };
 
 #endif // _TESTDOSECALCULATOR_HPP_
