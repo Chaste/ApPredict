@@ -72,8 +72,8 @@ protected:
     /**
      * Read a header line if present.
      *
-     * If not implemented this class doesn't touch the line, and returns false.
-     * Subclasses should implement the line loading and return true.
+     * If not implemented this class doesn't touch the line, and returns false (no header is considered present)
+     * Subclasses with a header line should implement the line loading and return true.
      */
     virtual bool LoadHeaderLine(std::stringstream& rLine);
 

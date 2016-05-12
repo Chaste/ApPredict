@@ -62,7 +62,7 @@ void AbstractDataStructure::LoadDataFromFile(const std::string& rFileName, unsig
            }
            else
            {
-               EXCEPTION("No data found on this line");
+               EXCEPTION("No data found on line " << num_lines_read);
            }
        }
        std::stringstream line(this_line);

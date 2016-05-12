@@ -130,6 +130,7 @@ std::string ApPredictMethods::PrintCommonArguments()
             "* Channels are named:\n"
             "* * herg (IKr current - hERG),\n"
             "* * na (fast sodium current - NaV1.5),\n"
+            "* * nal (late/persistent sodium current - NaV1.5 (perhaps!)),\n"
             "* * cal (L-type calcium current- CaV1.2),\n"
             "* * iks (IKs current - KCNQ1 + MinK),\n"
             "* * ik1 (IK1 current - KCNN4 a.k.a. KCa3.1),\n"
@@ -341,6 +342,9 @@ ApPredictMethods::ApPredictMethods()
     mMetadataNames.push_back("membrane_fast_sodium_current_conductance");
     mShortNames.push_back("na");
 
+    mMetadataNames.push_back("membrane_persistent_sodium_current_conductance");
+    mShortNames.push_back("nal");
+
     mMetadataNames.push_back("membrane_L_type_calcium_current_conductance");
     mShortNames.push_back("cal");
 
@@ -389,7 +393,9 @@ void ApPredictMethods::SetUpLookupTables()
     if (p_args->OptionExists("--ic50-ik1")  ||
         p_args->OptionExists("--pic50-ik1") ||
         p_args->OptionExists("--ic50-ito")  ||
-        p_args->OptionExists("--pic50-ito") )
+        p_args->OptionExists("--pic50-ito") ||
+        p_args->OptionExists("--ic50-nal")  ||
+        p_args->OptionExists("--pic50-nal"))
     {
         EXCEPTION("Lookup table (for --credible-intervals) is currently only including IKr, IKs, INa and ICaL block, you have specified additional ones so quitting.");
     }
@@ -814,7 +820,9 @@ void ApPredictMethods::CommonRunMethod()
             // 2. We know nothing about the spread, and should just take the median of the multiple values.
             if (mLookupTableAvailable)
             {
-                // Work out the median inferred IC50 and hill from the multiple values dataset, and do the simulation with those.
+                // Work out the median inferred IC50 and hill from the multiple values dataset,
+                // and do the simulation with those. Note that the median will give the same value
+                // whether we use IC50s or pIC50s, whereas the mean is skewed...
                 median_ic50.push_back(MedianOfStdVectorDouble(mSampledIc50s[channel_idx]));
                 median_hill.push_back(MedianOfStdVectorDouble(mSampledHills[channel_idx]));
 
