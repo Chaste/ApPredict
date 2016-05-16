@@ -339,11 +339,10 @@ ApPredictMethods::ApPredictMethods()
      mComplete(false)
 {
     // Here we list the possible drug blocks that can be applied with ApPredict
+    // The order of these should not be changed (additional ones can go on the end)
+    // as they are hardcoded in some of the LookupTable stuff...
     mMetadataNames.push_back("membrane_fast_sodium_current_conductance");
     mShortNames.push_back("na");
-
-    mMetadataNames.push_back("membrane_persistent_sodium_current_conductance");
-    mShortNames.push_back("nal");
 
     mMetadataNames.push_back("membrane_L_type_calcium_current_conductance");
     mShortNames.push_back("cal");
@@ -359,6 +358,9 @@ ApPredictMethods::ApPredictMethods()
 
     mMetadataNames.push_back("membrane_fast_transient_outward_current_conductance");
     mShortNames.push_back("ito");
+
+    mMetadataNames.push_back("membrane_persistent_sodium_current_conductance");
+    mShortNames.push_back("nal");
 
     // We'll use DOUBLE_UNSET to start with for these spread parameters.
     for (unsigned i=0; i<6u; i++)
