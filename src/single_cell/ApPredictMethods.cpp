@@ -339,8 +339,6 @@ ApPredictMethods::ApPredictMethods()
      mComplete(false)
 {
     // Here we list the possible drug blocks that can be applied with ApPredict
-    // The order of these should not be changed (additional ones can go on the end)
-    // as they are hardcoded in some of the LookupTable stuff...
     mMetadataNames.push_back("membrane_fast_sodium_current_conductance");
     mShortNames.push_back("na");
 
@@ -639,34 +637,43 @@ void ApPredictMethods::InterpolateFromLookupTableForThisConcentration(const unsi
     // The first channel entry in mSampledIc50s will give us the number of random samples.
     const unsigned num_samples = mSampledIc50s[0].size();
 
+    // In the lookup table the order of parameters is given in the filename:
+    // "4d_hERG_IKs_INa_ICaL_generator.arch"
+    std::vector<std::string> required_channels(TABLE_DIM);
+    required_channels[0] = "herg";
+    required_channels[1] = "iks";
+    required_channels[2] = "na";
+    required_channels[3] = "cal";
+
+    // This slightly complicated loop is just seeing which entry in mSampledIC50/Hills corresponds
+    // to the ones that we want, so we've listed the ones we want above and search for them in
+    // mShortNames here.
+    std::map<unsigned, unsigned> map_to_metadata_idx;
+    for (unsigned channel_idx = 0; channel_idx<TABLE_DIM; channel_idx++)
+    {
+        for (unsigned i=0; i<mShortNames.size(); i++)
+        {
+            if (mShortNames[i]==required_channels[channel_idx])
+            {
+                map_to_metadata_idx[channel_idx] = i;
+                break;
+            }
+        }
+    }
+    assert(map_to_metadata_idx.size() == TABLE_DIM);
+
     std::cout << "Calculating confidence intervals from Lookup Table...";
     std::vector<c_vector<double,4u> > sampling_points;
     for (unsigned rand_idx=0; rand_idx<num_samples; rand_idx++)
     {
-        // In the lookup table the order of parameters is given in the filename:
-        // "4d_hERG_IKs_INa_ICaL_generator.arch"
         c_vector<double,TABLE_DIM> sample_required_at;
-
-        // IKr
-        sample_required_at[0] = AbstractDataStructure::CalculateConductanceFactor(mConcs[concIndex],
-                                                                                  mSampledIc50s[2][rand_idx],
-                                                                                  mSampledHills[2][rand_idx],
-                                                                                  rMedianSaturationLevels[2]);
-        // IKs
-        sample_required_at[1] = AbstractDataStructure::CalculateConductanceFactor(mConcs[concIndex],
-                                                                                  mSampledIc50s[3][rand_idx],
-                                                                                  mSampledHills[3][rand_idx],
-                                                                                  rMedianSaturationLevels[3]);
-        // INa
-        sample_required_at[2] = AbstractDataStructure::CalculateConductanceFactor(mConcs[concIndex],
-                                                                                  mSampledIc50s[0][rand_idx],
-                                                                                  mSampledHills[0][rand_idx],
-                                                                                  rMedianSaturationLevels[0]);
-        // ICaL
-        sample_required_at[3] = AbstractDataStructure::CalculateConductanceFactor(mConcs[concIndex],
-                                                                                  mSampledIc50s[1][rand_idx],
-                                                                                  mSampledHills[1][rand_idx],
-                                                                                  rMedianSaturationLevels[1]);
+        for (unsigned i=0; i<TABLE_DIM; i++)
+        {
+            sample_required_at[i] = AbstractDataStructure::CalculateConductanceFactor(mConcs[concIndex],
+                                            mSampledIc50s[map_to_metadata_idx[i]][rand_idx],
+                                            mSampledHills[map_to_metadata_idx[i]][rand_idx],
+                                            rMedianSaturationLevels[map_to_metadata_idx[i]]);
+        }
         sampling_points.push_back(sample_required_at);
     }
 
@@ -674,7 +681,7 @@ void ApPredictMethods::InterpolateFromLookupTableForThisConcentration(const unsi
     assert(predictions.size()==mSampledIc50s[0].size());
 
     /*
-     * Compile all the lookup table predictions into a vector that we can sort.
+     * Compile all the lookup table predictions into a vector that we can sort to get percentiles.
      */
     //std::vector<double> apd_50_predictions;
     std::vector<double> apd_90_predictions;
