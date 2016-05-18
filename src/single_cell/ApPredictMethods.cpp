@@ -878,8 +878,8 @@ void ApPredictMethods::CommonRunMethod()
                            median_saturation[channel_idx]);
         }
 
-        double apd90, apd50, upstroke, peak;
-        OdeSolution solution = SteadyStatePacingExperiment(mpModel, apd90, apd50, upstroke, peak, 0.1 /*ms printing timestep*/, mConcs[conc_index]);
+        double apd90, apd50, upstroke, peak, ca_max, ca_min;
+        OdeSolution solution = SteadyStatePacingExperiment(mpModel, apd90, apd50, upstroke, peak, ca_max, ca_min, 0.1 /*ms printing timestep*/, mConcs[conc_index]);
 
         // Store some things as member variables for returning later (mainly for testing)
         mApd90s.push_back(apd90); // This is used by TorsadePredict and following method for control.

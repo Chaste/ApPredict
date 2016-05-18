@@ -56,6 +56,8 @@ public:
         mApd50(DOUBLE_UNSET),
         mUpstroke(DOUBLE_UNSET),
         mPeak(DOUBLE_UNSET),
+        mCaMin(DOUBLE_UNSET),
+        mCaMax(DOUBLE_UNSET),
         mpModel(pModel)
     {
     };
@@ -72,6 +74,8 @@ public:
                                                                           mApd50,
                                                                           mUpstroke,
                                                                           mPeak,
+                                                                          mCaMax,
+                                                                          mCaMin,
                                                                           printing_timestep);
     }
 
@@ -89,12 +93,14 @@ public:
                                                                           mApd50,
                                                                           mUpstroke,
                                                                           mPeak,
+                                                                          mCaMax,
+                                                                          mCaMin,
                                                                           printing_timestep,
                                                                           conc);
     }
 
     /**
-     * @return The APD90 of the trace.
+     * @return The APD90 of the trace (ms).
      */
     double GetApd90()
     {
@@ -103,7 +109,7 @@ public:
     }
 
     /**
-     * @return The APD50 of the trace.
+     * @return The APD50 of the trace (ms).
      */
     double GetApd50()
     {
@@ -121,12 +127,30 @@ public:
     }
 
     /**
-     * @return The peak voltage of the action potential.
+     * @return The peak voltage of the action potential (mV).
      */
     double GetPeakVoltage()
     {
         CheckItRan();
         return mPeak;
+    }
+
+    /**
+     * @return The diastolic (minimum) of Calcium transient (mM)
+     */
+    double GetCaMin()
+    {
+        CheckItRan();
+        return mCaMin;
+    }
+
+    /**
+     * @return The sysstolic (maximum) of Calcium transient (mM)
+     */
+    double GetCaMax()
+    {
+        CheckItRan();
+        return mCaMax;
     }
 
 private:
@@ -148,6 +172,8 @@ private:
     double mApd50;
     double mUpstroke;
     double mPeak;
+    double mCaMin;
+    double mCaMax;
     boost::shared_ptr<AbstractCvodeCell> mpModel;
 
 };

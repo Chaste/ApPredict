@@ -128,6 +128,8 @@ OdeSolution AbstractActionPotentialMethod::SteadyStatePacingExperiment(
         double& rApd50,
         double& rUpstroke,
         double& rPeak,
+        double& rCaMax,
+        double& rCaMin,
         const double printingTimeStep,
         const double conc)
 {
@@ -240,6 +242,8 @@ OdeSolution AbstractActionPotentialMethod::SteadyStatePacingExperiment(
                                                       rApd50,
                                                       rUpstroke,
                                                       rPeak,
+                                                      rCaMax,
+                                                      rCaMin,
                                                       s1_period,
                                                       maximum_time_step,
                                                       printingTimeStep,
@@ -255,6 +259,8 @@ OdeSolution AbstractActionPotentialMethod::SteadyStatePacingExperiment(
                                               rApd50,
                                               rUpstroke,
                                               rPeak,
+                                              rCaMax,
+                                              rCaMin,
                                               s1_period,
                                               maximum_time_step,
                                               printingTimeStep,
@@ -276,6 +282,8 @@ OdeSolution AbstractActionPotentialMethod::PerformAnalysisOfTwoPaces(boost::shar
                                                                      double& rApd50,
                                                                      double& rUpstroke,
                                                                      double& rPeak,
+                                                                     double& rCaMax,
+                                                                     double& rCaMin,
                                                                      const double s1_period,
                                                                      const double maximumTimeStep,
                                                                      const double printingTimeStep,
@@ -324,6 +332,10 @@ OdeSolution AbstractActionPotentialMethod::PerformAnalysisOfTwoPaces(boost::shar
             rUpstroke = voltage_properties.GetLastCompleteMaxUpstrokeVelocity();
             rPeak = voltage_properties.GetLastCompletePeakPotential();
         }
+
+        std::vector<double> calcium = solution.GetAnyVariable("cytosolic_calcium_concentration");
+        rCaMax = *(std::max_element(calcium.begin(),calcium.end()));
+        rCaMin = *(std::min_element(calcium.begin(),calcium.end()));
         mSuccessful = true;
     }
     catch (Exception& e)

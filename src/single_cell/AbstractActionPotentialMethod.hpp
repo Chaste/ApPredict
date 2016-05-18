@@ -84,6 +84,8 @@ private:
      * @param rApd50  double to populate with the postprocessed APD50 (ms)
      * @param rUpstroke  double to populate with the postprocessed maximum upstroke velocity (mV/ms)
      * @param rPeak  double to populate with the postprocessed peak voltage (mV)
+     * @param rCaMax double to populate with the maximum cytosolic calcium concentration
+     * @param rCaMin double to populate with the minimum cytosolic calcium concentration
      * @param maximumTimeStep  The maximum CVODE time step to use (ms).
      * @param printingTimeStep  the printing time step to use (defaults to 1ms).
      * @param conc  [optional] concentration argument (only used for more helpful warning messages).
@@ -95,6 +97,8 @@ private:
                                           double& rApd50,
                                           double& rUpstroke,
                                           double& rPeak,
+                                          double& rCaMax,
+                                          double& rCaMin,
                                           const double s1_period,
                                           const double maximumTimeStep,
                                           const double printingTimeStep,
@@ -145,6 +149,8 @@ protected:
      * @param rApd50  double to populate with the postprocessed APD50 (ms)
      * @param rUpstroke  double to populate with the postprocessed maximum upstroke velocity (mV/ms)
      * @param rPeak  double to populate with the postprocessed peak voltage (mV)
+     * @param rCaMax  double to populate with the maximum of calcium transient (mM)
+     * @param rCaMin  double to populate with the minimum of calcium transient (mM)
      * @param printingTimeStep  the printing time step to use (defaults to 1ms).
      * @param conc  [optional] concentration argument (only used for more helpful warning messages).
      *
@@ -155,6 +161,8 @@ protected:
                                             double& rApd50,
                                             double& rUpstroke,
                                             double& rPeak,
+                                            double& rCaMax,
+                                            double& rCaMin,
                                             const double printingTimeStep=1,//ms
                                             const double conc=DOUBLE_UNSET);
 
