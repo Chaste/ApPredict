@@ -59,10 +59,16 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "ProgressReporter.hpp"
 #include "Timer.hpp"
 
-// A little helper method that can float around here for now.
-double MedianOfStdVectorDouble(std::vector<double> vec)
+/**
+ * A little helper method that can float around here for now.
+ *
+ * @param rVec  The vector to return the median of.
+ */
+double MedianOfStdVectorDouble(const std::vector<double>& rVec)
 {
-    assert(!vec.empty());
+    assert(!rVec.empty());
+
+    std::vector<double> vec = rVec;
 
     std::sort(vec.begin(), vec.end());
 

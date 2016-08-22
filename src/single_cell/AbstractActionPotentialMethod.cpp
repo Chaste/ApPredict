@@ -251,6 +251,7 @@ OdeSolution AbstractActionPotentialMethod::SteadyStatePacingExperiment(
 
     if (mRepeat)
     {
+        // std::cout << "Repeating simulation to order alternans APs better...\n";
         // If we might benefit from pushing forward one period and re-analysing...
         PushModelForwardOneS1Interval(pModel, s1_period, maximum_time_step);
 
@@ -341,8 +342,8 @@ OdeSolution AbstractActionPotentialMethod::PerformAnalysisOfTwoPaces(boost::shar
     catch (Exception& e)
     {
         if (e.GetShortMessage()=="AP did not occur, never exceeded threshold voltage." ||
-                e.GetShortMessage()=="No full action potential was recorded" ||
-                e.GetShortMessage()=="No MaxUpstrokeVelocity matching a full action potential was recorded.")
+            e.GetShortMessage()=="No full action potential was recorded" ||
+            e.GetShortMessage()=="No MaxUpstrokeVelocity matching a full action potential was recorded.")
         {
             std::stringstream message;
             if (conc!=DOUBLE_UNSET)
