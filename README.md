@@ -17,8 +17,7 @@ This repo must be cloned into
 ```sh
 <chaste source directory>/projects/ApPredict
 ```
-so that all the file paths can be picked up correctly. 
-(replacing <chaste source directory> with the place you have put the Chaste source code). Alternatively, you can put a sim link from the above folder to wherever you clone this repo.
+so that all the file paths can be picked up correctly (replacing ```<chaste source directory>``` with the place you have put the Chaste source code). Alternatively, you can put a sim link from the above folder to wherever you clone this repo.
 
 This ApPredict project should be used with the current revision of Chaste. If instead you want a version that works with a released version of Chaste, then please select the relevant Tag of this github repository.
 
