@@ -38,3 +38,5 @@ $ cd ApPredict
 $ git submodule init
 $ git submodule update
 ```
+
+[Getting Started]: <https://chaste.cs.ox.ac.uk/trac/wiki/GettingStarted>
