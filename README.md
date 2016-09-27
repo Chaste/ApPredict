@@ -1,8 +1,10 @@
 # ApPredict - Action Potential Prediction 
+
 This project is an extension of Chaste that is intended to be used 
 for simulation of drug action in cardiac electrophysiology models. 
 
 ## Prerequisites
+
 Before using this code you will need to download and install Chaste's
 dependencies and the Chaste source code itself.
 
@@ -10,6 +12,7 @@ Please see [Getting Started] for details of how to do this
 (follow instructions for "Development Code User" to keep up to date with the latest code, or a release version if you want longer-term stability).
 
 ## Installation
+
 This repo must be cloned into
 ```sh
 <chaste source directory>/projects/ApPredict
@@ -26,6 +29,7 @@ $ git clone --recursive https://github.com/Chaste/ApPredict.git
 ```
 
 ### Older git
+
 N.B. on really old git versions (<1.6.5), recursive doesn't work and you need to do:
 ```sh
 $ cd <chaste source directory>/projects
