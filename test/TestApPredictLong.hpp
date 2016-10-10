@@ -66,7 +66,7 @@ public:
             }
             else
             {
-                model_option = "--cellml projects/ApPredict/src/cellml/ten_tusscher_model_2006_epi.cellml";
+                model_option = "--cellml projects/ApPredict/src/cellml/cellml/ten_tusscher_model_2006_epi.cellml";
             }
             CommandLineArgumentsMocker wrapper(model_option + " --plasma-concs 1 10 --pic50-herg 4.5 --plasma-conc-logscale false");
 
