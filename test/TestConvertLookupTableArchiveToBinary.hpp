@@ -83,10 +83,10 @@ public:
         // Just hard-code to this for now.
         std::string lookup_table_name = "shannon_wang_puglisi_weber_bers_2004_model_updated_4d_hERG_IKs_INa_ICaL_1Hz_generator";
 
-        mpAsciiArchiveFile.reset(new FileFinder(lookup_table_name + ".arch", RelativeTo::ChasteSourceRoot));
-        mpBinaryArchiveFile.reset(new FileFinder(lookup_table_name + "_BINARY.arch", RelativeTo::ChasteSourceRoot));
-        mpCompressedAsciiArchiveFile.reset(new FileFinder(lookup_table_name + "_COMPRESSED.arch", RelativeTo::ChasteSourceRoot));
-        mpCompressedBinaryArchiveFile.reset(new FileFinder(lookup_table_name + "_BINARY_COMPRESSED.arch", RelativeTo::ChasteSourceRoot));
+        mpAsciiArchiveFile.reset(new FileFinder(lookup_table_name + ".arch", RelativeTo::CWD));
+        mpBinaryArchiveFile.reset(new FileFinder(lookup_table_name + "_BINARY.arch", RelativeTo::CWD));
+        mpCompressedAsciiArchiveFile.reset(new FileFinder(lookup_table_name + "_COMPRESSED.arch", RelativeTo::CWD));
+        mpCompressedBinaryArchiveFile.reset(new FileFinder(lookup_table_name + "_BINARY_COMPRESSED.arch", RelativeTo::CWD));
 
         if (!mpAsciiArchiveFile->IsFile())
         {
