@@ -54,6 +54,7 @@ ActionPotentialDownsampler::ActionPotentialDownsampler(const std::string& rFolde
     *output_file << "Time(ms)\tMembrane_Voltage(mV)\n";
 
     double last_voltage_printed = DOUBLE_UNSET;
+    double last_time_printed = DOUBLE_UNSET;
     bool printed_last = true; // This is to make sure large jumps print out the step before.
 
     assert(rTimes.size()>0);
@@ -62,7 +63,8 @@ ActionPotentialDownsampler::ActionPotentialDownsampler(const std::string& rFolde
     for (unsigned i=0; i<rVoltages.size(); i++)
     {
         if (rTimes[i] - start_time_for_this_pace > window)
-        { // Only output the first action potential.
+        {
+        	// Only output the first action potential.
             break;
         }
         if (!CommandLineArguments::Instance()->OptionExists("--no-downsampling"))
@@ -71,18 +73,29 @@ ActionPotentialDownsampler::ActionPotentialDownsampler(const std::string& rFolde
             // We want to plot the first point, but not necessarily the last if we are repolarized.
             if (i>0 && (i<rVoltages.size() || rVoltages[i] < -50)) // if we aren't at the beginning or the end of the trace
             {
-                if (fabs(rVoltages[i] - last_voltage_printed) < 1.0)
-                {   // Only output a point if the voltage has changed by 1 mV.
-                    printed_last = false;
-                    continue;
+            	if (fabs(rVoltages[i] - last_voltage_printed) > 1.0 /*mV*/ )
+                {
+            		// Don't skip point if the voltage has changed by more than 1 mV
                 }
+            	else if (rTimes[i] - last_time_printed > 10.0 /*ms*/ )
+            	{
+            		// Don't skip point if time since last point is over 10ms
+            		printed_last = true; // But if this is the reason don't re-print last point too as we do for voltage jumps.
+            	}
+            	else
+            	{
+            		// Skip this point
+            		printed_last = false;
+            		continue;
+            	}
             }
             if(!printed_last) // We want the point before printing too, to avoid large interpolations.
             {
-                *output_file << rTimes[i-1] - start_time_for_this_pace << "\t" << rVoltages[i-1] << "\n";
+            	*output_file << rTimes[i-1] - start_time_for_this_pace << "\t" << rVoltages[i-1] << "\n";
             }
             printed_last = true;
             last_voltage_printed = rVoltages[i];
+            last_time_printed = rTimes[i];
         }
         *output_file << rTimes[i] - start_time_for_this_pace << "\t" << rVoltages[i] << "\n";
     }

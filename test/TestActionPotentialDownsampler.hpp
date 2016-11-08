@@ -108,6 +108,7 @@ public:
 
         // Test with downsampling switched off
         CommandLineArgumentsMocker wrapper("--no-downsampling");
+        output_filename = "sample_action_potential_no_downsampling.txt";
 
         // These are altered just so we can directly compare with the full_voltage_trace of input data.
         stim_time = 0; //ms
@@ -115,7 +116,7 @@ public:
         {
 			ActionPotentialDownsampler sampler(output_folder, output_filename, times, voltages, window, stim_time);
 
-			FileFinder generated_file("TestActionPotentialDownsampler/sample_action_potential.txt", RelativeTo::ChasteTestOutput);
+			FileFinder generated_file("TestActionPotentialDownsampler/sample_action_potential_no_downsampling.txt", RelativeTo::ChasteTestOutput);
 			FileFinder reference_file("projects/ApPredict/test/data/full_voltage_trace.dat", RelativeTo::ChasteSourceRoot);
 			TS_ASSERT(generated_file.IsFile());
 			TS_ASSERT(reference_file.IsFile());
