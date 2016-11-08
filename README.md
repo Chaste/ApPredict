@@ -29,10 +29,10 @@ $ git clone --recursive https://github.com/Chaste/ApPredict.git
 
 ### Older git
 
-N.B. on really old git versions (<1.6.5), recursive doesn't work and you need to do:
+N.B. on really old git versions (<1.6.5), `--recursive` doesn't work and you need to do:
 ```sh
 $ cd <chaste source directory>/projects
-$ git clone --recursive https://github.com/Chaste/ApPredict.git
+$ git clone https://github.com/Chaste/ApPredict.git
 $ cd ApPredict
 $ git submodule init
 $ git submodule update
