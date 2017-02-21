@@ -2,3 +2,11 @@ build/
 .cproject
 .pydevproject
 .settings
+
+apps/src/ApPredict
+
+apps/src/ApPredict\.o
+
+apps/src/TorsadePredict
+
+apps/src/TorsadePredict\.o
