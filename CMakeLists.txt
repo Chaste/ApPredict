@@ -21,6 +21,14 @@ find_package(Chaste COMPONENTS heart)
 # all metadata annotated variables). 
 set(Chaste_PYCML_EXTRA_ARGS "--expose-annotated-variables")
 
+# ApPredict uses pthreads, so we specify that threads are required and add the necessary compile flag
+set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
+find_package(Threads REQUIRED)
+if(CMAKE_USE_PTHREADS_INIT)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pthread")
+    set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -pthread")
+endif()
+
 # Change the project name in the line below to match the folder this file is in,
 # i.e. the name of your project.
 chaste_do_project(ApPredict)

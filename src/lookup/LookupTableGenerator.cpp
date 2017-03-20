@@ -35,6 +35,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <iomanip> // for setprecision()
 #include <boost/scoped_array.hpp> // to avoid variable length arrays.
+#include <pthread.h> // for pthread_create, pthread_join, etc
 
 #include "LookupTableGenerator.hpp"
 #include "SingleActionPotentialPrediction.hpp"
