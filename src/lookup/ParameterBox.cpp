@@ -38,15 +38,15 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "Exception.hpp"
 #include "ParameterBox.hpp"
 
-template<unsigned DIM>
+template <unsigned DIM>
 ParameterBox<DIM>::ParameterBox(ParameterBox<DIM>* pParent,
                                 const c_vector<double, DIM>& rMin,
                                 const c_vector<double, DIM>& rMax)
- : mAmParent(false),
-   mpParentBox(pParent),
-   mMin(rMin),
-   mMax(rMax),
-   mAllCornersEvaluated(false)
+        : mAmParent(false),
+          mpParentBox(pParent),
+          mMin(rMin),
+          mMax(rMax),
+          mAllCornersEvaluated(false)
 {
     if (!mpParentBox)
     {
@@ -63,14 +63,14 @@ ParameterBox<DIM>::ParameterBox(ParameterBox<DIM>* pParent,
     c_vector<double, DIM>* p_existing_corner; // Some working memory
 
     // Create a basic grid of the corners of this new box first
-    for (unsigned i=0; i<pow(2,DIM); i++)
+    for (unsigned i = 0; i < pow(2, DIM); i++)
     {
         // Use a binary conversion to get the right indices in place for the corners
         std::bitset<DIM> bin_i(i);
         c_vector<double, DIM> new_corner;
-        for (unsigned j=0; j<DIM; j++)
+        for (unsigned j = 0; j < DIM; j++)
         {
-            new_corner[j] = mMin[j] + (mMax[j] - mMin[j])*(double)(bin_i[j]);
+            new_corner[j] = mMin[j] + (mMax[j] - mMin[j]) * (double)(bin_i[j]);
         }
 
         // Make a pointer to new location
@@ -108,7 +108,7 @@ ParameterBox<DIM>::ParameterBox(ParameterBox<DIM>* pParent,
     }
 }
 
-template<unsigned DIM>
+template <unsigned DIM>
 ParameterBox<DIM>::~ParameterBox()
 {
     // If I am the original parent box, get all the corners,
@@ -116,8 +116,8 @@ ParameterBox<DIM>::~ParameterBox()
     if (!mpParentBox)
     {
         for (DataMapIter iter = mParameterPointDataMap.begin();
-                iter != mParameterPointDataMap.end();
-                ++iter)
+             iter != mParameterPointDataMap.end();
+             ++iter)
         {
             delete (*iter).first; // Delete the corner pointer
         }
@@ -126,39 +126,38 @@ ParameterBox<DIM>::~ParameterBox()
     // Also delete any daughter boxes that we made.
     if (mAmParent)
     {
-        for (unsigned i=0; i<mDaughterBoxes.size(); i++)
+        for (unsigned i = 0; i < mDaughterBoxes.size(); i++)
         {
             delete mDaughterBoxes[i];
         }
     }
 }
 
-template<unsigned DIM>
-std::set<c_vector<double, DIM>*, c_vector_compare<DIM> >  ParameterBox<DIM>::GetNewCorners()
+template <unsigned DIM>
+std::set<c_vector<double, DIM>*, c_vector_compare<DIM> > ParameterBox<DIM>::GetNewCorners()
 {
     return mNewCorners;
 }
 
-template<unsigned DIM>
+template <unsigned DIM>
 unsigned ParameterBox<DIM>::GetGeneration()
 {
     return mGeneration;
 }
 
-
-template<unsigned DIM>
+template <unsigned DIM>
 std::set<c_vector<double, DIM>*, c_vector_compare<DIM> > ParameterBox<DIM>::GetCorners()
 {
     CornerSet corner_set;
 
     // Get any corners that we own,
-    for (unsigned i=0; i<mCorners.size(); i++)
+    for (unsigned i = 0; i < mCorners.size(); i++)
     {
         corner_set.insert(mCorners[i]);
     }
 
     // Also include any corners that our children own.
-    for (unsigned i=0; i<mDaughterBoxes.size(); i++)
+    for (unsigned i = 0; i < mDaughterBoxes.size(); i++)
     {
         // For each parameter box
         CornerSet corners = mDaughterBoxes[i]->GetCorners();
@@ -168,28 +167,28 @@ std::set<c_vector<double, DIM>*, c_vector_compare<DIM> > ParameterBox<DIM>::GetC
     return corner_set;
 }
 
-template<unsigned DIM>
-std::vector<c_vector<double, DIM>* > ParameterBox<DIM>::GetCornersAsVector()
+template <unsigned DIM>
+std::vector<c_vector<double, DIM>*> ParameterBox<DIM>::GetCornersAsVector()
 {
     CornerSet corner_set = GetCorners();
     // Convert to a std::vector
-    std::vector<c_vector<double, DIM>* > result(corner_set.begin(), corner_set.end());
+    std::vector<c_vector<double, DIM>*> result(corner_set.begin(), corner_set.end());
     return result;
 }
 
-template<unsigned DIM>
-std::vector<c_vector<double, DIM>* > ParameterBox<DIM>::GetOwnCorners()
+template <unsigned DIM>
+std::vector<c_vector<double, DIM>*> ParameterBox<DIM>::GetOwnCorners()
 {
     return mCorners;
 }
 
-template<unsigned DIM>
+template <unsigned DIM>
 bool ParameterBox<DIM>::IsParent()
 {
     return mAmParent;
 }
 
-template<unsigned DIM>
+template <unsigned DIM>
 ParameterBox<DIM>* ParameterBox<DIM>::GetParent()
 {
     if (!mpParentBox)
@@ -199,26 +198,26 @@ ParameterBox<DIM>* ParameterBox<DIM>::GetParent()
     return mpParentBox;
 }
 
-template<unsigned DIM>
+template <unsigned DIM>
 ParameterBox<DIM>* ParameterBox<DIM>::GetGreatGrandParent()
 {
     return mpGreatGrandParentBox;
 }
 
-template<unsigned DIM>
-std::vector<ParameterBox<DIM>* > ParameterBox<DIM>::GetDaughterBoxes()
+template <unsigned DIM>
+std::vector<ParameterBox<DIM>*> ParameterBox<DIM>::GetDaughterBoxes()
 {
     return mDaughterBoxes;
 }
 
-template<unsigned DIM>
-std::vector<ParameterBox<DIM>* >  ParameterBox<DIM>::GetWholeFamilyOfBoxes()
+template <unsigned DIM>
+std::vector<ParameterBox<DIM>*> ParameterBox<DIM>::GetWholeFamilyOfBoxes()
 {
-    std::vector<ParameterBox<DIM>* > all_boxes;
-    for (unsigned i=0; i<mDaughterBoxes.size(); i++)
+    std::vector<ParameterBox<DIM>*> all_boxes;
+    for (unsigned i = 0; i < mDaughterBoxes.size(); i++)
     {
         std::vector<ParameterBox<DIM>*> daughter_family_boxes = mDaughterBoxes[i]->GetWholeFamilyOfBoxes();
-        for (unsigned j=0; j<daughter_family_boxes.size(); j++)
+        for (unsigned j = 0; j < daughter_family_boxes.size(); j++)
         {
             all_boxes.push_back(daughter_family_boxes[j]);
         }
@@ -227,7 +226,7 @@ std::vector<ParameterBox<DIM>* >  ParameterBox<DIM>::GetWholeFamilyOfBoxes()
     return all_boxes;
 }
 
-template<unsigned DIM>
+template <unsigned DIM>
 std::set<c_vector<double, DIM>*, c_vector_compare<DIM> > ParameterBox<DIM>::SubDivide()
 {
     if (mAmParent)
@@ -241,25 +240,25 @@ std::set<c_vector<double, DIM>*, c_vector_compare<DIM> > ParameterBox<DIM>::SubD
     assert(mParameterPointDataMap.size() == mCorners.size());
 
     // Loop over each daughter box, we need to create them all at once.
-    for (unsigned i=0; i<pow(2,DIM); i++)
+    for (unsigned i = 0; i < pow(2, DIM); i++)
     {
         // Use a binary conversion to get the right indices in place.
         std::bitset<DIM> bin_i(i);
         c_vector<double, DIM> corner;
-        for (unsigned j=0; j<DIM; j++)
+        for (unsigned j = 0; j < DIM; j++)
         {
-            corner[j] = mMin[j] + 0.5*(mMax[j] - mMin[j])*(double)(bin_i[j]);
+            corner[j] = mMin[j] + 0.5 * (mMax[j] - mMin[j]) * (double)(bin_i[j]);
         }
 
         // The new boxes are half the width in each dimension of this one.
         c_vector<double, DIM> min = corner;
-        c_vector<double, DIM> max = corner + 0.5*(mMax - mMin);
+        c_vector<double, DIM> max = corner + 0.5 * (mMax - mMin);
 
         ParameterBox<DIM>* daughter_box = new ParameterBox<DIM>(this, min, max);
 
         mDaughterBoxes.push_back(daughter_box);
         CornerSet new_corners_for_this_daughter = daughter_box->GetNewCorners();
-        for (unsigned j=0; j<new_corners_for_this_daughter.size(); j++)
+        for (unsigned j = 0; j < new_corners_for_this_daughter.size(); j++)
         {
             new_corners.insert(new_corners_for_this_daughter.begin(), new_corners_for_this_daughter.end());
         }
@@ -267,8 +266,8 @@ std::set<c_vector<double, DIM>*, c_vector_compare<DIM> > ParameterBox<DIM>::SubD
 
     // Work out interpolated estimates for each QoI
     for (CornerSetIter iter = new_corners.begin();
-            iter != new_corners.end();
-            ++iter)
+         iter != new_corners.end();
+         ++iter)
     {
         c_vector<double, DIM>* new_corner = *(iter);
 
@@ -286,7 +285,7 @@ std::set<c_vector<double, DIM>*, c_vector_compare<DIM> > ParameterBox<DIM>::SubD
     // Tidy up things that a parent box doesn't need.
     mCorners.clear();
     mParameterPointDataMapPredictions.clear();
-    if (!(mpGreatGrandParentBox==this))
+    if (!(mpGreatGrandParentBox == this))
     {
         // Great grandparent box keeps track of the entire data structure,
         // everyone else wipes it on sub-division.
@@ -296,7 +295,7 @@ std::set<c_vector<double, DIM>*, c_vector_compare<DIM> > ParameterBox<DIM>::SubD
     return new_corners;
 }
 
-template<unsigned DIM>
+template <unsigned DIM>
 void ParameterBox<DIM>::AssignQoIValues(c_vector<double, DIM>* pCorner,
                                         boost::shared_ptr<ParameterPointData> pParameterPointData,
                                         bool isPredictedQoI)
@@ -317,12 +316,12 @@ void ParameterBox<DIM>::AssignQoIValues(c_vector<double, DIM>* pCorner,
     DataMapIter iter = p_data_map->find(pCorner);
 
     // If we found the relevant corner in this box, and it doesn't already have data associated with it.
-    if (iter != p_data_map->end() && (*iter).second==NULL)
+    if (iter != p_data_map->end() && (*iter).second == NULL)
     {
         (*iter).second = pParameterPointData;
 
         // If this is real data and we are a child box, look to see if the fake data exists
-        if (!isPredictedQoI && !(mpGreatGrandParentBox==this))
+        if (!isPredictedQoI && !(mpGreatGrandParentBox == this))
         {
             DataMapIter iter2 = mParameterPointDataMapPredictions.find(pCorner);
             if (iter2 != mParameterPointDataMapPredictions.end())
@@ -332,7 +331,7 @@ void ParameterBox<DIM>::AssignQoIValues(c_vector<double, DIM>* pCorner,
                 std::vector<double> real_values = pParameterPointData->rGetQoIs();
                 std::vector<double> errors_in_predicitons;
                 assert(predictions.size() == real_values.size());
-                for (unsigned i=0; i<predictions.size(); i++)
+                for (unsigned i = 0; i < predictions.size(); i++)
                 {
                     double difference = predictions[i] - real_values[i];
                     //std::cout << "QoI[" << i << "]: prediction = " << predictions[i] << ", \treal = " <<
@@ -346,22 +345,22 @@ void ParameterBox<DIM>::AssignQoIValues(c_vector<double, DIM>* pCorner,
                 mParameterPointDataMapPredictions.erase(pCorner);
 
                 // If we have now evaluated all of the predictions
-                if (mParameterPointDataMapPredictions.size()==0)
+                if (mParameterPointDataMapPredictions.size() == 0)
                 {
                     mAllCornersEvaluated = true;
 
                     mMaxErrorsInEachQoI.clear();
                     // Take each QoI error at first corner to be the max for now.
-                    for (unsigned i=0; i<mErrorsInQoIs[0].size(); i++)
+                    for (unsigned i = 0; i < mErrorsInQoIs[0].size(); i++)
                     {
                         mMaxErrorsInEachQoI.push_back(fabs(mErrorsInQoIs[0][i]));
                     }
 
                     // For each other corner
-                    for (unsigned i=1u; i<mErrorsInQoIs.size(); i++)
+                    for (unsigned i = 1u; i < mErrorsInQoIs.size(); i++)
                     {
                         // For each QoI.
-                        for (unsigned j=0; j<mErrorsInQoIs[i].size(); j++)
+                        for (unsigned j = 0; j < mErrorsInQoIs[i].size(); j++)
                         {
                             if (fabs(mErrorsInQoIs[i][j]) > mMaxErrorsInEachQoI[j])
                             {
@@ -375,24 +374,26 @@ void ParameterBox<DIM>::AssignQoIValues(c_vector<double, DIM>* pCorner,
     }
 
     // Also pass on the instruction to our children boxes.
-    for (unsigned i=0; i<mDaughterBoxes.size(); i++)
+    for (unsigned i = 0; i < mDaughterBoxes.size(); i++)
     {
         mDaughterBoxes[i]->AssignQoIValues(pCorner, pParameterPointData, isPredictedQoI);
     }
 }
 
-template<unsigned DIM>
+template <unsigned DIM>
 bool ParameterBox<DIM>::DoesBoxNeedFurtherRefinement(const double& rTolerance,
                                                      const unsigned& rQuantityIndex)
 {
     // If I am not the GreatGrandParent
-    if (mpParentBox) assert(mAllCornersEvaluated);
-    if (mpParentBox) assert(mMaxErrorsInEachQoI.size()>0u);
+    if (mpParentBox)
+        assert(mAllCornersEvaluated);
+    if (mpParentBox)
+        assert(mMaxErrorsInEachQoI.size() > 0u);
     assert(!mAmParent);
     return (GetMaxErrorInQoIEstimateInThisBox(rQuantityIndex) > rTolerance);
 }
 
-template<unsigned DIM>
+template <unsigned DIM>
 double ParameterBox<DIM>::GetMaxErrorInQoIEstimateInThisBox(const unsigned& rQuantityIndex)
 {
     // If I am the great grandparent box, then we have no idea what the errors are.
@@ -404,8 +405,8 @@ double ParameterBox<DIM>::GetMaxErrorInQoIEstimateInThisBox(const unsigned& rQua
 
     // Otherwise all these things should be true!
     assert(mAllCornersEvaluated);
-    assert(mParameterPointDataMapPredictions.size()==0u);
-    assert(mMaxErrorsInEachQoI.size()>0u);
+    assert(mParameterPointDataMapPredictions.size() == 0u);
+    assert(mMaxErrorsInEachQoI.size() > 0u);
     assert(!mAmParent);
 
     // First check to see if all the corners have errors, if they do we don't want to
@@ -416,7 +417,7 @@ double ParameterBox<DIM>::GetMaxErrorInQoIEstimateInThisBox(const unsigned& rQua
          ++iter)
     {
         // See if an error occurred when evaluating the QoIs at this corner.
-        if (!(*iter).second->DidErrorOccur())
+        if ((*iter).second->GetErrorCode() > 0u)
         {
             all_errors = false;
             break;
@@ -428,33 +429,33 @@ double ParameterBox<DIM>::GetMaxErrorInQoIEstimateInThisBox(const unsigned& rQua
     }
 
     // Old code - based on the max gradient of the QoI across the box.
-//    double max = -DBL_MAX;
-//    double min = DBL_MAX;
-//    // This loop will update the maximum and minimum QoI that were recorded, only for corners
-//    // that were not associated with an error in the postprocessing.
-//    for (DataMapIter iter = mParameterPointDataMap.begin();
-//            iter != mParameterPointDataMap.end();
-//            ++iter)
-//    {
-//        const std::vector<double>& r_qois_at_this_parameter_point = (*iter).second->rGetQoIs();
-//        assert(r_qois_at_this_parameter_point.size() >=  quantityIndex + 1u);
-//
-//        if (r_qois_at_this_parameter_point[quantityIndex] > max)
-//        {
-//            max = r_qois_at_this_parameter_point[quantityIndex];
-//        }
-//        if (r_qois_at_this_parameter_point[quantityIndex] < min)
-//        {
-//            min = r_qois_at_this_parameter_point[quantityIndex];
-//        }
-//    }
-//    return max - min;
+    //    double max = -DBL_MAX;
+    //    double min = DBL_MAX;
+    //    // This loop will update the maximum and minimum QoI that were recorded, only for corners
+    //    // that were not associated with an error in the postprocessing.
+    //    for (DataMapIter iter = mParameterPointDataMap.begin();
+    //            iter != mParameterPointDataMap.end();
+    //            ++iter)
+    //    {
+    //        const std::vector<double>& r_qois_at_this_parameter_point = (*iter).second->rGetQoIs();
+    //        assert(r_qois_at_this_parameter_point.size() >=  quantityIndex + 1u);
+    //
+    //        if (r_qois_at_this_parameter_point[quantityIndex] > max)
+    //        {
+    //            max = r_qois_at_this_parameter_point[quantityIndex];
+    //        }
+    //        if (r_qois_at_this_parameter_point[quantityIndex] < min)
+    //        {
+    //            min = r_qois_at_this_parameter_point[quantityIndex];
+    //        }
+    //    }
+    //    return max - min;
 
     // New QoI error-estimate based measure
     return mMaxErrorsInEachQoI[rQuantityIndex];
 }
 
-template<unsigned DIM>
+template <unsigned DIM>
 void ParameterBox<DIM>::GetErrorEstimateInAllBoxes(ParameterBox<DIM>*& pBestBox,
                                                    double& rErrorEstimateInBestBox,
                                                    const double& rTolerance,
@@ -463,12 +464,14 @@ void ParameterBox<DIM>::GetErrorEstimateInAllBoxes(ParameterBox<DIM>*& pBestBox,
     if (!mAmParent)
     {
         // If I have a parent (if I am not the great grandparent)
-        if (mpParentBox) assert(mAllCornersEvaluated);
-        if (mpParentBox) assert(mMaxErrorsInEachQoI.size()>0u);
-        assert(mParameterPointDataMap.size()==pow(2,DIM)); // Check we have an entry for all of our corners.
-        assert(mDaughterBoxes.size()==0u);
+        if (mpParentBox)
+            assert(mAllCornersEvaluated);
+        if (mpParentBox)
+            assert(mMaxErrorsInEachQoI.size() > 0u);
+        assert(mParameterPointDataMap.size() == pow(2, DIM)); // Check we have an entry for all of our corners.
+        assert(mDaughterBoxes.size() == 0u);
 
-        if (DoesBoxNeedFurtherRefinement(rTolerance,rQuantityIndex))
+        if (DoesBoxNeedFurtherRefinement(rTolerance, rQuantityIndex))
         {
             double max_error_estimate = GetMaxErrorInQoIEstimateInThisBox(rQuantityIndex);
             unsigned errors_associated = GetNumErrors();
@@ -480,9 +483,9 @@ void ParameterBox<DIM>::GetErrorEstimateInAllBoxes(ParameterBox<DIM>*& pBestBox,
             //   * a current best box guess,
             //   * we have more than one error in the evaluation of the results in this box.
             bool new_max = (max_error_estimate > rErrorEstimateInBestBox);
-            if ( (new_max && !pBestBox) || // This condition applies to the great-grandparent original box.
-                 (new_max && errors_associated <= pow(2,DIM)-1) ) // || // We don't want to start refining where there are loads of errors
-                 //(errors_associated < pBestBox->GetNumErrors()) ) // So boxes with no error always win
+            if ((new_max && !pBestBox) || // This condition applies to the great-grandparent original box.
+                (new_max && errors_associated <= pow(2, DIM) - 1)) // || // We don't want to start refining where there are loads of errors
+            //(errors_associated < pBestBox->GetNumErrors()) ) // So boxes with no error always win
             {
                 pBestBox = this;
                 rErrorEstimateInBestBox = max_error_estimate;
@@ -492,7 +495,7 @@ void ParameterBox<DIM>::GetErrorEstimateInAllBoxes(ParameterBox<DIM>*& pBestBox,
     else
     {
         // If I am a parent then ask my daughter boxes the same thing.
-        for (unsigned i=0; i<mDaughterBoxes.size(); i++)
+        for (unsigned i = 0; i < mDaughterBoxes.size(); i++)
         {
             mDaughterBoxes[i]->GetErrorEstimateInAllBoxes(pBestBox, rErrorEstimateInBestBox, rTolerance, rQuantityIndex);
         }
@@ -500,7 +503,7 @@ void ParameterBox<DIM>::GetErrorEstimateInAllBoxes(ParameterBox<DIM>*& pBestBox,
     return;
 }
 
-template<unsigned DIM>
+template <unsigned DIM>
 ParameterBox<DIM>* ParameterBox<DIM>::FindBoxWithLargestQoIErrorEstimate(const unsigned& rQuantityIndex,
                                                                          const double& rTolerance,
                                                                          const unsigned& rMaxGenerationDifference)
@@ -525,9 +528,9 @@ ParameterBox<DIM>* ParameterBox<DIM>::FindBoxWithLargestQoIErrorEstimate(const u
 
         // Check the selected box isn't going to refine one area too much,
         // if it is refine least refined area instead.
-        if ( least_refined // if an unrefined box exists that doesn't meet the tolerances.
-           && ( (most_refined->GetGeneration() - least_refined->GetGeneration()) == rMaxGenerationDifference )
-           && (  p_box->GetGeneration()==GetMostRefinedChild()->GetGeneration() ) )
+        if (least_refined // if an unrefined box exists that doesn't meet the tolerances.
+            && ((most_refined->GetGeneration() - least_refined->GetGeneration()) == rMaxGenerationDifference)
+            && (p_box->GetGeneration() == GetMostRefinedChild()->GetGeneration()))
         {
             return least_refined;
         }
@@ -537,7 +540,7 @@ ParameterBox<DIM>* ParameterBox<DIM>::FindBoxWithLargestQoIErrorEstimate(const u
     return p_box;
 }
 
-template<unsigned DIM>
+template <unsigned DIM>
 ParameterBox<DIM>* ParameterBox<DIM>::GetBoxContainingPoint(const c_vector<double, DIM>& rPoint)
 {
     // We only want to perform this check on the main box.
@@ -558,8 +561,8 @@ ParameterBox<DIM>* ParameterBox<DIM>::GetBoxContainingPoint(const c_vector<doubl
     // If it is a parent then ask daughters...
     ParameterBox<DIM>* p_box = this;
 
-    std::vector<ParameterBox<DIM>* > daughters = GetDaughterBoxes();
-    for (unsigned i=0; i<daughters.size(); i++)
+    std::vector<ParameterBox<DIM>*> daughters = GetDaughterBoxes();
+    for (unsigned i = 0; i < daughters.size(); i++)
     {
         if (daughters[i]->IsPointInThisBox(rPoint))
         {
@@ -570,7 +573,7 @@ ParameterBox<DIM>* ParameterBox<DIM>::GetBoxContainingPoint(const c_vector<doubl
     return p_box;
 }
 
-template<unsigned DIM>
+template <unsigned DIM>
 std::vector<double> ParameterBox<DIM>::InterpolateQoIsAt(const c_vector<double, DIM>& rPoint)
 {
     // Only the grand parent should call this.
@@ -587,7 +590,7 @@ std::vector<double> ParameterBox<DIM>::InterpolateQoIsAt(const c_vector<double, 
     return interpolated_qois;
 }
 
-template<unsigned DIM>
+template <unsigned DIM>
 void ParameterBox<DIM>::InterpolatePoint(const c_vector<double, DIM>& rPoint,
                                          std::vector<double>& rQoIs)
 {
@@ -602,28 +605,28 @@ void ParameterBox<DIM>::InterpolatePoint(const c_vector<double, DIM>& rPoint,
 
     // Wipe the existing QoIs vector.
     rQoIs.resize(num_qois);
-    for (unsigned qoi_idx = 0; qoi_idx<num_qois; qoi_idx++)
+    for (unsigned qoi_idx = 0; qoi_idx < num_qois; qoi_idx++)
     {
         rQoIs[qoi_idx] = 0.0;
     }
 
     c_vector<double, DIM> point = rPoint;
     // Nondimensionalise the point within this box
-    for (unsigned j=0; j<DIM; j++)
+    for (unsigned j = 0; j < DIM; j++)
     {
-        point[j] = (rPoint[j] - mMin[j])/(mMax[j] - mMin[j]);
+        point[j] = (rPoint[j] - mMin[j]) / (mMax[j] - mMin[j]);
     }
 
     // See doxygen comment for this method for some detail of what is going on here.
     // This is in the same order as corners (as it is how we originally calculated them!).
-    for (unsigned i=0; i<pow(2,DIM); i++)
+    for (unsigned i = 0; i < pow(2, DIM); i++)
     {
         // Use a binary conversion to get the right indices in place.
         std::bitset<DIM> bin_i(i);
         double multiplier_for_this_corner = 1.0;
-        for (unsigned j=0; j<DIM; j++)
+        for (unsigned j = 0; j < DIM; j++)
         {
-            if (bin_i[j]==0)
+            if (bin_i[j] == 0)
             {
                 multiplier_for_this_corner *= (1.0 - point[j]);
             }
@@ -633,20 +636,20 @@ void ParameterBox<DIM>::InterpolatePoint(const c_vector<double, DIM>& rPoint,
             }
         }
 
-        for (unsigned qoi_idx = 0; qoi_idx<num_qois; qoi_idx++)
+        for (unsigned qoi_idx = 0; qoi_idx < num_qois; qoi_idx++)
         {
             rQoIs[qoi_idx] += multiplier_for_this_corner * mParameterPointDataMap[mCorners[i]]->rGetQoIs()[qoi_idx];
         }
     }
 }
 
-template<unsigned DIM>
+template <unsigned DIM>
 bool ParameterBox<DIM>::IsPointInThisBox(const c_vector<double, DIM>& rPoint)
 {
     bool within = true;
-    for (unsigned i=0; i<DIM; i++)
+    for (unsigned i = 0; i < DIM; i++)
     {
-        if (rPoint[i]>mMax[i] || rPoint[i]<mMin[i])
+        if (rPoint[i] > mMax[i] || rPoint[i] < mMin[i])
         {
             within = false;
             break;
@@ -655,14 +658,14 @@ bool ParameterBox<DIM>::IsPointInThisBox(const c_vector<double, DIM>& rPoint)
     return within;
 }
 
-template<unsigned DIM>
+template <unsigned DIM>
 unsigned ParameterBox<DIM>::GetNumErrors()
 {
     unsigned error_count = 0u;
 
-    for (unsigned i=0; i<mCorners.size(); i++)
+    for (unsigned i = 0; i < mCorners.size(); i++)
     {
-        if (mParameterPointDataMap[mCorners[i]]->DidErrorOccur())
+        if (mParameterPointDataMap[mCorners[i]]->GetErrorCode() > 0u)
         {
             error_count++;
         }
@@ -671,21 +674,21 @@ unsigned ParameterBox<DIM>::GetNumErrors()
     return error_count;
 }
 
-template<unsigned DIM>
+template <unsigned DIM>
 ParameterBox<DIM>* ParameterBox<DIM>::GetMostRefinedChild()
 {
     ParameterBox<DIM>* p_box = NULL;
 
     if (!mAmParent)
     {
-        assert(mCorners.size()==pow(2,DIM));
-        assert(mDaughterBoxes.size()==0u);
+        assert(mCorners.size() == pow(2, DIM));
+        assert(mDaughterBoxes.size() == 0u);
         p_box = this;
     }
     else
     {
         // Get a load of the most refined boxes that are owned by daughter boxes.
-        for (unsigned i=0; i<mDaughterBoxes.size(); i++)
+        for (unsigned i = 0; i < mDaughterBoxes.size(); i++)
         {
             ParameterBox<DIM>* this_daughters_most_refined = mDaughterBoxes[i]->GetMostRefinedChild();
             if (!p_box || this_daughters_most_refined->GetGeneration() > p_box->GetGeneration())
@@ -698,17 +701,17 @@ ParameterBox<DIM>* ParameterBox<DIM>::GetMostRefinedChild()
     return p_box;
 }
 
-template<unsigned DIM>
+template <unsigned DIM>
 ParameterBox<DIM>* ParameterBox<DIM>::GetLeastRefinedChild(const double& rTolerance, const unsigned& rQuantityIndex)
 {
     ParameterBox<DIM>* p_box = NULL;
 
     if (!mAmParent)
     {
-        assert(mCorners.size()==pow(2,DIM));
-        assert(mDaughterBoxes.size()==0u);
+        assert(mCorners.size() == pow(2, DIM));
+        assert(mDaughterBoxes.size() == 0u);
 
-        if (DoesBoxNeedFurtherRefinement(rTolerance,rQuantityIndex))
+        if (DoesBoxNeedFurtherRefinement(rTolerance, rQuantityIndex))
         {
             p_box = this;
         }
@@ -716,13 +719,13 @@ ParameterBox<DIM>* ParameterBox<DIM>::GetLeastRefinedChild(const double& rTolera
     else
     {
         // Get a load of the least refined boxes that are owned by daughter boxes.
-        for (unsigned i=0; i<mDaughterBoxes.size(); i++)
+        for (unsigned i = 0; i < mDaughterBoxes.size(); i++)
         {
-            ParameterBox<DIM>* this_daughters_least_refined = mDaughterBoxes[i]->GetLeastRefinedChild(rTolerance,rQuantityIndex);
+            ParameterBox<DIM>* this_daughters_least_refined = mDaughterBoxes[i]->GetLeastRefinedChild(rTolerance, rQuantityIndex);
 
-            if ( this_daughters_least_refined // If this daughter box needs refinement
-                 && ( !p_box // and we either don't have a box at the moment, or this box is a lower generation
-                     || this_daughters_least_refined->GetGeneration() < p_box->GetGeneration() ) )
+            if (this_daughters_least_refined // If this daughter box needs refinement
+                && (!p_box // and we either don't have a box at the moment, or this box is a lower generation
+                    || this_daughters_least_refined->GetGeneration() < p_box->GetGeneration()))
             {
                 p_box = this_daughters_least_refined;
             }
@@ -732,7 +735,7 @@ ParameterBox<DIM>* ParameterBox<DIM>::GetLeastRefinedChild(const double& rTolera
     return p_box;
 }
 
-template<unsigned DIM>
+template <unsigned DIM>
 std::vector<double> ParameterBox<DIM>::GetMaxErrorsInPredictedQoIs() const
 {
     if (!mAllCornersEvaluated)
@@ -748,7 +751,6 @@ std::vector<double> ParameterBox<DIM>::GetMaxErrorsInPredictedQoIs() const
 #include "SerializationExportWrapperForCpp.hpp"
 EXPORT_TEMPLATE_CLASS_SAME_DIMS(ParameterBox)
 
-
 /////////////////////////////////////////////////////////////////////
 // Explicit instantiation
 /////////////////////////////////////////////////////////////////////
@@ -758,6 +760,3 @@ template class ParameterBox<2>;
 template class ParameterBox<3>;
 template class ParameterBox<4>;
 template class ParameterBox<5>;
-
-
-

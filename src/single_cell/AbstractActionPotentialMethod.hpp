@@ -33,19 +33,18 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 */
 
-
 #ifndef ABSTRACTACTIONPOTENTIALMETHOD_HPP_
 #define ABSTRACTACTIONPOTENTIALMETHOD_HPP_
 
 #include <boost/shared_ptr.hpp>
 #include <vector>
 
-#include "SteadyStateRunner.hpp"
-#include "Exception.hpp"
-#include "RegularStimulus.hpp"
 #include "AbstractCvodeCell.hpp"
 #include "CellProperties.hpp"
 #include "CommandLineArguments.hpp"
+#include "Exception.hpp"
+#include "RegularStimulus.hpp"
+#include "SteadyStateRunner.hpp"
 
 /**
  * This is a class that provides methods for running cell models to steady state and evaluating
@@ -54,7 +53,6 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 class AbstractActionPotentialMethod
 {
 private:
-
     /** Whether we have run a simulation */
     bool mRunYet;
 
@@ -68,11 +66,17 @@ private:
     /** Any error messages that resulted */
     std::string mErrorMessage;
 
+    /** The error code (same as end of mErrorMessage) or 0 if no error occurred */
+    unsigned mErrorCode;
+
     /** Whether to say that no 1:1 correspondence between Stimuli and APs is an error, default is no, just warning */
     bool mNoOneToOneCorrespondenceIsError;
 
-    /** The threshold for an action potential (defaults to -50) altered if model is run at control conc of drug */
+    /** The threshold for an action potential (defaults to -50mV), altered if model is run at control conc of drug */
     double mActionPotentialThreshold;
+
+    /** Whether the AP threshold was set manually (defaults to false) */
+    bool mActionPotentialThresholdSetManually;
 
     /** Whether to attempt to reanalyse one period further on */
     bool mRepeat;
@@ -164,8 +168,8 @@ protected:
                                             double& rPeak,
                                             double& rCaMax,
                                             double& rCaMin,
-                                            const double printingTimeStep=1,//ms
-                                            const double conc=DOUBLE_UNSET);
+                                            const double printingTimeStep = 1, //ms
+                                            const double conc = DOUBLE_UNSET);
 
     /**
      * This method just passes any message into the WARNINGS macro.
@@ -215,6 +219,29 @@ public:
     std::string GetErrorMessage();
 
     /**
+     * @return The error code from attempting to evaluate markers, such as APD90.
+     *
+     * Returns "0" if no error occurred.
+     *
+     * This is "1" if the cell failed to depolarise (no AP occurs).
+     *
+     * Or "2" if the cell failed to repolarise (AP never returns to resting potential).
+     *
+     * Or "3" action potential did not repolarise in time for the next stimulus (no 1:1 correspondence).
+     *         This only occurs if #SetLackOfOneToOneCorrespondenceIsError() has been called.
+     */
+    unsigned GetErrorCode();
+
+    /**
+     * Set the voltage which is considered to be a triggered action potential.
+     *
+     * If this is not set it defaults to -50mV.
+     *
+     * @param threshold
+     */
+    void SetVoltageThresholdForRecordingAsActionPotential(double threshold);
+
+    /**
      * Tell the simulator whether to suppress output to std::cout.
      *
      * @param suppress  Whether to suppress output (defaults to true).
@@ -231,7 +258,6 @@ public:
      * Reset the action potential evaluator for a new run.
      */
     void Reset();
-
 };
 
 #endif // ABSTRACTACTIONPOTENTIALMETHOD_HPP_

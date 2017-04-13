@@ -36,9 +36,9 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef PARAMETERPOINTDATA_HPP_
 #define PARAMETERPOINTDATA_HPP_
 
-#include <vector>
 #include <boost/serialization/vector.hpp>
-#include "ChasteSerialization.hpp"  // Should be included before any other Chaste headers.
+#include <vector>
+#include "ChasteSerialization.hpp" // Should be included before any other Chaste headers.
 
 class ParameterPointData
 {
@@ -46,17 +46,31 @@ private:
     /** Needed for serialization. */
     friend class boost::serialization::access;
     /**
-     * Archive the object.
-     *
-     * @param archive the archive
-     * @param version the current version of this class
-     */
-    template<class Archive>
-    void serialize(Archive & archive, const unsigned int version)
+   * Archive the object.
+   *
+   * @param archive the archive
+   * @param version the current version of this class
+   */
+    template <class Archive>
+    void serialize(Archive& archive, const unsigned int version)
     {
-        archive & mQoIs;
-        archive & mErrorOccurred;
-        archive & mErrorEstimates;
+        archive& mQoIs;
+        if (version >= 1)
+        {
+            archive& mErrorCode;
+            archive& mErrorEstimates;
+        }
+        else
+        {
+            bool error_occurred = (mErrorCode > 0u);
+            archive& error_occurred;
+            archive& mErrorEstimates;
+
+            if (error_occurred)
+            {
+                mErrorCode = 1u; // Give an arbitrary error code.
+            }
+        }
     }
 
     /** The quantities of interest (QoIs) at this point */
@@ -65,86 +79,86 @@ private:
     /** Estimates for errors in the quantities of interest (QoIs) at this point */
     std::vector<double> mErrorEstimates;
 
-    /** Whether an error occurred whilst we were evaluating the QoIs.*/
-    bool mErrorOccurred;
+    /** Whether an error occurred (code>1) whilst we were evaluating the QoIs.*/
+    unsigned mErrorCode;
 
     /** Private constructor for archiving only. */
     ParameterPointData(){};
 
 public:
     /**
-     * Constructor
-     *
-     * @param rQoIs  The quantities of interest that were evaluated at this point.
-     * @param error  Whether an error occurred during their evaluation.
-     */
-    ParameterPointData(const std::vector<double>& rQoIs, bool error)
-        : mQoIs(rQoIs),
-          mErrorOccurred(error)
-    {
-
-    }
+   * Constructor
+   *
+   * @param rQoIs  The quantities of interest that were evaluated at this point.
+   * @param error  Whether an error occurred during their evaluation.
+   */
+    ParameterPointData(const std::vector<double>& rQoIs, unsigned error)
+            : mQoIs(rQoIs),
+              mErrorCode(error) {}
 
     /**
-     * @return The Quantities of Interest that were evaluated here.
-     */
+   * @return The Quantities of Interest that were evaluated here.
+   */
     std::vector<double> GetQoIs() const
     {
         return mQoIs;
     }
 
     /**
-     * A similar method to GetQoIs that returns a const'ed reference
-     * to lower overhead of copying data around.
-     *
-     * @return The Quantities of Interest that were evaluated here.
-     */
+   * A similar method to GetQoIs that returns a const'ed reference
+   * to lower overhead of copying data around.
+   *
+   * @return The Quantities of Interest that were evaluated here.
+   */
     const std::vector<double>& rGetQoIs() const
     {
         return mQoIs;
     }
 
     /**
-     * @return The error estimates in the Quantities of Interest that were evaluated here.
-     */
+   * @return The error estimates in the Quantities of Interest that were
+   * evaluated here.
+   */
     const std::vector<double>& rGetQoIErrorEstimates() const
     {
-        if (mErrorEstimates.size()==0u)
+        if (mErrorEstimates.size() == 0u)
         {
-            EXCEPTION("Error estimates have not been set on this parameter data point.");
+            EXCEPTION(
+                "Error estimates have not been set on this parameter data point.");
         }
         return mErrorEstimates;
     }
 
     /**
-     * Set the error estimates associated with the QoIs at this point
-     * @param errorEstimates  The error estimates.
-     */
+   * Set the error estimates associated with the QoIs at this point
+   * @param errorEstimates  The error estimates.
+   */
     void SetErrorEstimates(const std::vector<double>& rErrorEstimates)
     {
-        assert(rErrorEstimates.size()==mQoIs.size());
+        assert(rErrorEstimates.size() == mQoIs.size());
         mErrorEstimates = rErrorEstimates;
     }
 
     /**
-     * @return Whether there are any error estimates for this data point.
-     */
+   * @return Whether there are any error estimates for this data point.
+   */
     bool HasErrorEstimates()
     {
         return (mErrorEstimates.size() > 0u);
     }
 
     /**
-     * @return  Whether an error occurred during the QoI evaluation.
-     */
-    bool DidErrorOccur() const
+   * @return  Error code for the QoI evaluation (0 = no error). For other code meanings see
+   * ApPredict/src/single_cell/AbstractActionPotentialMethod::GetErrorCode
+   */
+    unsigned GetErrorCode() const
     {
-        return mErrorOccurred;
+        return mErrorCode;
     }
-
 };
 
 #include "SerializationExportWrapper.hpp"
 CHASTE_CLASS_EXPORT(ParameterPointData)
+BOOST_CLASS_VERSION(ParameterPointData, 1) // This is the second version of archiving for this class (member variable changed)
 
 #endif // PARAMETERPOINTDATA_HPP_
