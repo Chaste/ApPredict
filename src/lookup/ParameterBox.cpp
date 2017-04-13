@@ -278,7 +278,7 @@ std::set<c_vector<double, DIM>*, c_vector_compare<DIM> > ParameterBox<DIM>::SubD
 
         // Store these estimates for comparison with real data later.
         // We don't care whether an error actually occurred or not for this.
-        boost::shared_ptr<ParameterPointData> predicted_data = boost::shared_ptr<ParameterPointData>(new ParameterPointData(predicted_qois, false));
+        boost::shared_ptr<ParameterPointData> predicted_data = boost::shared_ptr<ParameterPointData>(new ParameterPointData(predicted_qois, 0u));
         AssignQoIValues(new_corner, predicted_data, true);
     }
 
@@ -417,7 +417,7 @@ double ParameterBox<DIM>::GetMaxErrorInQoIEstimateInThisBox(const unsigned& rQua
          ++iter)
     {
         // See if an error occurred when evaluating the QoIs at this corner.
-        if ((*iter).second->GetErrorCode() > 0u)
+        if ((*iter).second->GetErrorCode() == 0u) // (Error code 0u means no error occurred)
         {
             all_errors = false;
             break;

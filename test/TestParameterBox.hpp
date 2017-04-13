@@ -39,8 +39,8 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <cxxtest/TestSuite.h>
 #include "CheckpointArchiveTypes.hpp"
 
-#include "ParameterBox.hpp"
 #include "OutputFileHandler.hpp"
+#include "ParameterBox.hpp"
 
 /**
  * Test the Parameter Box class.
@@ -51,14 +51,16 @@ class TestParameterBox : public CxxTest::TestSuite
 private:
     // 1D box
     void AssignExponentialData(ParameterBox<1>& rBox,
-                               std::vector<c_vector<double, 1u>* >& rCorners)
+                               std::vector<c_vector<double, 1u>*>& rCorners)
     {
+        unsigned error_code = 0u;
         // Invent some initial guesses (some too big, some too small)
-        for (unsigned i=0; i<rCorners.size(); i++)
+        for (unsigned i = 0; i < rCorners.size(); i++)
         {
             std::vector<double> qoi;
             qoi.push_back(0.5); // Our initial guess is 0.5 everywhere.
-            boost::shared_ptr<ParameterPointData> p_data = boost::shared_ptr<ParameterPointData>(new ParameterPointData(qoi, false));
+
+            boost::shared_ptr<ParameterPointData> p_data = boost::shared_ptr<ParameterPointData>(new ParameterPointData(qoi, error_code));
 
             // Assign this data as an estimate at this corner (with the 'true' flag).
             rBox.AssignQoIValues(rCorners[i], p_data, true);
@@ -70,40 +72,41 @@ private:
         }
 
         // Assign some 'real' data with exp(x)
-        for (unsigned i=0; i<rCorners.size(); i++)
+        for (unsigned i = 0; i < rCorners.size(); i++)
         {
             std::vector<double> qoi;
             qoi.push_back(exp((*(rCorners[i]))[0]));
-            boost::shared_ptr<ParameterPointData> p_data = boost::shared_ptr<ParameterPointData>(new ParameterPointData(qoi, false));
+            boost::shared_ptr<ParameterPointData> p_data = boost::shared_ptr<ParameterPointData>(new ParameterPointData(qoi, error_code));
             rBox.AssignQoIValues(rCorners[i], p_data);
         }
     }
 
     // 2D Box just the same (exponential data on x only)
     void AssignExponentialData(ParameterBox<2>& rBox,
-                               std::vector<c_vector<double, 2u>* >& rCorners)
+                               std::vector<c_vector<double, 2u>*>& rCorners)
     {
+        unsigned error_code = 0u;
         // Invent some data with exp(x)
-        for (unsigned i=0; i<rCorners.size(); i++)
+        for (unsigned i = 0; i < rCorners.size(); i++)
         {
             std::vector<double> qoi;
             qoi.push_back(exp((*(rCorners[i]))[0]));
-            boost::shared_ptr<ParameterPointData> p_data = boost::shared_ptr<ParameterPointData>(new ParameterPointData(qoi, false));
+            boost::shared_ptr<ParameterPointData> p_data = boost::shared_ptr<ParameterPointData>(new ParameterPointData(qoi, error_code));
             rBox.AssignQoIValues(rCorners[i], p_data);
         }
     }
 
 public:
-    void TestParameterBox1d() throw (Exception)
+    void TestParameterBox1d() throw(Exception)
     {
         ParameterBox<1> parent_box_1d(NULL);
 
         TS_ASSERT_EQUALS(parent_box_1d.GetGeneration(), 0u);
-        std::vector<c_vector<double, 1u>* > corner_parameters = parent_box_1d.GetCornersAsVector();
+        std::vector<c_vector<double, 1u>*> corner_parameters = parent_box_1d.GetCornersAsVector();
 
-        TS_ASSERT_EQUALS(corner_parameters.size(),2u);
-        TS_ASSERT_DELTA((*(corner_parameters[0]))[0],0.0, 1e-12);
-        TS_ASSERT_DELTA((*(corner_parameters[1]))[0],1.0, 1e-12);
+        TS_ASSERT_EQUALS(corner_parameters.size(), 2u);
+        TS_ASSERT_DELTA((*(corner_parameters[0]))[0], 0.0, 1e-12);
+        TS_ASSERT_DELTA((*(corner_parameters[1]))[0], 1.0, 1e-12);
 
         TS_ASSERT_THROWS_THIS(parent_box_1d.GetMaxErrorsInPredictedQoIs(),
                               "Not all the parameter points (which you can get with GetNewCorners()) have been assigned data. Error estimates unavailable.");
@@ -132,7 +135,7 @@ public:
         TS_ASSERT_THROWS_THIS(parent_box_1d.SubDivide(),
                               "Already subdivided this box.");
 
-        std::vector<ParameterBox<1>* > daughter_boxes = parent_box_1d.GetDaughterBoxes();
+        std::vector<ParameterBox<1>*> daughter_boxes = parent_box_1d.GetDaughterBoxes();
         TS_ASSERT_EQUALS(daughter_boxes.size(), 2u);
         TS_ASSERT_EQUALS(daughter_boxes[0]->GetGeneration(), 1u);
         TS_ASSERT_EQUALS(daughter_boxes[1]->GetGeneration(), 1u);
@@ -154,7 +157,7 @@ public:
         TS_ASSERT_EQUALS(new_corners2.size(), 0u);
 
         corner_parameters = parent_box_1d.GetCornersAsVector();
-        TS_ASSERT_EQUALS(corner_parameters.size(),3u);
+        TS_ASSERT_EQUALS(corner_parameters.size(), 3u);
         TS_ASSERT_DELTA((*(corner_parameters[0]))[0], 0.0, 1e-12);
         TS_ASSERT_DELTA((*(corner_parameters[1]))[0], 0.5, 1e-12);
         TS_ASSERT_DELTA((*(corner_parameters[2]))[0], 1.0, 1e-12);
@@ -177,14 +180,13 @@ public:
 
         // The error should be linear approximation between exp(0) and exp(1),
         // compared to exp(0.5). This is very pleasing!
-        TS_ASSERT_DELTA(errors1[0], (exp(0) + exp(1))/2.0 - exp(0.5), 1e-12);
-
+        TS_ASSERT_DELTA(errors1[0], (exp(0) + exp(1)) / 2.0 - exp(0.5), 1e-12);
 
         // Divide box at 0,0.5 into two:
         daughter_boxes[0]->SubDivide();
 
         corner_parameters = parent_box_1d.GetCornersAsVector();
-        TS_ASSERT_EQUALS(corner_parameters.size(),4u);
+        TS_ASSERT_EQUALS(corner_parameters.size(), 4u);
         TS_ASSERT_DELTA((*(corner_parameters[0]))[0], 0.0, 1e-12);
         TS_ASSERT_DELTA((*(corner_parameters[1]))[0], 0.25, 1e-12);
         TS_ASSERT_DELTA((*(corner_parameters[2]))[0], 0.5, 1e-12);
@@ -195,7 +197,7 @@ public:
         daughter_boxes[1]->SubDivide();
 
         corner_parameters = parent_box_1d.GetCornersAsVector();
-        TS_ASSERT_EQUALS(corner_parameters.size(),5u);
+        TS_ASSERT_EQUALS(corner_parameters.size(), 5u);
         TS_ASSERT_DELTA((*(corner_parameters[0]))[0], 0.0, 1e-12);
         TS_ASSERT_DELTA((*(corner_parameters[1]))[0], 0.25, 1e-12);
         TS_ASSERT_DELTA((*(corner_parameters[2]))[0], 0.5, 1e-12);
@@ -212,7 +214,7 @@ public:
         TS_ASSERT_EQUALS(p_box->IsParent(), false);
         TS_ASSERT_EQUALS(p_box->GetGeneration(), 2u);
         TS_ASSERT_DELTA(p_box->GetMaxErrorsInPredictedQoIs()[0],
-                        (exp(1)-exp(0.5))/2.0 + exp(0.5) - exp(0.75), 1e-12);
+                        (exp(1) - exp(0.5)) / 2.0 + exp(0.5) - exp(0.75), 1e-12);
         TS_ASSERT_DELTA((*(p_box->GetCornersAsVector()[0]))[0], 0.5, 1e-12);
         TS_ASSERT_DELTA((*(p_box->GetCornersAsVector()[1]))[0], 0.75, 1e-12);
 
@@ -233,7 +235,7 @@ public:
 
     void TestArchivingParameterBox() throw(Exception)
     {
-        OutputFileHandler handler("archive",false);
+        OutputFileHandler handler("archive", false);
         std::string archive_filename = handler.GetOutputDirectoryFullPath() + "ParameterBox.arch";
 
         // SAVE
@@ -241,14 +243,14 @@ public:
             // Repeat most of the first test to get us to a state with 5 boxes...
 
             ParameterBox<1>* p_parent_box_1d = new ParameterBox<1>(NULL);
-            std::vector<c_vector<double, 1u>* > corner_parameters = p_parent_box_1d->GetCornersAsVector();
+            std::vector<c_vector<double, 1u>*> corner_parameters = p_parent_box_1d->GetCornersAsVector();
 
-            TS_ASSERT_EQUALS(corner_parameters.size(),2u);
+            TS_ASSERT_EQUALS(corner_parameters.size(), 2u);
 
             AssignExponentialData(*p_parent_box_1d, corner_parameters);
             p_parent_box_1d->SubDivide();
 
-            std::vector<ParameterBox<1>* > daughter_boxes = p_parent_box_1d->GetDaughterBoxes();
+            std::vector<ParameterBox<1>*> daughter_boxes = p_parent_box_1d->GetDaughterBoxes();
             TS_ASSERT_EQUALS(daughter_boxes.size(), 2u);
 
             std::set<c_vector<double, 1u>*, c_vector_compare<1u> > new_corners = daughter_boxes[0]->GetNewCorners();
@@ -259,7 +261,7 @@ public:
             TS_ASSERT_EQUALS(new_corners.size(), 0u);
 
             corner_parameters = p_parent_box_1d->GetCornersAsVector();
-            TS_ASSERT_EQUALS(corner_parameters.size(),3u);
+            TS_ASSERT_EQUALS(corner_parameters.size(), 3u);
 
             // Check nesting works
             // Divide box at 0,0.5 into two:
@@ -267,32 +269,31 @@ public:
             daughter_boxes[0]->SubDivide();
 
             corner_parameters = p_parent_box_1d->GetCornersAsVector();
-            TS_ASSERT_EQUALS(corner_parameters.size(),4u);
+            TS_ASSERT_EQUALS(corner_parameters.size(), 4u);
 
             // And the other box:
             AssignExponentialData(*p_parent_box_1d, corner_parameters);
             daughter_boxes[1]->SubDivide();
 
             corner_parameters = p_parent_box_1d->GetCornersAsVector();
-            TS_ASSERT_EQUALS(corner_parameters.size(),5u);
+            TS_ASSERT_EQUALS(corner_parameters.size(), 5u);
 
             AssignExponentialData(*p_parent_box_1d, corner_parameters);
 
             // The largest jump in exp(x) should be between 0.75 and 1.0
-            ParameterBox<1u>* p_best_box =
-                    p_parent_box_1d->FindBoxWithLargestQoIErrorEstimate(0u, DBL_MIN);
+            ParameterBox<1u>* p_best_box = p_parent_box_1d->FindBoxWithLargestQoIErrorEstimate(0u, DBL_MIN);
 
             TS_ASSERT(p_best_box);
             TS_ASSERT_EQUALS(p_best_box->IsParent(), false);
             TS_ASSERT_DELTA(p_best_box->GetMaxErrorsInPredictedQoIs()[0],
-                            (exp(1)-exp(0.5))/2.0+ exp(0.5) - exp(0.75), 1e-12);
+                            (exp(1) - exp(0.5)) / 2.0 + exp(0.5) - exp(0.75), 1e-12);
             TS_ASSERT_DELTA((*(p_best_box->GetCornersAsVector()[0]))[0], 0.5, 1e-12);
             TS_ASSERT_DELTA((*(p_best_box->GetCornersAsVector()[1]))[0], 0.75, 1e-12);
 
             daughter_boxes = p_parent_box_1d->GetDaughterBoxes();
             TS_ASSERT_EQUALS(daughter_boxes.size(), 2u);
 
-            std::vector<ParameterBox<1u>* > all_boxes = p_parent_box_1d->GetWholeFamilyOfBoxes();
+            std::vector<ParameterBox<1u>*> all_boxes = p_parent_box_1d->GetWholeFamilyOfBoxes();
             TS_ASSERT_EQUALS(all_boxes.size(), 7u);
 
             // Archive it
@@ -317,16 +318,15 @@ public:
             // restore from the archive
             input_arch >> p_box;
 
-            std::vector<ParameterBox<1>* > daughter_boxes = p_box->GetDaughterBoxes();
+            std::vector<ParameterBox<1>*> daughter_boxes = p_box->GetDaughterBoxes();
             TS_ASSERT_EQUALS(daughter_boxes.size(), 2u);
 
-            ParameterBox<1u>* p_best_box =
-                    p_box->FindBoxWithLargestQoIErrorEstimate(0u, DBL_MIN);
+            ParameterBox<1u>* p_best_box = p_box->FindBoxWithLargestQoIErrorEstimate(0u, DBL_MIN);
 
             TS_ASSERT(p_best_box);
             TS_ASSERT_EQUALS(p_best_box->IsParent(), false);
             TS_ASSERT_DELTA(p_best_box->GetMaxErrorsInPredictedQoIs()[0],
-                            (exp(1)-exp(0.5))/2.0+ exp(0.5) - exp(0.75), 1e-12);
+                            (exp(1) - exp(0.5)) / 2.0 + exp(0.5) - exp(0.75), 1e-12);
             TS_ASSERT_DELTA((*(p_best_box->GetCornersAsVector()[0]))[0], 0.5, 1e-12);
             TS_ASSERT_DELTA((*(p_best_box->GetCornersAsVector()[1]))[0], 0.75, 1e-12);
 
@@ -335,12 +335,12 @@ public:
         }
     }
 
-    void TestParameterBox2d() throw (Exception)
+    void TestParameterBox2d() throw(Exception)
     {
         ParameterBox<2> parent_box_2d(NULL);
-        std::vector<c_vector<double, 2u>* > corner_parameters = parent_box_2d.GetCornersAsVector();
+        std::vector<c_vector<double, 2u>*> corner_parameters = parent_box_2d.GetCornersAsVector();
 
-        TS_ASSERT_EQUALS(corner_parameters.size(),4u);
+        TS_ASSERT_EQUALS(corner_parameters.size(), 4u);
         TS_ASSERT_DELTA((*(corner_parameters[0]))[0], 0.0, 1e-12);
         TS_ASSERT_DELTA((*(corner_parameters[0]))[1], 0.0, 1e-12);
         TS_ASSERT_DELTA((*(corner_parameters[1]))[0], 0.0, 1e-12);
@@ -358,66 +358,66 @@ public:
         TS_ASSERT_EQUALS(new_points.size(), 5u); // In 2D a SubDivide requires the addition of 5 new points.
 
         corner_parameters = parent_box_2d.GetCornersAsVector();
-        TS_ASSERT_EQUALS(corner_parameters.size(),9u);
+        TS_ASSERT_EQUALS(corner_parameters.size(), 9u);
 
-        TS_ASSERT_DELTA((*(corner_parameters[0]))[0], 0  , 1e-12);
-        TS_ASSERT_DELTA((*(corner_parameters[0]))[1], 0  , 1e-12);
-        TS_ASSERT_DELTA((*(corner_parameters[1]))[0], 0  , 1e-12);
+        TS_ASSERT_DELTA((*(corner_parameters[0]))[0], 0, 1e-12);
+        TS_ASSERT_DELTA((*(corner_parameters[0]))[1], 0, 1e-12);
+        TS_ASSERT_DELTA((*(corner_parameters[1]))[0], 0, 1e-12);
         TS_ASSERT_DELTA((*(corner_parameters[1]))[1], 0.5, 1e-12);
-        TS_ASSERT_DELTA((*(corner_parameters[2]))[0], 0  , 1e-12);
-        TS_ASSERT_DELTA((*(corner_parameters[2]))[1], 1  , 1e-12);
+        TS_ASSERT_DELTA((*(corner_parameters[2]))[0], 0, 1e-12);
+        TS_ASSERT_DELTA((*(corner_parameters[2]))[1], 1, 1e-12);
         TS_ASSERT_DELTA((*(corner_parameters[3]))[0], 0.5, 1e-12);
-        TS_ASSERT_DELTA((*(corner_parameters[3]))[1], 0  , 1e-12);
+        TS_ASSERT_DELTA((*(corner_parameters[3]))[1], 0, 1e-12);
         TS_ASSERT_DELTA((*(corner_parameters[4]))[0], 0.5, 1e-12);
         TS_ASSERT_DELTA((*(corner_parameters[4]))[1], 0.5, 1e-12);
         TS_ASSERT_DELTA((*(corner_parameters[5]))[0], 0.5, 1e-12);
-        TS_ASSERT_DELTA((*(corner_parameters[5]))[1], 1  , 1e-12);
-        TS_ASSERT_DELTA((*(corner_parameters[6]))[0], 1  , 1e-12);
-        TS_ASSERT_DELTA((*(corner_parameters[6]))[1], 0  , 1e-12);
-        TS_ASSERT_DELTA((*(corner_parameters[7]))[0], 1  , 1e-12);
+        TS_ASSERT_DELTA((*(corner_parameters[5]))[1], 1, 1e-12);
+        TS_ASSERT_DELTA((*(corner_parameters[6]))[0], 1, 1e-12);
+        TS_ASSERT_DELTA((*(corner_parameters[6]))[1], 0, 1e-12);
+        TS_ASSERT_DELTA((*(corner_parameters[7]))[0], 1, 1e-12);
         TS_ASSERT_DELTA((*(corner_parameters[7]))[1], 0.5, 1e-12);
-        TS_ASSERT_DELTA((*(corner_parameters[8]))[0], 1  , 1e-12);
-        TS_ASSERT_DELTA((*(corner_parameters[8]))[1], 1  , 1e-12);
+        TS_ASSERT_DELTA((*(corner_parameters[8]))[0], 1, 1e-12);
+        TS_ASSERT_DELTA((*(corner_parameters[8]))[1], 1, 1e-12);
 
-        std::vector<ParameterBox<2>* > daughter_boxes = parent_box_2d.GetDaughterBoxes();
+        std::vector<ParameterBox<2>*> daughter_boxes = parent_box_2d.GetDaughterBoxes();
         TS_ASSERT_EQUALS(daughter_boxes.size(), 4u);
 
         // Box 0
-        TS_ASSERT_DELTA((*(daughter_boxes[0]->GetCornersAsVector()[0]))[0], 0  , 1e-12);
-        TS_ASSERT_DELTA((*(daughter_boxes[0]->GetCornersAsVector()[0]))[1], 0  , 1e-12);
-        TS_ASSERT_DELTA((*(daughter_boxes[0]->GetCornersAsVector()[1]))[0], 0  , 1e-12);
+        TS_ASSERT_DELTA((*(daughter_boxes[0]->GetCornersAsVector()[0]))[0], 0, 1e-12);
+        TS_ASSERT_DELTA((*(daughter_boxes[0]->GetCornersAsVector()[0]))[1], 0, 1e-12);
+        TS_ASSERT_DELTA((*(daughter_boxes[0]->GetCornersAsVector()[1]))[0], 0, 1e-12);
         TS_ASSERT_DELTA((*(daughter_boxes[0]->GetCornersAsVector()[1]))[1], 0.5, 1e-12);
         TS_ASSERT_DELTA((*(daughter_boxes[0]->GetCornersAsVector()[2]))[0], 0.5, 1e-12);
-        TS_ASSERT_DELTA((*(daughter_boxes[0]->GetCornersAsVector()[2]))[1], 0  , 1e-12);
+        TS_ASSERT_DELTA((*(daughter_boxes[0]->GetCornersAsVector()[2]))[1], 0, 1e-12);
         TS_ASSERT_DELTA((*(daughter_boxes[0]->GetCornersAsVector()[3]))[0], 0.5, 1e-12);
         TS_ASSERT_DELTA((*(daughter_boxes[0]->GetCornersAsVector()[3]))[1], 0.5, 1e-12);
         // Box 1
         TS_ASSERT_DELTA((*(daughter_boxes[1]->GetCornersAsVector()[0]))[0], 0.5, 1e-12);
-        TS_ASSERT_DELTA((*(daughter_boxes[1]->GetCornersAsVector()[0]))[1], 0  , 1e-12);
+        TS_ASSERT_DELTA((*(daughter_boxes[1]->GetCornersAsVector()[0]))[1], 0, 1e-12);
         TS_ASSERT_DELTA((*(daughter_boxes[1]->GetCornersAsVector()[1]))[0], 0.5, 1e-12);
         TS_ASSERT_DELTA((*(daughter_boxes[1]->GetCornersAsVector()[1]))[1], 0.5, 1e-12);
-        TS_ASSERT_DELTA((*(daughter_boxes[1]->GetCornersAsVector()[2]))[0], 1  , 1e-12);
-        TS_ASSERT_DELTA((*(daughter_boxes[1]->GetCornersAsVector()[2]))[1], 0  , 1e-12);
-        TS_ASSERT_DELTA((*(daughter_boxes[1]->GetCornersAsVector()[3]))[0], 1  , 1e-12);
+        TS_ASSERT_DELTA((*(daughter_boxes[1]->GetCornersAsVector()[2]))[0], 1, 1e-12);
+        TS_ASSERT_DELTA((*(daughter_boxes[1]->GetCornersAsVector()[2]))[1], 0, 1e-12);
+        TS_ASSERT_DELTA((*(daughter_boxes[1]->GetCornersAsVector()[3]))[0], 1, 1e-12);
         TS_ASSERT_DELTA((*(daughter_boxes[1]->GetCornersAsVector()[3]))[1], 0.5, 1e-12);
         // Box 2
-        TS_ASSERT_DELTA((*(daughter_boxes[2]->GetCornersAsVector()[0]))[0], 0  , 1e-12);
+        TS_ASSERT_DELTA((*(daughter_boxes[2]->GetCornersAsVector()[0]))[0], 0, 1e-12);
         TS_ASSERT_DELTA((*(daughter_boxes[2]->GetCornersAsVector()[0]))[1], 0.5, 1e-12);
-        TS_ASSERT_DELTA((*(daughter_boxes[2]->GetCornersAsVector()[1]))[0], 0  , 1e-12);
-        TS_ASSERT_DELTA((*(daughter_boxes[2]->GetCornersAsVector()[1]))[1], 1  , 1e-12);
+        TS_ASSERT_DELTA((*(daughter_boxes[2]->GetCornersAsVector()[1]))[0], 0, 1e-12);
+        TS_ASSERT_DELTA((*(daughter_boxes[2]->GetCornersAsVector()[1]))[1], 1, 1e-12);
         TS_ASSERT_DELTA((*(daughter_boxes[2]->GetCornersAsVector()[2]))[0], 0.5, 1e-12);
         TS_ASSERT_DELTA((*(daughter_boxes[2]->GetCornersAsVector()[2]))[1], 0.5, 1e-12);
         TS_ASSERT_DELTA((*(daughter_boxes[2]->GetCornersAsVector()[3]))[0], 0.5, 1e-12);
-        TS_ASSERT_DELTA((*(daughter_boxes[2]->GetCornersAsVector()[3]))[1], 1  , 1e-12);
+        TS_ASSERT_DELTA((*(daughter_boxes[2]->GetCornersAsVector()[3]))[1], 1, 1e-12);
         // Box 3
         TS_ASSERT_DELTA((*(daughter_boxes[3]->GetCornersAsVector()[0]))[0], 0.5, 1e-12);
         TS_ASSERT_DELTA((*(daughter_boxes[3]->GetCornersAsVector()[0]))[1], 0.5, 1e-12);
         TS_ASSERT_DELTA((*(daughter_boxes[3]->GetCornersAsVector()[1]))[0], 0.5, 1e-12);
-        TS_ASSERT_DELTA((*(daughter_boxes[3]->GetCornersAsVector()[1]))[1], 1  , 1e-12);
-        TS_ASSERT_DELTA((*(daughter_boxes[3]->GetCornersAsVector()[2]))[0], 1  , 1e-12);
+        TS_ASSERT_DELTA((*(daughter_boxes[3]->GetCornersAsVector()[1]))[1], 1, 1e-12);
+        TS_ASSERT_DELTA((*(daughter_boxes[3]->GetCornersAsVector()[2]))[0], 1, 1e-12);
         TS_ASSERT_DELTA((*(daughter_boxes[3]->GetCornersAsVector()[2]))[1], 0.5, 1e-12);
-        TS_ASSERT_DELTA((*(daughter_boxes[3]->GetCornersAsVector()[3]))[0], 1  , 1e-12);
-        TS_ASSERT_DELTA((*(daughter_boxes[3]->GetCornersAsVector()[3]))[1], 1  , 1e-12);
+        TS_ASSERT_DELTA((*(daughter_boxes[3]->GetCornersAsVector()[3]))[0], 1, 1e-12);
+        TS_ASSERT_DELTA((*(daughter_boxes[3]->GetCornersAsVector()[3]))[1], 1, 1e-12);
     }
 };
 
