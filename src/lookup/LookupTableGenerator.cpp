@@ -63,6 +63,7 @@ struct ThreadInputData
     unsigned mMaxNumPaces;
     unsigned mModelIndex;
     double mFrequency;
+    double mVoltageThreshold;
 };
 
 template <unsigned DIM>
@@ -79,7 +80,8 @@ LookupTableGenerator<DIM>::LookupTableGenerator(
           mGenerationHasBegun(false),
           mMaxRefinementDifference(UNSIGNED_UNSET),
           mpParentBox(new ParameterBox<DIM>(NULL)),
-          mMaxNumPaces(UNSIGNED_UNSET)
+          mMaxNumPaces(UNSIGNED_UNSET),
+          mVoltageThreshold(-50.0)
 {
     // empty
 }
@@ -149,6 +151,11 @@ void LookupTableGenerator<DIM>::GenerateLookupTable()
         {
             mUnscaledParameters.push_back(p_model->GetParameter(mParameterNames[i]));
         }
+
+        // We now do a special run of a model with sodium current set to zero, so we can see the effect
+        // of simply a stimulus current, and then set the threshold for APs accordingly.
+        mVoltageThreshold = DetectVoltageThresholdForActionPotential(p_model);
+        p_model->SetStateVariables(mInitialConditions); // Put the model back to sensible state
 
         // Initial scalings
         CornerSet set_of_points = mpParentBox->GetCorners();
@@ -263,6 +270,7 @@ void LookupTableGenerator<DIM>::RunEvaluationsForThesePoints(
         thread_data[i].mMaxNumPaces = mMaxNumPaces;
         thread_data[i].mModelIndex = mModelIndex;
         thread_data[i].mFrequency = mFrequency;
+        thread_data[i].mVoltageThreshold = mVoltageThreshold;
 
         // Launch the ThreadedActionPotential method on this thread
         return_code = pthread_create(&threads[i], NULL, ThreadedActionPotential,
@@ -359,6 +367,7 @@ void* ThreadedActionPotential(void* argument)
     ap_runner.SuppressOutput();
     ap_runner.SetMaxNumPaces(my_data->mMaxNumPaces);
     ap_runner.SetLackOfOneToOneCorrespondenceIsError();
+    ap_runner.SetVoltageThresholdForRecordingAsActionPotential(my_data->mVoltageThreshold);
 
     // Call the SingleActionPotentialPrediction methods.
     try
@@ -568,6 +577,37 @@ template <unsigned DIM>
 void LookupTableGenerator<DIM>::SetPacingFrequency(double frequency)
 {
     mFrequency = frequency;
+}
+
+template <unsigned DIM>
+double LookupTableGenerator<DIM>::DetectVoltageThresholdForActionPotential(boost::shared_ptr<AbstractCvodeCell> pModel)
+{
+    SingleActionPotentialPrediction ap_runner(pModel);
+    ap_runner.SuppressOutput();
+    ap_runner.SetMaxNumPaces(100u);
+
+    // We switch off the sodium current and see how high the stimulus makes the voltage go.
+    if (pModel->HasParameter("membrane_fast_sodium_current_conductance"))
+    {
+        const double original_na_conductance = pModel->GetParameter("membrane_fast_sodium_current_conductance");
+        pModel->SetParameter("membrane_fast_sodium_current_conductance", 0u);
+
+        OdeSolution solution = ap_runner.RunSteadyPacingExperiment();
+
+        // Put it back where it was! The calling method will reset state variables.
+        pModel->SetParameter("membrane_fast_sodium_current_conductance", original_na_conductance);
+
+        std::vector<double> voltages = solution.GetAnyVariable("membrane_voltage");
+        double max_voltage = *(std::max_element(voltages.begin(), voltages.end()));
+        double min_voltage = *(std::min_element(voltages.begin(), voltages.end()));
+
+        // Go 10% over the depolarization jump at gNa=0 as a threshold for 'this really is an AP'.
+        return min_voltage + 1.1 * (max_voltage - min_voltage);
+    }
+    else
+    {
+        return -50.0; // mV
+    }
 }
 
 #include "SerializationExportWrapperForCpp.hpp"

@@ -36,23 +36,23 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef LOOKUPTABLEGENERATOR_HPP_
 #define LOOKUPTABLEGENERATOR_HPP_
 
-#include <set>
 #include <boost/shared_ptr.hpp>
+#include <set>
 // Seems that whatever version of ublas I am using now contains boost serialization
 // methods for c_vector, which is nice.
-#include <boost/serialization/vector.hpp>
 #include <boost/serialization/shared_ptr.hpp>
+#include <boost/serialization/vector.hpp>
 #include "ChasteSerialization.hpp" // Should be included before any other Chaste headers.
 #include "ChasteSerializationVersion.hpp"
 
 #include "AbstractCvodeCell.hpp"
-#include "ParameterBox.hpp"
 #include "Exception.hpp"
-#include "UblasVectorInclude.hpp" // Chaste helper header to get c_vectors included with right namespace.
 #include "OutputFileHandler.hpp"
-#include "SingleActionPotentialPrediction.hpp"
-#include "QuantityOfInterest.hpp"
+#include "ParameterBox.hpp"
 #include "ParameterPointData.hpp"
+#include "QuantityOfInterest.hpp"
+#include "SingleActionPotentialPrediction.hpp"
+#include "UblasVectorInclude.hpp" // Chaste helper header to get c_vectors included with right namespace.
 
 /**
  * A class that will generate lookup tables in DIM-dimensional parameter space,
@@ -68,10 +68,13 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * You should add QoIs in order of importance, as the lookup table will be refined for each in turn.
  */
-template<unsigned DIM>
+template <unsigned DIM>
 class LookupTableGenerator
 {
-  private:
+private:
+    /** Needed for testing */
+    friend class TestLookupTableGenerator;
+
     /** Needed for serialization. */
     friend class boost::serialization::access;
     /**
@@ -80,31 +83,35 @@ class LookupTableGenerator
      * @param archive the archive
      * @param version the current version of this class
      */
-    template<class Archive>
-    void serialize(Archive & archive, const unsigned int version)
+    template <class Archive>
+    void serialize(Archive& archive, const unsigned int version)
     {
-        archive & mModelIndex;
+        archive& mModelIndex;
         if (version > 0u)
         {
-            archive & mFrequency;
+            archive& mFrequency;
         }
-        archive & mParameterPoints;
-        archive & mParameterPointData;
-        archive & mParameterNames;
-        archive & mMinimums;
-        archive & mMaximums;
-        archive & mUnscaledParameters;
-        archive & mQuantitiesToRecord;
-        archive & mQoITolerances;
-        archive & mMaxNumEvaluations;
-        archive & mNumEvaluations;
-        archive & mOutputFileName;
-        archive & mOutputFolder;
-        archive & mGenerationHasBegun;
-        archive & mpParentBox;
-        archive & mInitialConditions;
-        archive & mMaxRefinementDifference;
-        archive & mMaxNumPaces;
+        archive& mParameterPoints;
+        archive& mParameterPointData;
+        archive& mParameterNames;
+        archive& mMinimums;
+        archive& mMaximums;
+        archive& mUnscaledParameters;
+        archive& mQuantitiesToRecord;
+        archive& mQoITolerances;
+        archive& mMaxNumEvaluations;
+        archive& mNumEvaluations;
+        archive& mOutputFileName;
+        archive& mOutputFolder;
+        archive& mGenerationHasBegun;
+        archive& mpParentBox;
+        archive& mInitialConditions;
+        archive& mMaxRefinementDifference;
+        archive& mMaxNumPaces;
+        if (version > 1u)
+        {
+            archive& mVoltageThreshold;
+        }
     }
 
     /** Helper wrappers round these long-winded set and iterator names */
@@ -168,6 +175,9 @@ class LookupTableGenerator
     /** The maximum number of paces to do */
     unsigned mMaxNumPaces;
 
+    /** Threshold to send to action potential evaluation software to say "This is an excited AP" or not. */
+    double mVoltageThreshold;
+
     /**
      * This method will farm out the evaluation of a set of points using multi-threading.
      *
@@ -183,12 +193,21 @@ class LookupTableGenerator
      *  make sure we can detect and recover the intended state of everything.
      */
     LookupTableGenerator()
-     : mModelIndex(0u),
-       mpParentBox(NULL)
-    {};
+            : mModelIndex(0u),
+              mpParentBox(NULL){};
 
-  public:
+    /**
+     * @param pModel a cell model
+     *
+     * @return the threshold at which we think a voltage signal is a real
+     * excited action potential, rather than simply a stimulus current and decay
+     * so we give the error code NoActionPotential_1 appropriately (rather than really small APDs).
+     *
+     * Note this method will mess up state variables and they will need resetting to normal steady state after calling it.
+     */
+    double DetectVoltageThresholdForActionPotential(boost::shared_ptr<AbstractCvodeCell> pModel);
 
+public:
     /**
      * Constructor
      *
@@ -312,21 +331,20 @@ EXPORT_TEMPLATE_CLASS_SAME_DIMS(LookupTableGenerator)
 // Keep track of the archive version we are using
 namespace boost
 {
-    namespace serialization
-    {
-        /**
+namespace serialization
+{
+    /**
          * Specify a version number for archive backwards compatibility.
          *
          * This is how to do BOOST_CLASS_VERSION(AbstractCardiacPde, 1)
          * with a templated class.
          */
-        template <unsigned DIM>
-        struct version<LookupTableGenerator<DIM> >
-        {
-            CHASTE_VERSION_CONTENT(1); // Increment this on serialize method changes.
-        };
-    } // namespace serialization
+    template <unsigned DIM>
+    struct version<LookupTableGenerator<DIM> >
+    {
+        CHASTE_VERSION_CONTENT(2); // Increment this on serialize method changes.
+    };
+} // namespace serialization
 } // namespace boost
-
 
 #endif // LOOKUPTABLEGENERATOR_HPP_
