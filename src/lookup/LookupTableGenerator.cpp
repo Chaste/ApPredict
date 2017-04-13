@@ -67,9 +67,9 @@ struct ThreadInputData
 };
 
 template <unsigned DIM>
-LookupTableGenerator<DIM>::LookupTableGenerator(
-    const unsigned& rModelIndex, const std::string& rOutputFileName,
-    const std::string& rOutputFolder)
+LookupTableGenerator<DIM>::LookupTableGenerator(const unsigned& rModelIndex,
+                                                const std::string& rOutputFileName,
+                                                const std::string& rOutputFolder)
         : mModelIndex(rModelIndex),
           mFrequency(1.0),
           mMaxNumEvaluations(UNSIGNED_UNSET),
@@ -152,10 +152,13 @@ void LookupTableGenerator<DIM>::GenerateLookupTable()
             mUnscaledParameters.push_back(p_model->GetParameter(mParameterNames[i]));
         }
 
-        // We now do a special run of a model with sodium current set to zero, so we can see the effect
-        // of simply a stimulus current, and then set the threshold for APs accordingly.
+        // We now do a special run of a model with sodium current set to zero, so we
+        // can see the effect
+        // of simply a stimulus current, and then set the threshold for APs
+        // accordingly.
         mVoltageThreshold = DetectVoltageThresholdForActionPotential(p_model);
-        p_model->SetStateVariables(mInitialConditions); // Put the model back to sensible state
+        p_model->SetStateVariables(
+            mInitialConditions); // Put the model back to sensible state
 
         // Initial scalings
         CornerSet set_of_points = mpParentBox->GetCorners();
@@ -252,8 +255,8 @@ void LookupTableGenerator<DIM>::RunEvaluationsForThesePoints(
     int i;
 
     /**
-   * This loop launches each of the threads.
-   */
+ * This loop launches each of the threads.
+ */
     for (iter = setOfPoints.begin(), i = 0; iter != setOfPoints.end();
          ++iter, ++i)
     {
@@ -280,8 +283,8 @@ void LookupTableGenerator<DIM>::RunEvaluationsForThesePoints(
     }
 
     /*
-   * This loop gets the answers back from all the threads.
-   */
+ * This loop gets the answers back from all the threads.
+ */
     for (iter = setOfPoints.begin(), i = 0; iter != setOfPoints.end();
          ++iter, ++i)
     {
@@ -342,6 +345,8 @@ void LookupTableGenerator<DIM>::RunEvaluationsForThesePoints(
 
 void* ThreadedActionPotential(void* argument)
 {
+    // bool debugging_on = true;
+
     struct ThreadInputData* my_data;
     my_data = (struct ThreadInputData*)argument;
 
@@ -367,12 +372,27 @@ void* ThreadedActionPotential(void* argument)
     ap_runner.SuppressOutput();
     ap_runner.SetMaxNumPaces(my_data->mMaxNumPaces);
     ap_runner.SetLackOfOneToOneCorrespondenceIsError();
-    ap_runner.SetVoltageThresholdForRecordingAsActionPotential(my_data->mVoltageThreshold);
+    ap_runner.SetVoltageThresholdForRecordingAsActionPotential(
+        my_data->mVoltageThreshold);
 
     // Call the SingleActionPotentialPrediction methods.
     try
     {
+        //        if (debugging_on)
+        //        {
+        //            std::stringstream filename;
+        //            for (unsigned i = 0; i < scalings.size(); i++)
+        //            {
+        //                filename << scalings[i] << "_";
+        //            }
+        //            OdeSolution solution = ap_runner.RunSteadyPacingExperiment();
+        //            solution.WriteToFile("Debugging_Lookup", filename.str(), "ms",
+        //            1, false);
+        //        }
+        //        else
+        //        {
         ap_runner.RunSteadyPacingExperiment();
+        //        }
     }
     catch (Exception& e)
     {
@@ -396,12 +416,10 @@ void* ThreadedActionPotential(void* argument)
             std::cout << "Lookup table generator reports that " << error_message
                       << "\n"
                       << std::flush;
-            // We could use different numerical codes for different errors here if we
-            // wanted to.
+            // We could use different numerical codes for different errors here if we wanted to.
             if ((error_message == "NoActionPotential_2" || error_message == "NoActionPotential_3") && (my_data->mQuantitiesToRecord[i] == Apd90 || my_data->mQuantitiesToRecord[i] == Apd50))
             {
-                // For an APD calculation failure on repolarisation put in the stimulus
-                // period.
+                // For an APD calculation failure on repolarisation put in the stimulus period.
                 double stim_period = boost::static_pointer_cast<RegularStimulus>(
                                          p_model->GetStimulusFunction())
                                          ->GetPeriod();
@@ -586,7 +604,8 @@ double LookupTableGenerator<DIM>::DetectVoltageThresholdForActionPotential(boost
     ap_runner.SuppressOutput();
     ap_runner.SetMaxNumPaces(100u);
 
-    // We switch off the sodium current and see how high the stimulus makes the voltage go.
+    // We switch off the sodium current and see how high the stimulus makes the
+    // voltage go.
     if (pModel->HasParameter("membrane_fast_sodium_current_conductance"))
     {
         const double original_na_conductance = pModel->GetParameter("membrane_fast_sodium_current_conductance");
@@ -595,7 +614,8 @@ double LookupTableGenerator<DIM>::DetectVoltageThresholdForActionPotential(boost
         OdeSolution solution = ap_runner.RunSteadyPacingExperiment();
 
         // Put it back where it was! The calling method will reset state variables.
-        pModel->SetParameter("membrane_fast_sodium_current_conductance", original_na_conductance);
+        pModel->SetParameter("membrane_fast_sodium_current_conductance",
+                             original_na_conductance);
 
         std::vector<double> voltages = solution.GetAnyVariable("membrane_voltage");
         double max_voltage = *(std::max_element(voltages.begin(), voltages.end()));
