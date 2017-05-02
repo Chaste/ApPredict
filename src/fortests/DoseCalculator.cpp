@@ -165,11 +165,12 @@ std::vector<double> DoseCalculator::GetEquallySpacedBetween(double low, double h
 std::vector<double> DoseCalculator::GetConcentrations(void)
 {
 	std::vector<double> concs;
-    const double control_for_logscale = 1e-3;
+    const double control_for_logscale = 1e-3; // uM
 
 	if (mUseSpecifiedConcs)
 	{   // The exact concentrations to test have been input
 		concs = mConcentrations;
+		assert(concs.size()>=1u);
 		std::sort(concs.begin(), concs.end());
 
 		// Make sure there is a control case, if not add it in.
@@ -180,10 +181,14 @@ std::vector<double> DoseCalculator::GetConcentrations(void)
 		}
 
 		// For all Log scale cases also check we have 1nM (1e-3 uM) included
-		if (mLogScale && concs[1]-control_for_logscale > 1e-12)
+		if (mLogScale)
 		{
-			concs.push_back(control_for_logscale);
-			std::sort(concs.begin(), concs.end());
+		    // Check whether we've already got this control here
+		    if (concs.size()== 1u || concs[1]-control_for_logscale > 1e-12)
+		    {
+                concs.push_back(control_for_logscale);
+                std::sort(concs.begin(), concs.end());
+		    }
 		}
 
 		std::vector<double> concs_to_add;

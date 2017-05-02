@@ -87,7 +87,7 @@ public:
     }
 
     /**
-     * This last test should emulate the standalone executable and read your command line arguments.
+     * This test should emulate the standalone executable and read your command line arguments.
      */
     void TestDrugAffectByVaryingConductances(void) throw (Exception)
     {
