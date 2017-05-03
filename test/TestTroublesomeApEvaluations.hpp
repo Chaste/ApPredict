@@ -140,7 +140,7 @@ public:
         // So that cell does not depolarize.
         TS_ASSERT_EQUALS(message, "NoActionPotential_1");
 
-        delete steady_state;
+        DeleteVector(steady_state);
     }
 };
 
