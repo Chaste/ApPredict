@@ -55,9 +55,9 @@ private:
     template <class Archive>
     void save(Archive& archive, const unsigned int version) const
     {
-        archive& mQoIs;
-        archive& mErrorCode;
-        archive& mErrorEstimates;
+        archive & mQoIs;
+        archive & mErrorCode;
+        archive & mErrorEstimates;
     }
 
     /**
@@ -69,15 +69,15 @@ private:
     template <class Archive>
     void load(Archive& archive, const unsigned int version)
     {
-        archive& mQoIs;
+        archive & mQoIs;
         if (version >= 1)
         {
-            archive& mErrorCode;
+            archive & mErrorCode;
         }
         else // Older versions of this class had just a bool archived to say whether or not there was an error
         {
             bool error_occurred;
-            archive& error_occurred;
+            archive & error_occurred;
             if (error_occurred)
             {
                 mErrorCode = 1u; // Give an arbitrary error code.
@@ -87,7 +87,7 @@ private:
                 mErrorCode = 0u;
             }
         }
-        archive& mErrorEstimates;
+        archive & mErrorEstimates;
     }
     BOOST_SERIALIZATION_SPLIT_MEMBER()
 
@@ -112,6 +112,7 @@ public:
      */
     ParameterPointData(const std::vector<double>& rQoIs, unsigned error)
             : mQoIs(rQoIs),
+			  mErrorEstimates(),
               mErrorCode(error)
     {
     }
