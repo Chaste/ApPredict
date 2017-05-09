@@ -38,11 +38,12 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <boost/shared_ptr.hpp>
 #include <set>
-// Seems that whatever version of ublas I am using now contains boost serialization
+// Seems that whatever version of ublas I am using now contains boost
+// serialization
 // methods for c_vector, which is nice.
 #include <boost/serialization/shared_ptr.hpp>
 #include <boost/serialization/vector.hpp>
-#include "ChasteSerialization.hpp" // Should be included before any other Chaste headers.
+#include "ChasteSerialization.hpp"  // Should be included before any other Chaste headers.
 #include "ChasteSerializationVersion.hpp"
 
 #include "AbstractCvodeCell.hpp"
@@ -52,7 +53,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "ParameterPointData.hpp"
 #include "QuantityOfInterest.hpp"
 #include "SingleActionPotentialPrediction.hpp"
-#include "UblasVectorInclude.hpp" // Chaste helper header to get c_vectors included with right namespace.
+#include "UblasVectorInclude.hpp"  // Chaste helper header to get c_vectors included with right namespace.
 
 /**
  * A class that will generate lookup tables in DIM-dimensional parameter space,
@@ -66,285 +67,307 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * IKs  (KCNQ1/minK)
  * Ito  (Kv4.3/KChIP2.2)
  *
- * You should add QoIs in order of importance, as the lookup table will be refined for each in turn.
+ * You should add QoIs in order of importance, as the lookup table will be
+ * refined for each in turn.
  */
 template <unsigned DIM>
-class LookupTableGenerator
-{
-private:
-    /** Needed for testing */
-    friend class TestLookupTableGenerator;
+class LookupTableGenerator {
+ private:
+  /** Needed for testing */
+  friend class TestLookupTableGenerator;
 
-    /** Needed for serialization. */
-    friend class boost::serialization::access;
-    /**
-     * Archive the object.
-     *
-     * @param archive the archive
-     * @param version the current version of this class
-     */
-    template <class Archive>
-    void serialize(Archive& archive, const unsigned int version)
-    {
-        archive& mModelIndex;
-        if (version > 0u)
-        {
-            archive& mFrequency;
-        }
-        archive& mParameterPoints;
-        archive& mParameterPointData;
-        archive& mParameterNames;
-        archive& mMinimums;
-        archive& mMaximums;
-        archive& mUnscaledParameters;
-        archive& mQuantitiesToRecord;
-        archive& mQoITolerances;
-        archive& mMaxNumEvaluations;
-        archive& mNumEvaluations;
-        archive& mOutputFileName;
-        archive& mOutputFolder;
-        archive& mGenerationHasBegun;
-        archive& mpParentBox;
-        archive& mInitialConditions;
-        archive& mMaxRefinementDifference;
-        archive& mMaxNumPaces;
-        if (version > 1u)
-        {
-            archive& mVoltageThreshold;
-        }
+  /** Needed for serialization. */
+  friend class boost::serialization::access;
+  /**
+   * Archive the object.
+   *
+   * @param archive the archive
+   * @param version the current version of this class
+   */
+  template <class Archive>
+  void serialize(Archive& archive, const unsigned int version) {
+    archive& mModelIndex;
+    if (version > 0u) {
+      archive& mFrequency;
     }
+    archive& mParameterPoints;
+    archive& mParameterPointData;
+    archive& mParameterNames;
+    archive& mMinimums;
+    archive& mMaximums;
+    archive& mUnscaledParameters;
+    archive& mQuantitiesToRecord;
+    archive& mQoITolerances;
+    archive& mMaxNumEvaluations;
+    archive& mNumEvaluations;
+    archive& mOutputFileName;
+    archive& mOutputFolder;
+    archive& mGenerationHasBegun;
+    archive& mpParentBox;
+    archive& mInitialConditions;
+    archive& mMaxRefinementDifference;
+    archive& mMaxNumPaces;
+    if (version > 1u) {
+      archive& mVoltageThreshold;
+    }
+  }
 
-    /** Helper wrappers round these long-winded set and iterator names */
-    typedef typename std::set<c_vector<double, DIM>*, c_vector_compare<DIM> > CornerSet;
-    typedef typename std::set<c_vector<double, DIM>*, c_vector_compare<DIM> >::iterator CornerSetIter;
+  /** Helper wrappers round these long-winded set and iterator names */
+  typedef typename std::set<c_vector<double, DIM>*, c_vector_compare<DIM> >
+      CornerSet;
+  typedef typename std::set<c_vector<double, DIM>*,
+                            c_vector_compare<DIM> >::iterator CornerSetIter;
 
-    /** The model index we are using, refers to options in SetupModel class. */
-    unsigned mModelIndex;
+  /** The model index we are using, refers to options in SetupModel class. */
+  unsigned mModelIndex;
 
-    /** The frequency of pacing to use (in Hz), default value is taken to be 1Hz */
-    double mFrequency;
+  /** The frequency of pacing to use (in Hz), default value is taken to be 1Hz
+   */
+  double mFrequency;
 
-    /** The steady 1Hz pacing conditions for ones(DIM). */
-    std::vector<double> mInitialConditions;
+  /** The steady 1Hz pacing conditions for ones(DIM). */
+  std::vector<double> mInitialConditions;
 
-    /** The points in DIM-dimensional parameter space at which we have evaluated quantities of interest (lookup table co-ords) */
-    std::vector<c_vector<double, DIM> > mParameterPoints;
+  /** The points in DIM-dimensional parameter space at which we have evaluated
+   * quantities of interest (lookup table co-ords) */
+  std::vector<c_vector<double, DIM> > mParameterPoints;
 
-    /** The data (QoIs) that were evaluated at the points in #mParameterPoints */
-    std::vector<boost::shared_ptr<ParameterPointData> > mParameterPointData;
+  /** The data (QoIs) that were evaluated at the points in #mParameterPoints */
+  std::vector<boost::shared_ptr<ParameterPointData> > mParameterPointData;
 
-    /** The Oxford metadata names of the parameters that we are going to scale */
-    std::vector<std::string> mParameterNames;
+  /** The Oxford metadata names of the parameters that we are going to scale */
+  std::vector<std::string> mParameterNames;
 
-    /** The minimum scalings that should be applied (lower bounds of lookup table) */
-    std::vector<double> mMinimums;
+  /** The minimum scalings that should be applied (lower bounds of lookup table)
+   */
+  std::vector<double> mMinimums;
 
-    /** The maximum scalings that should be applied (upper bounds of lookup table) */
-    std::vector<double> mMaximums;
+  /** The maximum scalings that should be applied (upper bounds of lookup table)
+   */
+  std::vector<double> mMaximums;
 
-    /** The unscaled parameters that should not be messed with! */
-    std::vector<double> mUnscaledParameters;
+  /** The unscaled parameters that should not be messed with! */
+  std::vector<double> mUnscaledParameters;
 
-    /** The list of quantities of interest that we should record */
-    std::vector<QuantityOfInterest> mQuantitiesToRecord;
+  /** The list of quantities of interest that we should record */
+  std::vector<QuantityOfInterest> mQuantitiesToRecord;
 
-    /** The tolerances to aim for for each Quantity of Interest (QoI). */
-    std::vector<double> mQoITolerances;
+  /** The tolerances to aim for for each Quantity of Interest (QoI). */
+  std::vector<double> mQoITolerances;
 
-    /** The maximum number of function evaluations to perform */
-    unsigned mMaxNumEvaluations;
+  /** The maximum number of function evaluations to perform */
+  unsigned mMaxNumEvaluations;
 
-    /** The number of evaluations that have been performed up to now. */
-    unsigned mNumEvaluations;
+  /** The number of evaluations that have been performed up to now. */
+  unsigned mNumEvaluations;
 
-    /** The output file base name to use */
-    std::string mOutputFileName;
+  /** The output file base name to use */
+  std::string mOutputFileName;
 
-    /** The output folder to use when writing out lookup table entries. */
-    std::string mOutputFolder;
+  /** The output folder to use when writing out lookup table entries. */
+  std::string mOutputFolder;
 
-    /** Whether we have started generating lookup tables, to prevent accidents */
-    bool mGenerationHasBegun;
+  /** Whether we have started generating lookup tables, to prevent accidents */
+  bool mGenerationHasBegun;
 
-    /** The maximum difference in parameter box refinement we are going to allow */
-    unsigned mMaxRefinementDifference;
+  /** The maximum difference in parameter box refinement we are going to allow
+   */
+  unsigned mMaxRefinementDifference;
 
-    /** The great-great-grandaddy parameter box */
-    ParameterBox<DIM>* mpParentBox;
+  /** The great-great-grandaddy parameter box */
+  ParameterBox<DIM>* mpParentBox;
 
-    /** The maximum number of paces to do */
-    unsigned mMaxNumPaces;
+  /** The maximum number of paces to do */
+  unsigned mMaxNumPaces;
 
-    /** Threshold to send to action potential evaluation software to say "This is an excited AP" or not. */
-    double mVoltageThreshold;
+  /** Threshold to send to action potential evaluation software to say "This is
+   * an excited AP" or not. */
+  double mVoltageThreshold;
 
-    /**
-     * This method will farm out the evaluation of a set of points using multi-threading.
-     *
-     * @param setOfPoints  A collection of points in parameter space at which to evaluate QoIs.
-     * @param rFile  The output file to write a line of results into.
-     */
-    void RunEvaluationsForThesePoints(CornerSet setOfPoints, out_stream& rFile);
+  /**
+   * This method will farm out the evaluation of a set of points using
+   * multi-threading.
+   *
+   * @param setOfPoints  A collection of points in parameter space at which to
+   * evaluate QoIs.
+   * @param rFile  The output file to write a line of results into.
+   */
+  void RunEvaluationsForThesePoints(CornerSet setOfPoints, out_stream& rFile);
 
-    /**
-     *  Private constructor, just for use in archiving
-     *
-     *  This just ensures the pointers are correctly initialised to
-     *  make sure we can detect and recover the intended state of everything.
-     */
-    LookupTableGenerator()
-            : mModelIndex(0u),
-              mpParentBox(NULL){};
+  /**
+   *  Private constructor, just for use in archiving
+   *
+   *  This just ensures the pointers are correctly initialised to
+   *  make sure we can detect and recover the intended state of everything.
+   */
+  LookupTableGenerator() : mModelIndex(0u), mpParentBox(NULL){};
 
-    /**
-     * @param pModel a cell model
-     *
-     * @return the threshold at which we think a voltage signal is a real
-     * excited action potential, rather than simply a stimulus current and decay
-     * so we give the error code NoActionPotential_1 appropriately (rather than really small APDs).
-     *
-     * Note this method will mess up state variables and they will need resetting to normal steady state after calling it.
-     */
-    double DetectVoltageThresholdForActionPotential(boost::shared_ptr<AbstractCvodeCell> pModel);
+ public:
+  /**
+   * Constructor
+   *
+   * @param rModelIndex  The action potential model to use (see SetupModel for
+   * options).
+   * @param rOutputFileName  The base file name to use for the lookup table.
+   * @param rOutputFolder  The folder to put the output in, defaults to
+   * "LookupTables".
+   */
+  LookupTableGenerator(const unsigned& rModelIndex,
+                       const std::string& rOutputFileName,
+                       const std::string& rOutputFolder = "LookupTables");
 
-public:
-    /**
-     * Constructor
-     *
-     * @param rModelIndex  The action potential model to use (see SetupModel for options).
-     * @param rOutputFileName  The base file name to use for the lookup table.
-     * @param rOutputFolder  The folder to put the output in, defaults to "LookupTables".
-     */
-    LookupTableGenerator(const unsigned& rModelIndex,
-                         const std::string& rOutputFileName,
-                         const std::string& rOutputFolder = "LookupTables");
+  /**
+   * Destructor - cleans up some memory
+   */
+  ~LookupTableGenerator();
 
-    /**
-     * Destructor - cleans up some memory
-     */
-    ~LookupTableGenerator();
+  /**
+   * Main method,
+   *
+   * runs simulations varying the parameters requested in SetParameterToScale()
+   *
+   * performs postprocessing requested by AddQuantityOfInterest()
+   *
+   * and puts lookup table entries for f(mParameterPoints) =
+   * mQuantitiesOfInterest
+   * in the relevant member variables.
+   */
+  void GenerateLookupTable();
 
-    /**
-     * Main method,
-     *
-     * runs simulations varying the parameters requested in SetParameterToScale()
-     *
-     * performs postprocessing requested by AddQuantityOfInterest()
-     *
-     * and puts lookup table entries for f(mParameterPoints) =  mQuantitiesOfInterest
-     * in the relevant member variables.
-     */
-    void GenerateLookupTable();
+  /**
+   * @return The points in NUM_PARAMS-dimensional parameter space at which the
+   * quantities of interest have been evaluated.
+   */
+  std::vector<c_vector<double, DIM> > GetParameterPoints();
 
-    /**
-     * @return The points in NUM_PARAMS-dimensional parameter space at which the quantities of interest have been evaluated.
-     */
-    std::vector<c_vector<double, DIM> > GetParameterPoints();
+  /**
+   * @return The quantities of interest that have been evaluated at points in
+   * the lookup table.
+   */
+  std::vector<std::vector<double> > GetFunctionValues();
 
-    /**
-     * @return The quantities of interest that have been evaluated at points in the lookup table.
-     */
-    std::vector<std::vector<double> > GetFunctionValues();
+  /**
+   * Choose which parameter in the model to scale.
+   *
+   * @param rMetadataName  The Oxford metadata name of the parameter we want to
+   * scale.
+   * @param rMin  The minimum bound the parameter should take (limit of lookup
+   * table).
+   * @param rMax  The maximum bound the parameter should take (limit of lookup
+   * table).
+   */
+  void SetParameterToScale(const std::string& rMetadataName, const double& rMin,
+                           const double& rMax);
 
-    /**
-     * Choose which parameter in the model to scale.
-     *
-     * @param rMetadataName  The Oxford metadata name of the parameter we want to scale.
-     * @param rMin  The minimum bound the parameter should take (limit of lookup table).
-     * @param rMax  The maximum bound the parameter should take (limit of lookup table).
-     */
-    void SetParameterToScale(const std::string& rMetadataName,
-                             const double& rMin,
-                             const double& rMax);
+  /**
+   * Set the maximum number of paces to do in a single evaluation.
+   *
+   * This changes the "timeout" on the steady state calculation. If we
+   * reach steady state first then we stop there.
+   *
+   * This method is useful if you are emulating an experiment of a given
+   * duration. For example in the rabbit wedge at GSK they don't go for
+   * longer than 30 minutes at a given frequency so we change this accordingly.
+   *
+   * @param numPaces  The maximum number of paces to do.
+   */
+  void SetMaxNumPaces(unsigned numPaces);
 
-    /**
-     * Set the maximum number of paces to do in a single evaluation.
-     *
-     * This changes the "timeout" on the steady state calculation. If we
-     * reach steady state first then we stop there.
-     *
-     * This method is useful if you are emulating an experiment of a given
-     * duration. For example in the rabbit wedge at GSK they don't go for
-     * longer than 30 minutes at a given frequency so we change this accordingly.
-     *
-     * @param numPaces  The maximum number of paces to do.
-     */
-    void SetMaxNumPaces(unsigned numPaces);
+  /**
+   * @return The maximum number of paces considered in the Lookup table
+   * generation.
+   */
+  unsigned GetMaxNumPaces();
 
-    /**
-     * @return The maximum number of paces considered in the Lookup table generation.
-     */
-    unsigned GetMaxNumPaces();
+  /**
+   * Add a quantity of interest to create a lookup table for.
+   *
+   * These are listed in QuantityOfInterest enumeration at the top of
+   * LookupTableGenerator.hpp
+   *
+   * @param quantity  A quantity of interest (QoI)
+   * @param tolerance the tolerance we are willing to accept in this QoI between
+   * lookup table points.
+   */
+  void AddQuantityOfInterest(QuantityOfInterest quantity, double tolerance);
 
-    /**
-     * Add a quantity of interest to create a lookup table for.
-     *
-     * These are listed in QuantityOfInterest enumeration at the top of LookupTableGenerator.hpp
-     *
-     * @param quantity  A quantity of interest (QoI)
-     * @param tolerance the tolerance we are willing to accept in this QoI between lookup table points.
-     */
-    void AddQuantityOfInterest(QuantityOfInterest quantity, double tolerance);
+  /**
+   * Set maximum number of simulations to run when making the table.
+   *
+   * @param rMaxNumEvals  The maximum number of simulations.
+   */
+  void SetMaxNumEvaluations(const unsigned& rMaxNumEvals);
 
-    /**
-     * Set maximum number of simulations to run when making the table.
-     *
-     * @param rMaxNumEvals  The maximum number of simulations.
-     */
-    void SetMaxNumEvaluations(const unsigned& rMaxNumEvals);
+  /**
+   * Set a maximum difference in refinement level across the parameter space.
+   *
+   * If you don't set this there is assumed to be no limit on the refinement
+   * around the areas
+   * where the QoIs are varying most rapidly, this can lead to under-exploring
+   * other parts of
+   * the parameter space.
+   *
+   * @param rMaxRefinementDifference  The maximum difference in the parameter
+   * boxes to allow.
+   */
+  void SetMaxVariationInRefinement(const unsigned& rMaxRefinementDifference);
 
-    /**
-     * Set a maximum difference in refinement level across the parameter space.
-     *
-     * If you don't set this there is assumed to be no limit on the refinement around the areas
-     * where the QoIs are varying most rapidly, this can lead to under-exploring other parts of
-     * the parameter space.
-     *
-     * @param rMaxRefinementDifference  The maximum difference in the parameter boxes to allow.
-     */
-    void SetMaxVariationInRefinement(const unsigned& rMaxRefinementDifference);
+  /**
+   * Provide an interpolated estimate for the quantities of interest throughout
+   * parameter space.
+   *
+   * @param rParameterPoints  The points in parameter space at which we would
+   * like to estimate QoIs.
+   * @return The QoI estimates at these points.
+   */
+  std::vector<std::vector<double> > Interpolate(
+      const std::vector<c_vector<double, DIM> >& rParameterPoints);
 
-    /**
-     * Provide an interpolated estimate for the quantities of interest throughout parameter space.
-     *
-     * @param rParameterPoints  The points in parameter space at which we would like to estimate QoIs.
-     * @return The QoI estimates at these points.
-     */
-    std::vector<std::vector<double> > Interpolate(const std::vector<c_vector<double, DIM> >& rParameterPoints);
+  /**
+   * @return The number of evaluations (points in the lookup table at which
+   * Quantities of Interest have been evaluated).
+   */
+  unsigned GetNumEvaluations();
 
-    /**
-     * @return The number of evaluations (points in the lookup table at which Quantities of Interest have been evaluated).
-     */
-    unsigned GetNumEvaluations();
+  /**
+   * Set the pacing frequency to use throughout the lookup table generation.
+   *
+   * @param frequency  The pacing frequency to use (in Hz).
+   */
+  void SetPacingFrequency(double frequency);
 
-    /**
-     * Set the pacing frequency to use throughout the lookup table generation.
-     *
-     * @param frequency  The pacing frequency to use (in Hz).
-     */
-    void SetPacingFrequency(double frequency);
+  /**
+   * @param pModel a cell model
+   *
+   * @return the threshold at which we think a voltage signal is a real
+   * excited action potential, rather than simply a stimulus current and decay
+   * so we give the error code NoActionPotential_1 appropriately (rather than
+   * really small APDs).
+   *
+   * Note this method will mess up state variables and they will need resetting
+   * to normal steady state after calling it.
+   */
+  static double DetectVoltageThresholdForActionPotential(
+      boost::shared_ptr<AbstractCvodeCell> pModel);
 };
 
 #include "SerializationExportWrapper.hpp"
 EXPORT_TEMPLATE_CLASS_SAME_DIMS(LookupTableGenerator)
 
 // Keep track of the archive version we are using
-namespace boost
-{
-namespace serialization
-{
-    /**
-         * Specify a version number for archive backwards compatibility.
-         *
-         * This is how to do BOOST_CLASS_VERSION(AbstractCardiacPde, 1)
-         * with a templated class.
-         */
-    template <unsigned DIM>
-    struct version<LookupTableGenerator<DIM> >
-    {
-        CHASTE_VERSION_CONTENT(2); // Increment this on serialize method changes.
-    };
-} // namespace serialization
-} // namespace boost
+namespace boost {
+namespace serialization {
+/**
+* Specify a version number for archive backwards compatibility.
+*
+* This is how to do BOOST_CLASS_VERSION(LookupTableGenerator, 1)
+* with a templated class.
+*/
+template <unsigned DIM>
+struct version<LookupTableGenerator<DIM> > {
+  CHASTE_VERSION_CONTENT(2);  // Increment this on serialize method changes.
+};
+}  // namespace serialization
+}  // namespace boost
 
-#endif // LOOKUPTABLEGENERATOR_HPP_
+#endif  // LOOKUPTABLEGENERATOR_HPP_

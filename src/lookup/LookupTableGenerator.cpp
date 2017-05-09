@@ -67,9 +67,9 @@ struct ThreadInputData
 };
 
 template <unsigned DIM>
-LookupTableGenerator<DIM>::LookupTableGenerator(const unsigned& rModelIndex,
-                                                const std::string& rOutputFileName,
-                                                const std::string& rOutputFolder)
+LookupTableGenerator<DIM>::LookupTableGenerator(
+    const unsigned& rModelIndex, const std::string& rOutputFileName,
+    const std::string& rOutputFolder)
         : mModelIndex(rModelIndex),
           mFrequency(1.0),
           mMaxNumEvaluations(UNSIGNED_UNSET),
@@ -136,6 +136,7 @@ void LookupTableGenerator<DIM>::GenerateLookupTable()
     // Do a few special things the first time round.
     if (!mGenerationHasBegun)
     {
+        std::cout << "Generating from fresh" << std::endl;
         // Provide an initial guess for steady state ICs.
         SetupModel setup(1.0, mModelIndex); // model at 1 Hz
         boost::shared_ptr<AbstractCvodeCell> p_model = setup.GetModel();
@@ -174,6 +175,7 @@ void LookupTableGenerator<DIM>::GenerateLookupTable()
     // (we are probably recovering an archive and the pre-existing .dat file may
     // be gone.
     {
+        std::cout << "Generation has already begun" << std::endl;
         for (unsigned i = 0; i < mParameterPointData.size(); i++)
         {
             std::stringstream line_of_output;
@@ -255,8 +257,8 @@ void LookupTableGenerator<DIM>::RunEvaluationsForThesePoints(
     int i;
 
     /**
- * This loop launches each of the threads.
- */
+*This loop launches each of the threads.
+*/
     for (iter = setOfPoints.begin(), i = 0; iter != setOfPoints.end();
          ++iter, ++i)
     {
@@ -283,8 +285,8 @@ void LookupTableGenerator<DIM>::RunEvaluationsForThesePoints(
     }
 
     /*
- * This loop gets the answers back from all the threads.
- */
+*This loop gets the answers back from all the threads.
+*/
     for (iter = setOfPoints.begin(), i = 0; iter != setOfPoints.end();
          ++iter, ++i)
     {
@@ -416,10 +418,12 @@ void* ThreadedActionPotential(void* argument)
             std::cout << "Lookup table generator reports that " << error_message
                       << "\n"
                       << std::flush;
-            // We could use different numerical codes for different errors here if we wanted to.
+            // We could use different numerical codes for different errors here if we
+            // wanted to.
             if ((error_message == "NoActionPotential_2" || error_message == "NoActionPotential_3") && (my_data->mQuantitiesToRecord[i] == Apd90 || my_data->mQuantitiesToRecord[i] == Apd50))
             {
-                // For an APD calculation failure on repolarisation put in the stimulus period.
+                // For an APD calculation failure on repolarisation put in the stimulus
+                // period.
                 double stim_period = boost::static_pointer_cast<RegularStimulus>(
                                          p_model->GetStimulusFunction())
                                          ->GetPeriod();
@@ -598,7 +602,8 @@ void LookupTableGenerator<DIM>::SetPacingFrequency(double frequency)
 }
 
 template <unsigned DIM>
-double LookupTableGenerator<DIM>::DetectVoltageThresholdForActionPotential(boost::shared_ptr<AbstractCvodeCell> pModel)
+double LookupTableGenerator<DIM>::DetectVoltageThresholdForActionPotential(
+    boost::shared_ptr<AbstractCvodeCell> pModel)
 {
     SingleActionPotentialPrediction ap_runner(pModel);
     ap_runner.SuppressOutput();
@@ -621,7 +626,8 @@ double LookupTableGenerator<DIM>::DetectVoltageThresholdForActionPotential(boost
         double max_voltage = *(std::max_element(voltages.begin(), voltages.end()));
         double min_voltage = *(std::min_element(voltages.begin(), voltages.end()));
 
-        // Go 10% over the depolarization jump at gNa=0 as a threshold for 'this really is an AP'.
+        // Go 10% over the depolarization jump at gNa=0 as a threshold for 'this
+        // really is an AP'.
         return min_voltage + 1.1 * (max_voltage - min_voltage);
     }
     else
