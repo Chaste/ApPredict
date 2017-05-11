@@ -47,11 +47,11 @@ private:
     /** Needed for serialization. */
     friend class boost::serialization::access;
     /**
-   * Archive the object.
-   *
-   * @param archive the archive
-   * @param version the current version of this class
-   */
+     * Save the object.
+     *
+     * @param archive the archive
+     * @param version the current version of this class
+     */
     template <class Archive>
     void save(Archive& archive, const unsigned int version) const
     {
@@ -61,11 +61,11 @@ private:
     }
 
     /**
-   * Archive the object.
-   *
-   * @param archive the archive
-   * @param version the current version of this class
-   */
+     * Load the object.
+     *
+     * @param archive the archive
+     * @param version the current version of this class
+     */
     template <class Archive>
     void load(Archive& archive, const unsigned int version)
     {

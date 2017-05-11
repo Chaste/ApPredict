@@ -74,7 +74,6 @@ LookupTableGenerator<DIM>::LookupTableGenerator(
           mFrequency(1.0),
           mMaxNumEvaluations(UNSIGNED_UNSET),
           mNumEvaluations(0u),
-          // mpSingleApRunner(NULL),
           mOutputFileName(rOutputFileName),
           mOutputFolder(rOutputFolder),
           mGenerationHasBegun(false),
@@ -119,7 +118,7 @@ void LookupTableGenerator<DIM>::GenerateLookupTable()
 
     *p_file << std::setprecision(8);
 
-    // Write out the header line - understood by LookupTableReader
+    // Write out the header line - understood by LookupTableReader (NOW OBSELETE WAY OF USING LOOKUP TABLE!)
     *p_file << mParameterNames.size() << "\t" << mQuantitiesToRecord.size()
             << "\t";
     for (unsigned i = 0; i < mParameterNames.size(); i++)
@@ -138,7 +137,7 @@ void LookupTableGenerator<DIM>::GenerateLookupTable()
     {
         std::cout << "Generating from fresh" << std::endl;
         // Provide an initial guess for steady state ICs.
-        SetupModel setup(1.0, mModelIndex); // model at 1 Hz
+        SetupModel setup(mFrequency, mModelIndex); // model at desired frequency
         boost::shared_ptr<AbstractCvodeCell> p_model = setup.GetModel();
 
         SteadyStateRunner steady_runner(p_model);
