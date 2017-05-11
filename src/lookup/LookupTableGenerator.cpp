@@ -36,6 +36,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/scoped_array.hpp> // to avoid variable length arrays.
 #include <iomanip> // for setprecision()
 #include <pthread.h> // for pthread_create, pthread_join, etc
+#include <unistd.h> // Timing delays to make pthreads behave themselves
 
 #include "FileFinder.hpp"
 #include "LookupTableGenerator.hpp"
@@ -256,8 +257,8 @@ void LookupTableGenerator<DIM>::RunEvaluationsForThesePoints(
     int i;
 
     /**
-*This loop launches each of the threads.
-*/
+	 *This loop launches each of the threads.
+	 */
     for (iter = setOfPoints.begin(), i = 0; iter != setOfPoints.end();
          ++iter, ++i)
     {
@@ -276,16 +277,21 @@ void LookupTableGenerator<DIM>::RunEvaluationsForThesePoints(
         thread_data[i].mFrequency = mFrequency;
         thread_data[i].mVoltageThreshold = mVoltageThreshold;
 
+        //std::cout << "Launching pthread[" << i << "]" << std::endl;
+
         // Launch the ThreadedActionPotential method on this thread
         return_code = pthread_create(&threads[i], NULL, ThreadedActionPotential,
                                      (void*)&thread_data[i]);
 
         assert(0 == return_code); // Check launch worked OK
+
+        // Horrific seg. faults without the below line - bug in p_threads?
+        usleep(1e5); // 0.1 second pause to allow thread to launch properly!
     }
 
     /*
-*This loop gets the answers back from all the threads.
-*/
+     *This loop gets the answers back from all the threads.
+     */
     for (iter = setOfPoints.begin(), i = 0; iter != setOfPoints.end();
          ++iter, ++i)
     {
