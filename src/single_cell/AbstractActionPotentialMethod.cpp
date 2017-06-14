@@ -244,6 +244,10 @@ OdeSolution AbstractActionPotentialMethod::SteadyStatePacingExperiment(
     {
         // This method tries to detect a steady state if we are happy we're producing APs...
         SteadyStateRunner steady_runner(pModel, true); // The true denotes a 'two pace scan', which will catch alternans too.
+        if (mSuppressOutput)
+        {
+            steady_runner.SuppressOutput();
+        }
         if (mMaxNumPaces != UNSIGNED_UNSET)
         {
             steady_runner.SetMaxNumPaces(mMaxNumPaces - num_paces_analysed_elsewhere);
