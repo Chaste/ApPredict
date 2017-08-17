@@ -38,8 +38,8 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <boost/shared_ptr.hpp>
 
-#include "OutputFileHandler.hpp"
 #include "AbstractCvodeCell.hpp"
+#include "OutputFileHandler.hpp"
 
 /**
  * Class to return a Cvode cell model with appropriate stimulus based on the
@@ -90,7 +90,7 @@ public:
         return "* EITHER --model\n"
                "*   options: 1 = Shannon, 2 = TenTusscher (06), 3 = Mahajan,\n"
                "*            4 = Hund-Rudy, 5 = Grandi, 6 = O'Hara-Rudy (endo),\n"
-               "*            7 = Paci (ventricular).\n"
+               "*            7 = Paci (ventricular), 8 = Faber-Rudy.\n"
                "* OR --cellml <file>\n";
     }
 
@@ -99,7 +99,6 @@ public:
      * @return a pointer to the model
      */
     boost::shared_ptr<AbstractCvodeCell> GetModel();
-
 };
 
 #endif // SETUPMODEL_HPP_
