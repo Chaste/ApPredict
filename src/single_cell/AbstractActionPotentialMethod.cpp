@@ -46,7 +46,8 @@ AbstractActionPotentialMethod::AbstractActionPotentialMethod()
           mActionPotentialThresholdSetManually(false),
           mRepeat(false),
           mSuppressOutput(false),
-          mHertz(1.0), // default to 1 Hz, replaced by suitable command line argument if present.
+          mHertz(1.0), // default to 1 Hz, replaced by suitable command line
+          // argument if present.
           mSuccessful(false),
           mPeriodTwoBehaviour(false)
 {
@@ -87,12 +88,10 @@ void AbstractActionPotentialMethod::SetMaxNumPaces(unsigned numPaces)
     }
 }
 
-void AbstractActionPotentialMethod::Reset()
-{
-    mRunYet = false;
-}
+void AbstractActionPotentialMethod::Reset() { mRunYet = false; }
 
-void AbstractActionPotentialMethod::SetLackOfOneToOneCorrespondenceIsError(bool errorOn)
+void AbstractActionPotentialMethod::SetLackOfOneToOneCorrespondenceIsError(
+    bool errorOn)
 {
     mNoOneToOneCorrespondenceIsError = errorOn;
 }
@@ -160,11 +159,11 @@ OdeSolution AbstractActionPotentialMethod::SteadyStatePacingExperiment(
     mRunYet = true;
 
     /**
-   * STEADY STATE PACING EXPERIMENT
-   *
-   * Stimulate many times to establish the steady state response.
-   * Do most of the calculations in one go to avoid overhead setting up Cvode...
-   */
+ * STEADY STATE PACING EXPERIMENT
+ *
+ * Stimulate many times to establish the steady state response.
+ * Do most of the calculations in one go to avoid overhead setting up Cvode...
+ */
     bool skip_steady_state_calculation = false;
 
     // Get the stimulus parameters and make sure the maximum timestep is the
@@ -311,12 +310,11 @@ OdeSolution AbstractActionPotentialMethod::PerformAnalysisOfTwoPaces(
 {
     const unsigned num_paces_to_analyze = 2u;
     mRepeat = false;
-    const double alternans_threshold = 0.5; // ms in APD90.
+    const double alternans_threshold = 0.25; // ms in APD90.
 
     pModel->SetMaxSteps(num_paces_to_analyze * 100000);
     OdeSolution solution = pModel->Solve(0, num_paces_to_analyze * s1_period, maximumTimeStep,
-                                         printingTimeStep); // Get plenty of detail on these two
-    // paces for analysis.
+                                         printingTimeStep); // Get plenty of detail on these two paces for analysis.
 
     // Get voltage properties
     const unsigned voltage_index = pModel->GetSystemInformation()->GetStateVariableIndex("membrane_voltage");
@@ -363,9 +361,8 @@ OdeSolution AbstractActionPotentialMethod::PerformAnalysisOfTwoPaces(
     }
     catch (Exception& e)
     {
-        if (e.GetShortMessage() == "AP did not occur, never exceeded threshold voltage."
-            || e.GetShortMessage() == "No full action potential was recorded"
-            || e.GetShortMessage() == "No MaxUpstrokeVelocity matching a full action potential was recorded.")
+        if (e.GetShortMessage() == "AP did not occur, never exceeded threshold voltage." || e.GetShortMessage() == "No full action potential was recorded" || e.GetShortMessage() == "No MaxUpstrokeVelocity matching a full action potential was "
+                                                                                                                                                                                     "recorded.")
         {
             std::stringstream message;
             if (conc != DOUBLE_UNSET)
