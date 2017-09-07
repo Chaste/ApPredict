@@ -631,9 +631,9 @@ double LookupTableGenerator<DIM>::DetectVoltageThresholdForActionPotential(
         double max_voltage = *(std::max_element(voltages.begin(), voltages.end()));
         double min_voltage = *(std::min_element(voltages.begin(), voltages.end()));
 
-        // Go 10% over the depolarization jump at gNa=0 as a threshold for 'this
+        // Go 20% over the depolarization jump at gNa=0 as a threshold for 'this
         // really is an AP'.
-        return min_voltage + 1.1 * (max_voltage - min_voltage);
+        return min_voltage + 1.2 * (max_voltage - min_voltage);
     }
     else
     {
