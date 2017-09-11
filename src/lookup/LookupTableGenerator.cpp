@@ -119,7 +119,8 @@ void LookupTableGenerator<DIM>::GenerateLookupTable()
 
     *p_file << std::setprecision(8);
 
-    // Write out the header line - understood by LookupTableReader (NOW OBSELETE WAY OF USING LOOKUP TABLE!)
+    // Write out the header line - understood by LookupTableReader (NOW OBSELETE
+    // WAY OF USING LOOKUP TABLE!)
     *p_file << mParameterNames.size() << "\t" << mQuantitiesToRecord.size()
             << "\t";
     for (unsigned i = 0; i < mParameterNames.size(); i++)
@@ -257,8 +258,8 @@ void LookupTableGenerator<DIM>::RunEvaluationsForThesePoints(
     int i;
 
     /**
-	 *This loop launches each of the threads.
-	 */
+       *This loop launches each of the threads.
+       */
     for (iter = setOfPoints.begin(), i = 0; iter != setOfPoints.end();
          ++iter, ++i)
     {
@@ -277,27 +278,29 @@ void LookupTableGenerator<DIM>::RunEvaluationsForThesePoints(
         thread_data[i].mFrequency = mFrequency;
         thread_data[i].mVoltageThreshold = mVoltageThreshold;
 
-        //std::cout << "Launching pthread[" << i << "]" << std::endl;
+        // std::cout << "Launching pthread[" << i << "]" << std::endl;
 
         // Launch the ThreadedActionPotential method on this thread
         return_code = pthread_create(&threads[i], NULL, ThreadedActionPotential,
                                      (void*)&thread_data[i]);
 
         assert(0 == return_code); // Check launch worked OK
+        EXCEPT_IF_NOT(0 == return_code);
 
         // Horrific seg. faults without the below line - bug in p_threads?
         usleep(1e5); // 0.1 second pause to allow thread to launch properly!
     }
 
     /*
-     *This loop gets the answers back from all the threads.
-     */
+   *This loop gets the answers back from all the threads.
+   */
     for (iter = setOfPoints.begin(), i = 0; iter != setOfPoints.end();
          ++iter, ++i)
     {
         // Get the answers back
         return_code = pthread_join(threads[i], &answers[i]);
         assert(0 == return_code);
+        EXCEPT_IF_NOT(0 == return_code);
 
         // Translate back from the structs to sensible formats.
         ThreadReturnData* thread_results = (ThreadReturnData*)answers[i];
