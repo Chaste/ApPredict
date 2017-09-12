@@ -85,8 +85,11 @@ private:
     /** Whether the AP threshold was set manually (defaults to false) */
     bool mActionPotentialThresholdSetManually;
 
-    /** Whether to attempt to reanalyse one period further on */
+    /** Whether to reanalyse one period further on if in alternans */
     bool mRepeat;
+
+    /** We attempt to reanalyse one period further on if in alternans */
+    unsigned mRepeatNumber;
 
     /**
      * A helper method, only available to this class.

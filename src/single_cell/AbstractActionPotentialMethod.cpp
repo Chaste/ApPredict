@@ -45,9 +45,9 @@ AbstractActionPotentialMethod::AbstractActionPotentialMethod()
           mActionPotentialThreshold(-50),
           mActionPotentialThresholdSetManually(false),
           mRepeat(false),
+          mRepeatNumber(0u),
           mSuppressOutput(false),
-          mHertz(1.0), // default to 1 Hz, replaced by suitable command line
-          // argument if present.
+          mHertz(1.0), // default to 1 Hz, replaced by suitable command line argument if present.
           mSuccessful(false),
           mPeriodTwoBehaviour(false)
 {
@@ -159,11 +159,11 @@ OdeSolution AbstractActionPotentialMethod::SteadyStatePacingExperiment(
     mRunYet = true;
 
     /**
- * STEADY STATE PACING EXPERIMENT
- *
- * Stimulate many times to establish the steady state response.
- * Do most of the calculations in one go to avoid overhead setting up Cvode...
- */
+     * STEADY STATE PACING EXPERIMENT
+     *
+     * Stimulate many times to establish the steady state response.
+     * Do most of the calculations in one go to avoid overhead setting up Cvode...
+     */
     bool skip_steady_state_calculation = false;
 
     // Get the stimulus parameters and make sure the maximum timestep is the
@@ -241,11 +241,10 @@ OdeSolution AbstractActionPotentialMethod::SteadyStatePacingExperiment(
         }
         catch (Exception& e)
         {
-            if (e.GetShortMessage() == "AP did not occur, never exceeded threshold voltage." || e.GetShortMessage() == "No full action potential was recorded")
+            if (e.GetShortMessage() == "AP did not occur, never exceeded threshold voltage."
+                || e.GetShortMessage() == "No full action potential was recorded")
             {
                 skip_steady_state_calculation = true;
-                // EXCEPTION("No action potential on first pace - model/parameter choice
-                // is dodgy\n");
             }
             else
             {
@@ -308,21 +307,26 @@ OdeSolution AbstractActionPotentialMethod::PerformAnalysisOfTwoPaces(
     const double s1_period, const double maximumTimeStep,
     const double printingTimeStep, const double conc)
 {
+    // We usually analyse two paces to look for alternans.
+    // Have observed three pace periods or more, so this is a hardcoded option for now.
     const unsigned num_paces_to_analyze = 2u;
     mRepeat = false;
-    const double alternans_threshold = 0.25; // ms in APD90.
+    const double alternans_threshold = 1.0; // ms in APD90 - hardcoded,
+    // could make an option in future. But if it is any smaller alternans 'comes and goes' as you
+    // move through parameter space. Here it appears to pick up only the serious (after a bifurcation)
+    // kind of alternans.
 
-    pModel->SetMaxSteps(num_paces_to_analyze * 100000);
+    pModel->SetMaxSteps(num_paces_to_analyze * 100000); // Internal ODE solver steps, not paces!
     OdeSolution solution = pModel->Solve(0, num_paces_to_analyze * s1_period, maximumTimeStep,
                                          printingTimeStep); // Get plenty of detail on these two paces for analysis.
 
     // Get voltage properties
     const unsigned voltage_index = pModel->GetSystemInformation()->GetStateVariableIndex("membrane_voltage");
     std::vector<double> voltages = solution.GetVariableAtIndex(voltage_index);
-    CellProperties voltage_properties(voltages, solution.rGetTimes(),
-                                      mActionPotentialThreshold);
+    CellProperties voltage_properties(voltages, solution.rGetTimes(), mActionPotentialThreshold);
 
     std::vector<double> apd90s;
+    // See if we can get back some action potential duration(s).
     try
     {
         apd90s = voltage_properties.GetAllActionPotentialDurations(90);
@@ -361,51 +365,52 @@ OdeSolution AbstractActionPotentialMethod::PerformAnalysisOfTwoPaces(
     }
     catch (Exception& e)
     {
-        if (e.GetShortMessage() == "AP did not occur, never exceeded threshold voltage." || e.GetShortMessage() == "No full action potential was recorded" || e.GetShortMessage() == "No MaxUpstrokeVelocity matching a full action potential was "
-                                                                                                                                                                                     "recorded.")
-        {
-            std::stringstream message;
-            if (conc != DOUBLE_UNSET)
-            {
-                message << "At a concentration of " << conc << "uM: ";
-            }
-            message << "no action potentials were recorded, cell did not ";
-
-            // Work out whether most of the time was spent above or below threshold
-            double mean_voltage = 0.0;
-            for (unsigned i = 0; i < voltages.size(); i++)
-            {
-                mean_voltage += voltages[i];
-            }
-            mean_voltage /= ((double)(voltages.size()));
-
-            if (mean_voltage > mActionPotentialThreshold)
-            {
-                mErrorCode = 2u;
-                mErrorMessage = "NoActionPotential_2";
-                message << "repolarise.";
-            }
-            else
-            {
-                mErrorCode = 1u;
-                mErrorMessage = "NoActionPotential_1";
-                message << "depolarise.";
-            }
-            // std::cout << message.str() << std::endl << std::flush;
-            if (!mSuppressOutput)
-                std::cout << message.str() << std::endl
-                          << std::flush;
-            WriteMessageToFile(message.str());
-            mSuccessful = false;
-            mPeriodTwoBehaviour = true;
-            // Redo the analysis in case being 'in sync' on period 2 orbit allows us
-            // to get an APD.
-            mRepeat = true;
-        }
-        else
+        // We didn't get back any action potentials,
+        // which should be because of one of the following errors (if not throw the exception).
+        if (e.GetShortMessage() != "AP did not occur, never exceeded threshold voltage."
+            && e.GetShortMessage() != "No full action potential was recorded"
+            && e.GetShortMessage() != "No MaxUpstrokeVelocity matching a full action potential was recorded.")
         {
             throw e;
         }
+
+        std::stringstream message;
+        if (conc != DOUBLE_UNSET)
+        {
+            message << "At a concentration of " << conc << "uM: ";
+        }
+        message << "no action potentials were recorded, cell did not ";
+
+        // Work out whether most of the time was spent above or below threshold
+        double mean_voltage = 0.0;
+        for (unsigned i = 0; i < voltages.size(); i++)
+        {
+            mean_voltage += voltages[i];
+        }
+        mean_voltage /= ((double)(voltages.size()));
+
+        if (mean_voltage > mActionPotentialThreshold)
+        {
+            mErrorCode = 2u;
+            mErrorMessage = "NoActionPotential_2";
+            message << "repolarise.";
+        }
+        else
+        {
+            mErrorCode = 1u;
+            mErrorMessage = "NoActionPotential_1";
+            message << "depolarise.";
+        }
+        // std::cout << message.str() << std::endl << std::flush;
+        if (!mSuppressOutput)
+            std::cout << message.str() << std::endl
+                      << std::flush;
+        WriteMessageToFile(message.str());
+        mSuccessful = false;
+        mPeriodTwoBehaviour = true;
+        // Redo the analysis in case being 'in sync' on period 2 orbit allows us
+        // to get an APD.
+        mRepeat = true;
     }
 
     if (mSuccessful)
@@ -416,7 +421,7 @@ OdeSolution AbstractActionPotentialMethod::PerformAnalysisOfTwoPaces(
         if (apd90s.size() >= 2u && fabs(apd90s[0] - apd90s[1]) > alternans_threshold)
         {
             mPeriodTwoBehaviour = true;
-            if (apd90s[1] > apd90s[0])
+            if (apd90s[1] > apd90s[0] && mRepeatNumber == 0u)
             {
                 // Redo so that we always plot the longest AP first.
                 mRepeat = true;
@@ -472,6 +477,8 @@ OdeSolution AbstractActionPotentialMethod::PerformAnalysisOfTwoPaces(
             mPeriodTwoBehaviour = true;
         }
     }
+
+    mRepeatNumber++;
 
     return solution;
 }

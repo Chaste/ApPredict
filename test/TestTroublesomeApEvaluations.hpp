@@ -36,26 +36,41 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef TESTTROUBLESOMEAPEVALUATIONS_HPP_
 #define TESTTROUBLESOMEAPEVALUATIONS_HPP_
 
+#include <cxxtest/TestSuite.h>
 #include "SetupModel.hpp"
 #include "SingleActionPotentialPrediction.hpp"
 #include "ZeroStimulus.hpp"
-#include <cxxtest/TestSuite.h>
 
 class TestTroublesomeApEvaluations : public CxxTest::TestSuite
 {
 private:
-    std::string Run(boost::shared_ptr<AbstractCvodeCell> pModel)
+    std::string Run(boost::shared_ptr<AbstractCvodeCell> pModel,
+                    unsigned maxNumPaces = 1800u,
+                    bool print_trace = false,
+                    double voltage_threshold = DOUBLE_UNSET)
     {
         SingleActionPotentialPrediction runner(pModel);
-        runner.SetMaxNumPaces(1800u);
+        runner.SetMaxNumPaces(maxNumPaces);
+        runner.SetAlternansIsError();
         runner.SetLackOfOneToOneCorrespondenceIsError();
+        if (voltage_threshold != DOUBLE_UNSET)
+        {
+            runner.SetVoltageThresholdForRecordingAsActionPotential(voltage_threshold);
+        }
         OdeSolution soln = runner.RunSteadyPacingExperiment();
 
-//        std::vector<double> voltage = soln.GetAnyVariable("membrane_voltage");
-//        for (unsigned t=0; t<soln.rGetTimes().size(); t++)
-//        {
-//            std::cout << soln.rGetTimes()[t] << "\t" << voltage[t] << "\n";
-//        }
+        if (print_trace)
+        {
+            OutputFileHandler handler("Troublesome_AP_debug");
+            out_stream p_file = handler.OpenOutputFile("voltage_trace.txt");
+            std::vector<double> voltage = soln.GetAnyVariable("membrane_voltage");
+            for (unsigned t = 0; t < soln.rGetTimes().size(); t++)
+            {
+                *p_file << soln.rGetTimes()[t] << "\t" << voltage[t] << std::endl;
+            }
+            *p_file << std::flush;
+            p_file->close();
+        }
 
         if (runner.DidErrorOccur())
         {
@@ -68,9 +83,9 @@ private:
     }
 
 public:
-    void TestTroublesomeCases() throw (Exception)
+    void TestTroublesomeTenTusscherCases() throw(Exception)
     {
-        SetupModel setup(1.0,2u); // TT06, 1.0Hz
+        SetupModel setup(1.0, 2u); // TT06, 1.0Hz
         boost::shared_ptr<AbstractCvodeCell> p_model = setup.GetModel();
 
         const std::string gkr_name = "membrane_rapid_delayed_rectifier_potassium_current_conductance";
@@ -80,7 +95,7 @@ public:
         const double gKs_max = p_model->GetParameter(gks_name);
 
         std::cout << "Normal model:\n";
-        std::string message =  Run(p_model);
+        std::string message = Run(p_model);
 
         TS_ASSERT_EQUALS(message, "No error");
 
@@ -89,8 +104,8 @@ public:
 
         std::cout << "Case 1:\n";
         // Alternans, one AP followed by fail to repolarize.
-        p_model->SetParameter(gkr_name, gKr_max*0.0234375);
-        p_model->SetParameter(gks_name, gKs_max*0.046875);
+        p_model->SetParameter(gkr_name, gKr_max * 0.0234375);
+        p_model->SetParameter(gks_name, gKs_max * 0.046875);
         message = Run(p_model);
 
         TS_ASSERT_EQUALS(message, "NoActionPotential_2");
@@ -98,8 +113,8 @@ public:
         // Alternans, failure to repolarize followed by one AP.
         std::cout << "Case 2:\n";
         p_model->SetStateVariables(steady_state);
-        p_model->SetParameter(gkr_name, gKr_max*0.0390625);
-        p_model->SetParameter(gks_name, gKs_max*0.046875);
+        p_model->SetParameter(gkr_name, gKr_max * 0.0390625);
+        p_model->SetParameter(gks_name, gKs_max * 0.046875);
         message = Run(p_model);
 
         TS_ASSERT_EQUALS(message, "NoActionPotential_2");
@@ -107,8 +122,8 @@ public:
         // Alternans, two different failures to repolarize.
         std::cout << "Case 3:\n";
         p_model->SetStateVariables(steady_state);
-        p_model->SetParameter(gkr_name, gKr_max*0.265625);
-        p_model->SetParameter(gks_name, gKs_max*0.0234375);
+        p_model->SetParameter(gkr_name, gKr_max * 0.265625);
+        p_model->SetParameter(gks_name, gKs_max * 0.0234375);
         message = Run(p_model);
 
         TS_ASSERT_EQUALS(message, "NoActionPotential_2");
@@ -116,8 +131,8 @@ public:
         // Lack of 1:1 stimulus APD.
         std::cout << "Case 4:\n";
         p_model->SetStateVariables(steady_state);
-        p_model->SetParameter(gkr_name, gKr_max*0.0);
-        p_model->SetParameter(gks_name, gKs_max*0.075);
+        p_model->SetParameter(gkr_name, gKr_max * 0.0);
+        p_model->SetParameter(gks_name, gKs_max * 0.075);
         message = Run(p_model);
 
         TS_ASSERT_EQUALS(message, "NoActionPotential_3");
@@ -131,7 +146,7 @@ public:
         p_model->SetParameter(gks_name, gKs_max);
 
         TS_ASSERT_THROWS_THIS(Run(p_model),
-             "AbstractActionPotentialMethod only works with cells that have a RegularStimulus set.");
+                              "AbstractActionPotentialMethod only works with cells that have a RegularStimulus set.");
 
         // Make a really weak stimulus.
         p_model->SetStimulusFunction(boost::shared_ptr<RegularStimulus>(new RegularStimulus(-0.01, 3, 1000, 1)));
@@ -139,6 +154,101 @@ public:
 
         // So that cell does not depolarize.
         TS_ASSERT_EQUALS(message, "NoActionPotential_1");
+
+        DeleteVector(steady_state);
+    }
+
+    void TestTroublesomeOHaraActionPotentials() throw(Exception)
+    {
+        SetupModel setup(1.0, 6u); // O'Hara, 1.0Hz
+        boost::shared_ptr<AbstractCvodeCell> p_model = setup.GetModel();
+
+        const std::string gkr_name = "membrane_rapid_delayed_rectifier_potassium_current_conductance";
+        const std::string gna_name = "membrane_fast_sodium_current_conductance";
+
+        const double gKr_max = p_model->GetParameter(gkr_name);
+        const double gNa_max = p_model->GetParameter(gna_name);
+        const double voltage_threshold = -40.42461370307312; // From 10% over max V with gNa=0.
+
+        std::cout << "Normal model:\n";
+        std::string message = Run(p_model);
+        TS_ASSERT_EQUALS(message, "No error");
+        // We are now in a steady state.
+        N_Vector steady_state = p_model->GetStateVariables(); // Take a copy of the state variables.
+
+        p_model->SetParameter(gkr_name, gKr_max * 0.5); // For all of these set gKr = 0.5 and vary gNa.
+
+        {
+            std::cout << "\nCase 1a: no depolarisation:\n"
+                      << std::endl;
+            p_model->SetStateVariables(steady_state);
+            p_model->SetParameter(gna_name, gNa_max * 0);
+            message = Run(p_model, 100, false, voltage_threshold);
+            TS_ASSERT_EQUALS(message, "NoActionPotential_1");
+        }
+
+        {
+            std::cout << "\nCase 1b: no depolarisation again:\n"
+                      << std::endl;
+            p_model->SetStateVariables(steady_state);
+            p_model->SetParameter(gna_name, gNa_max * 0.05);
+            message = Run(p_model, 100, false, voltage_threshold);
+            TS_ASSERT_EQUALS(message, "NoActionPotential_1");
+        }
+
+        {
+            std::cout << "\nCase 2: no depolarisation on second AP:\n"
+                      << std::endl;
+            p_model->SetStateVariables(steady_state);
+            p_model->SetParameter(gna_name, gNa_max * 0.065);
+            message = Run(p_model, 100, false, voltage_threshold);
+            TS_ASSERT_EQUALS(message, "NoActionPotential_5");
+        }
+
+        {
+            std::cout << "\nCase 3: alternans:\n"
+                      << std::endl;
+            p_model->SetStateVariables(steady_state);
+            p_model->SetParameter(gna_name, gNa_max * 0.081);
+            message = Run(p_model, 100, false, voltage_threshold);
+            TS_ASSERT_EQUALS(message, "NoActionPotential_4");
+        }
+
+        {
+            std::cout << "\nCase 4: alternans again 1:\n"
+                      << std::endl;
+            p_model->SetStateVariables(steady_state);
+            p_model->SetParameter(gna_name, gNa_max * 0.092);
+            message = Run(p_model, 100, false, voltage_threshold);
+            TS_ASSERT_EQUALS(message, "NoActionPotential_4");
+        }
+
+        {
+            std::cout << "\nCase 5: alternans again 2:\n"
+                      << std::endl;
+            p_model->SetStateVariables(steady_state);
+            p_model->SetParameter(gna_name, gNa_max * 0.093);
+            message = Run(p_model, 100, false, voltage_threshold);
+            TS_ASSERT_EQUALS(message, "NoActionPotential_4");
+        }
+
+        {
+            std::cout << "\nCase 6: alternans again 3:\n"
+                      << std::endl;
+            p_model->SetStateVariables(steady_state);
+            p_model->SetParameter(gna_name, gNa_max * 0.094);
+            message = Run(p_model, 100, false, voltage_threshold);
+            TS_ASSERT_EQUALS(message, "NoActionPotential_4");
+        }
+
+        {
+            std::cout << "\nCase 7: behaves:\n"
+                      << std::endl;
+            p_model->SetStateVariables(steady_state);
+            p_model->SetParameter(gna_name, gNa_max * 0.1);
+            message = Run(p_model, 100, false, voltage_threshold);
+            TS_ASSERT_EQUALS(message, "No error");
+        }
 
         DeleteVector(steady_state);
     }
