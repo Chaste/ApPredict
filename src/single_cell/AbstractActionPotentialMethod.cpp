@@ -157,6 +157,8 @@ OdeSolution AbstractActionPotentialMethod::SteadyStatePacingExperiment(
     const double printingTimeStep, const double conc)
 {
     mRunYet = true;
+    mRepeat = false; //    These two resets are for counting whether we should repeat the last
+    mRepeatNumber = 0u; // AP simulation to detect alternans or abnormal repolarization.
 
     /**
      * STEADY STATE PACING EXPERIMENT
