@@ -442,7 +442,7 @@ OdeSolution AbstractActionPotentialMethod::PerformAnalysisOfTwoPaces(
                     // (see test case 9 in O'Hara model TestTroublesomeApEvaluations)
                     if (mDefaultParametersApd90 != DOUBLE_UNSET
                         && (apd90s[0] > mDefaultParametersApd90 && apd90s[1] > mDefaultParametersApd90)
-                        && (fabs(peak_voltages[0] - peak_voltages[1]) < 5 /*mV*/)) // magic number!
+                        && (fabs(peak_voltages[0] - peak_voltages[1]) < 10 /*mV*/)) // magic number!
                     {
                         // We have alternans tending to long/no repolarisation
                         mErrorCode = 6u;
