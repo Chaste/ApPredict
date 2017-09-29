@@ -46,23 +46,29 @@ class TestTroublesomeApEvaluations : public CxxTest::TestSuite
 private:
     std::string Run(boost::shared_ptr<AbstractCvodeCell> pModel,
                     unsigned maxNumPaces = 1800u,
-                    bool print_trace = false,
-                    double voltage_threshold = DOUBLE_UNSET)
+                    bool printTrace = false,
+                    double voltageThreshold = DOUBLE_UNSET,
+                    double defaultApd90 = DOUBLE_UNSET,
+                    std::string fileSuffix = "")
     {
         SingleActionPotentialPrediction runner(pModel);
         runner.SetMaxNumPaces(maxNumPaces);
         runner.SetAlternansIsError();
         runner.SetLackOfOneToOneCorrespondenceIsError();
-        if (voltage_threshold != DOUBLE_UNSET)
+        if (voltageThreshold != DOUBLE_UNSET)
         {
-            runner.SetVoltageThresholdForRecordingAsActionPotential(voltage_threshold);
+            runner.SetVoltageThresholdForRecordingAsActionPotential(voltageThreshold);
+        }
+        if (defaultApd90 != DOUBLE_UNSET)
+        {
+            runner.SetControlActionPotentialDuration90(defaultApd90);
         }
         OdeSolution soln = runner.RunSteadyPacingExperiment();
 
-        if (print_trace)
+        if (printTrace)
         {
-            OutputFileHandler handler("Troublesome_AP_debug");
-            out_stream p_file = handler.OpenOutputFile("voltage_trace.txt");
+            OutputFileHandler handler("Troublesome_AP_debug", false);
+            out_stream p_file = handler.OpenOutputFile("voltage_trace" + fileSuffix + ".txt");
             std::vector<double> voltage = soln.GetAnyVariable("membrane_voltage");
             for (unsigned t = 0; t < soln.rGetTimes().size(); t++)
             {
@@ -248,6 +254,38 @@ public:
             p_model->SetParameter(gna_name, gNa_max * 0.1);
             message = Run(p_model, 100, false, voltage_threshold);
             TS_ASSERT_EQUALS(message, "No error");
+        }
+
+        const double default_apd = 500.0;
+
+        // Now set sodium and vary gKr in the test cases:
+        p_model->SetParameter(gna_name, gNa_max * 0.5);
+
+        {
+            std::cout << "\nCase 8a: NoAP3 (but a bit like 5):\n"
+                      << std::endl;
+            p_model->SetStateVariables(steady_state);
+            p_model->SetParameter(gkr_name, gKr_max * 0.0407);
+            message = Run(p_model, 100, true, voltage_threshold, default_apd, "_gKr_0.0407");
+            TS_ASSERT_EQUALS(message, "NoActionPotential_3");
+        }
+
+        {
+            std::cout << "\nCase 8b: NoAP3 (but a bit like 5):\n"
+                      << std::endl;
+            p_model->SetStateVariables(steady_state);
+            p_model->SetParameter(gkr_name, gKr_max * 0.0408);
+            message = Run(p_model, 100, true, voltage_threshold, default_apd, "_gKr_0.0408");
+            TS_ASSERT_EQUALS(message, "NoActionPotential_3");
+        }
+
+        {
+            std::cout << "\nCase 8c: NoAP3 (but a bit like 5):\n"
+                      << std::endl;
+            p_model->SetStateVariables(steady_state);
+            p_model->SetParameter(gkr_name, gKr_max * 0.0409);
+            message = Run(p_model, 100, true, voltage_threshold, default_apd, "_gKr_0.0409");
+            TS_ASSERT_EQUALS(message, "NoActionPotential_6");
         }
 
         DeleteVector(steady_state);

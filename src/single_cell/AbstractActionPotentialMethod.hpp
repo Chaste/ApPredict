@@ -85,6 +85,11 @@ private:
     /** Whether the AP threshold was set manually (defaults to false) */
     bool mActionPotentialThresholdSetManually;
 
+    /** The default APD90, can optionally be set to get more accurate error messages about whether
+     * errors are to do with depolarisation or repolarisation.
+     */
+    double mDefaultParametersApd90;
+
     /** Whether to reanalyse one period further on if in alternans */
     bool mRepeat;
 
@@ -165,11 +170,15 @@ protected:
    * the next stimulus (no 1:1 correspondence) only an error if #SetLackOfOneToOneCorrespondenceIsError()
    * has been called, otherwise it's a warning.
    *  * NoActionPotential_4 - alternans or period two behaviour is occurring. This is only an error if
-   *  SetAlternansIsError() has been called, otherwise it is a warning.
-   *
+   *  SetAlternansIsError() has been called, otherwise it is a warning. If SetControlActionPotentialDuration90
+   *  has been set, then this code indicates short alternans and NoActionPotential_6 indicates long alternans.
    * * NoActionPotential_5 - alternans or period two behaviour is occurring, but one AP is sub-threshold.
    * This is only an error if #SetLackOfOneToOneCorrespondenceIsError() has been called,
    * otherwise it is a warning.
+   * * NoActionPotential_6 - long alternans or period two behaviour is occurring.
+   * This is only an error if #SetLackOfOneToOneCorrespondenceIsError() has been called,
+   * otherwise it is a warning. You only get this error code if SetControlActionPotentialDuration90() has been
+   * called, otherwise all alternans will be NoActionPotential_4.
    *
    * Optionally you can state a concentration (for more helpful warning
    * messages) and printing time step.
@@ -199,27 +208,27 @@ protected:
         const double conc = DOUBLE_UNSET);
 
     /**
-   * This method just passes any message into the WARNINGS macro.
-   *
-   * It can be called from subclass methods to write a log message to the
-   * messages.txt file
-   * that should be displayed alongside the results.
-   * (for example a warning that the cell failed to de/re-polarise at a certain
-   * concentration.)
-   * @param rMessage  The message to write to file
-   */
+     * This method just passes any message into the WARNINGS macro.
+     *
+     * It can be called from subclass methods to write a log message to the
+     * messages.txt file
+     * that should be displayed alongside the results.
+     * (for example a warning that the cell failed to de/re-polarise at a certain
+     * concentration.)
+     * @param rMessage  The message to write to file
+     */
     virtual void WriteMessageToFile(const std::string& rMessage);
 
 public:
     /**
-   * The main constructor, sets a few defaults and reads some command line
-   * options.
-   */
+     * The main constructor, sets a few defaults and reads some command line
+     * options.
+     */
     AbstractActionPotentialMethod();
 
     /**
-   * Destructor
-   */
+     * Destructor
+     */
     virtual ~AbstractActionPotentialMethod(){};
 
     /**
@@ -253,13 +262,20 @@ public:
    *         This only occurs if #SetLackOfOneToOneCorrespondenceIsError() has
    * been called.
    *
-   * Or "NoActionPotential_4" if alternans is occuring (different APD on subsequent beats).
+   * Or "NoActionPotential_4" if alternans is occurring (different APD on subsequent beats).
    * This only occurs if #SetAlternansIsError() has been called,
    * otherwise a warning is printed to screen.
+   * If SetControlActionPotentialDuration90() has been set, then this code indicates short
+   * alternans and NoActionPotential_6 indicates long alternans. Otherwise this code covers both
    *
-   * Or "NoActionPotential_5" if alternans is occuring but second AP is sub-threshold on
+   * Or "NoActionPotential_5" if alternans is occurring but second AP is sub-threshold on
    * the next stimulus (no 1:1 correspondence).
    * This only occurs if #SetLackOfOneToOneCorrespondenceIsError() has been called.
+   *
+   * Or "NoActionPotential_6" - long alternans or period two behaviour is occurring.
+   * This is only an error if #SetLackOfOneToOneCorrespondenceIsError() has been called,
+   * otherwise it is a warning. You will only get this code if SetControlActionPotentialDuration90()
+   * has been set.
    */
     std::string GetErrorMessage();
 
@@ -278,24 +294,41 @@ public:
    *         This only occurs if #SetLackOfOneToOneCorrespondenceIsError() has
    * been called.
    *
-   * Or "4" if alternans is occuring (different APD on subsequent beats).
+   * Or "4" if alternans is occurring (different APD on subsequent beats).
    * This only occurs if #SetAlternansIsError() has been called,
-   * otherwise a warning is printed to screen.
+   * otherwise a warning is printed to screen. If SetControlActionPotentialDuration90()
+   * has been set you get this error code for shorter than average APDs, if not you
+   * get this error code for short and long alternans.
    *
-   * Or "5" if alternans is occuring but second AP is sub-threshold on
+   * Or "5" if alternans is occurring but second AP is sub-threshold on
    * the next stimulus (no 1:1 correspondence).
    * This only occurs if #SetLackOfOneToOneCorrespondenceIsError() has been called.
+   *
+   * Or "6" if alternans is occurring (with longer than default APD90s)
+   * This only occurs if #SetLackOfOneToOneCorrespondenceIsError() has been called.
+   * You will only get this code if SetControlActionPotentialDuration90()
+   * has been set.
    */
     unsigned GetErrorCode();
 
     /**
-   * Set the voltage which is considered to be a triggered action potential.
-   *
-   * If this is not set it defaults to -50mV.
-   *
-   * @param threshold
-   */
+    * Set the voltage which is considered to be a triggered action potential.
+    *
+    * If this is not set it defaults to -50mV.
+    *
+    * @param threshold
+    */
     void SetVoltageThresholdForRecordingAsActionPotential(double threshold);
+
+    /**
+    * Set the control APD90. This is used in parameter sweeps to decide whether an
+    * error message should be more like "no repolarisation" or "no depolarisation"!
+    *
+    * If this is not set, it is not used.
+    *
+    * @param apd90  Default parameters APD90.
+    */
+    void SetControlActionPotentialDuration90(double apd90);
 
     /**
    * Tell the simulator whether to suppress output to std::cout.

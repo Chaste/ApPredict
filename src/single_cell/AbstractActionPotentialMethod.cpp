@@ -44,6 +44,7 @@ AbstractActionPotentialMethod::AbstractActionPotentialMethod()
           mAlternansIsError(false),
           mActionPotentialThreshold(-50),
           mActionPotentialThresholdSetManually(false),
+          mDefaultParametersApd90(DOUBLE_UNSET),
           mRepeat(false),
           mRepeatNumber(0u),
           mSuppressOutput(false),
@@ -304,16 +305,16 @@ void AbstractActionPotentialMethod::PushModelForwardOneS1Interval(
 }
 
 OdeSolution AbstractActionPotentialMethod::PerformAnalysisOfTwoPaces(
-    boost::shared_ptr<AbstractCvodeCell> pModel, double& rApd90, double& rApd50,
-    double& rUpstroke, double& rPeak, double& rCaMax, double& rCaMin,
+    boost::shared_ptr<AbstractCvodeCell> pModel,
+    double& rApd90, double& rApd50, double& rUpstroke, double& rPeak, double& rCaMax, double& rCaMin,
     const double s1_period, const double maximumTimeStep,
     const double printingTimeStep, const double conc)
 {
     // We usually analyse two paces to look for alternans.
-    // Have observed three pace periods or more, so this is a hardcoded option for now.
+    // Have observed three period behaviour or more, so this is a hardcoded option for now.
     const unsigned num_paces_to_analyze = 2u;
     mRepeat = false;
-    const double alternans_threshold = 1.0; // ms in APD90 - hardcoded,
+    const double alternans_threshold = 0.5; // ms in APD90 - hardcoded,
     // could make an option in future. But if it is any smaller alternans 'comes and goes' as you
     // move through parameter space. Here it appears to pick up only the serious (after a bifurcation)
     // kind of alternans.
@@ -432,8 +433,17 @@ OdeSolution AbstractActionPotentialMethod::PerformAnalysisOfTwoPaces(
             { // If we're going to repeat, we don't want this message twice.
                 if (mAlternansIsError)
                 {
-                    mErrorCode = 4u;
-                    mErrorMessage = "NoActionPotential_4";
+                    if (mDefaultParametersApd90 != DOUBLE_UNSET && apd90s[0] > mDefaultParametersApd90 && apd90s[1] > mDefaultParametersApd90)
+                    {
+                        // We have alternans tending to long no repolarisation
+                        mErrorCode = 6u;
+                        mErrorMessage = "NoActionPotential_6";
+                    }
+                    else
+                    {
+                        mErrorCode = 4u;
+                        mErrorMessage = "NoActionPotential_4";
+                    }
                     mSuccessful = false;
                 }
 
@@ -464,7 +474,10 @@ OdeSolution AbstractActionPotentialMethod::PerformAnalysisOfTwoPaces(
 
             if (mNoOneToOneCorrespondenceIsError)
             {
-                if (apd90s[0] > s1_period)
+                // The second condition here is to check if the second AP is non-repolarising...
+                // absence of this caused a bit of a bug where a period 3 non-repolarising looked like non
+                // depolarising...
+                if (apd90s[0] > s1_period || voltages.back() >= mActionPotentialThreshold)
                 {
                     mErrorCode = 3u;
                     mErrorMessage = "NoActionPotential_3";
@@ -490,4 +503,9 @@ void AbstractActionPotentialMethod::
 {
     mActionPotentialThreshold = threshold;
     mActionPotentialThresholdSetManually = true;
+}
+
+void AbstractActionPotentialMethod::SetControlActionPotentialDuration90(double apd90)
+{
+    mDefaultParametersApd90 = apd90;
 }
