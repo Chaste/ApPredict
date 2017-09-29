@@ -266,7 +266,7 @@ public:
                       << std::endl;
             p_model->SetStateVariables(steady_state);
             p_model->SetParameter(gkr_name, gKr_max * 0.0407);
-            message = Run(p_model, 100, true, voltage_threshold, default_apd, "_gKr_0.0407");
+            message = Run(p_model, 100, false, voltage_threshold, default_apd, "_gKr_0.0407");
             TS_ASSERT_EQUALS(message, "NoActionPotential_3");
         }
 
@@ -275,17 +275,28 @@ public:
                       << std::endl;
             p_model->SetStateVariables(steady_state);
             p_model->SetParameter(gkr_name, gKr_max * 0.0408);
-            message = Run(p_model, 100, true, voltage_threshold, default_apd, "_gKr_0.0408");
+            message = Run(p_model, 100, false, voltage_threshold, default_apd, "_gKr_0.0408");
             TS_ASSERT_EQUALS(message, "NoActionPotential_3");
         }
 
         {
-            std::cout << "\nCase 8c: NoAP3 (but a bit like 5):\n"
+            std::cout << "\nCase 8c: NoAP6 (but a bit like 4 but longer APDs):\n"
                       << std::endl;
             p_model->SetStateVariables(steady_state);
             p_model->SetParameter(gkr_name, gKr_max * 0.0409);
-            message = Run(p_model, 100, true, voltage_threshold, default_apd, "_gKr_0.0409");
+            message = Run(p_model, 100, false, voltage_threshold, default_apd, "_gKr_0.0409");
             TS_ASSERT_EQUALS(message, "NoActionPotential_6");
+        }
+
+        {
+            std::cout << "\nCase 9: Depolarisation failure long APDs and alternans:\n"
+                      << std::endl;
+            p_model->SetStateVariables(steady_state);
+            p_model->SetParameter(gkr_name, gKr_max * 0.697631);
+            p_model->SetParameter(gna_name, gNa_max * 0.0992804);
+            message = Run(p_model, 100, false, voltage_threshold, default_apd, "_gNa_0.0992804_gKr_0.697631");
+            // These are long alternans, but caused by depolarisation failure, so should get error code 4.
+            TS_ASSERT_EQUALS(message, "NoActionPotential_4");
         }
 
         DeleteVector(steady_state);

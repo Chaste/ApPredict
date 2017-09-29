@@ -314,7 +314,7 @@ OdeSolution AbstractActionPotentialMethod::PerformAnalysisOfTwoPaces(
     // Have observed three period behaviour or more, so this is a hardcoded option for now.
     const unsigned num_paces_to_analyze = 2u;
     mRepeat = false;
-    const double alternans_threshold = 0.5; // ms in APD90 - hardcoded,
+    const double alternans_threshold = 1; // ms in APD90 - hardcoded,
     // could make an option in future. But if it is any smaller alternans 'comes and goes' as you
     // move through parameter space. Here it appears to pick up only the serious (after a bifurcation)
     // kind of alternans.
@@ -329,6 +329,7 @@ OdeSolution AbstractActionPotentialMethod::PerformAnalysisOfTwoPaces(
     CellProperties voltage_properties(voltages, solution.rGetTimes(), mActionPotentialThreshold);
 
     std::vector<double> apd90s;
+    std::vector<double> peak_voltages;
     // See if we can get back some action potential duration(s).
     try
     {
@@ -350,7 +351,8 @@ OdeSolution AbstractActionPotentialMethod::PerformAnalysisOfTwoPaces(
             rApd90 = voltage_properties.GetAllActionPotentialDurations(90)[0];
             rApd50 = voltage_properties.GetAllActionPotentialDurations(50)[0];
             rUpstroke = voltage_properties.GetMaxUpstrokeVelocities()[0];
-            rPeak = voltage_properties.GetPeakPotentials()[0];
+            peak_voltages = voltage_properties.GetPeakPotentials();
+            rPeak = peak_voltages[0];
         }
         else
         {
@@ -433,9 +435,16 @@ OdeSolution AbstractActionPotentialMethod::PerformAnalysisOfTwoPaces(
             { // If we're going to repeat, we don't want this message twice.
                 if (mAlternansIsError)
                 {
-                    if (mDefaultParametersApd90 != DOUBLE_UNSET && apd90s[0] > mDefaultParametersApd90 && apd90s[1] > mDefaultParametersApd90)
+                    // These conditions check (if we are looking for repolarisation caused alternans by setting
+                    // a default APD90):
+                    // 1. That the alternans APDs are longer than default
+                    // 2. That this isn't caused by a slow depolarisation which tends to give varied Peak Vm
+                    // (see test case 9 in O'Hara model TestTroublesomeApEvaluations)
+                    if (mDefaultParametersApd90 != DOUBLE_UNSET
+                        && (apd90s[0] > mDefaultParametersApd90 && apd90s[1] > mDefaultParametersApd90)
+                        && (fabs(peak_voltages[0] - peak_voltages[1]) < 5 /*mV*/)) // magic number!
                     {
-                        // We have alternans tending to long no repolarisation
+                        // We have alternans tending to long/no repolarisation
                         mErrorCode = 6u;
                         mErrorMessage = "NoActionPotential_6";
                     }
