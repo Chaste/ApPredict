@@ -168,31 +168,31 @@ protected:
      * if specified by subclasses.
      *
      * The mErrorMessage takes one of the following strings:
-     *  * NoActionPotential_1 - cell did not depolarise enough to form action
-     * potential
-     *  * NoActionPotential_2 - cell did not repolarise enough to form action
-     * potential
-     *  * NoActionPotential_3 - action potential did not repolarise in time for
-     * the next stimulus (no 1:1 correspondence) only an error if
-     * #SetLackOfOneToOneCorrespondenceIsError()
-     * has been called, otherwise it's a warning.
+     *  * NoActionPotential_1 - cell did not depolarise enough to form action potential
+     *
+     *  * NoActionPotential_2 - cell did not repolarise enough to form action potential
+     *
+     *  * NoActionPotential_3 - action potential did not repolarise in time for the next stimulus (no 1:1 correspondence) only an error if
+     * #SetLackOfOneToOneCorrespondenceIsError() has been called, otherwise it's a warning.
+     *
      *  * NoActionPotential_4 - alternans or period two behaviour is occurring. This
-     * is only an error if
-     *  SetAlternansIsError() has been called, otherwise it is a warning. If
-     * SetControlActionPotentialDuration90
-     *  has been set, then this code indicates short alternans and
+     * is only an error if SetAlternansIsError() has been called, otherwise it is a warning. If
+     * SetControlActionPotentialDuration90 has been set, then this code indicates short alternans and
      * NoActionPotential_6 indicates long alternans.
+     *
      * * NoActionPotential_5 - alternans or period two behaviour is occurring, but
-     * one AP is sub-threshold.
-     * This is only an error if #SetLackOfOneToOneCorrespondenceIsError() has been
-     * called,
-     * otherwise it is a warning.
+     * one AP is sub-threshold. This is only an error if #SetLackOfOneToOneCorrespondenceIsError() has been
+     * called,otherwise it is a warning.
+     *
      * * NoActionPotential_6 - long alternans or period two behaviour is occurring.
      * This is only an error if #SetLackOfOneToOneCorrespondenceIsError() has been
-     * called,
-     * otherwise it is a warning. You only get this error code if
+     * called, otherwise it is a warning. You only get this error code if
      * SetControlActionPotentialDuration90() has been
      * called, otherwise all alternans will be NoActionPotential_4.
+     *
+     * * NoActionPotential_7 -  if depolarisation abnormalities are occurring
+     * You will only get this code if SetControlTimeOfPeakVoltage()
+     * has been set.
      *
      * Optionally you can state a concentration (for more helpful warning
      * messages) and printing time step.
@@ -294,6 +294,10 @@ public:
  * otherwise it is a warning. You will only get this code if
  * SetControlActionPotentialDuration90()
  * has been set.
+ *
+ * Or "NoActionPotential_7" if depolarisation abnormalities are occurring
+ * You will only get this code if SetControlTimeOfPeakVoltage()
+ * has been set.
  */
     std::string GetErrorMessage();
 
@@ -329,6 +333,10 @@ public:
  * This only occurs if #SetLackOfOneToOneCorrespondenceIsError() has been
  * called.
  * You will only get this code if SetControlActionPotentialDuration90()
+ * has been set.
+ *
+ * Or "7" if depolarisation abnormalities are occurring
+ * You will only get this code if SetControlTimeOfPeakVoltage()
  * has been set.
  */
     unsigned GetErrorCode();
