@@ -45,6 +45,7 @@ AbstractActionPotentialMethod::AbstractActionPotentialMethod()
           mActionPotentialThreshold(-50),
           mActionPotentialThresholdSetManually(false),
           mDefaultParametersApd90(DOUBLE_UNSET),
+          mDefaultParametersTimeOfVMax(DOUBLE_UNSET),
           mRepeat(false),
           mRepeatNumber(0u),
           mSuppressOutput(false),
@@ -154,7 +155,7 @@ void AbstractActionPotentialMethod::SuppressOutput(bool suppress)
 
 OdeSolution AbstractActionPotentialMethod::SteadyStatePacingExperiment(
     boost::shared_ptr<AbstractCvodeCell> pModel, double& rApd90, double& rApd50,
-    double& rUpstroke, double& rPeak, double& rCaMax, double& rCaMin,
+    double& rUpstroke, double& rPeak, double& rPeakTime, double& rCaMax, double& rCaMin,
     const double printingTimeStep, const double conc)
 {
     mRunYet = true;
@@ -280,7 +281,7 @@ OdeSolution AbstractActionPotentialMethod::SteadyStatePacingExperiment(
     }
 
     OdeSolution solution = PerformAnalysisOfTwoPaces(
-        pModel, rApd90, rApd50, rUpstroke, rPeak, rCaMax, rCaMin, s1_period,
+        pModel, rApd90, rApd50, rUpstroke, rPeak, rPeakTime, rCaMax, rCaMin, s1_period,
         maximum_time_step, printingTimeStep, conc);
 
     if (mRepeat)
@@ -290,7 +291,7 @@ OdeSolution AbstractActionPotentialMethod::SteadyStatePacingExperiment(
         PushModelForwardOneS1Interval(pModel, s1_period, maximum_time_step);
 
         solution = PerformAnalysisOfTwoPaces(
-            pModel, rApd90, rApd50, rUpstroke, rPeak, rCaMax, rCaMin, s1_period,
+            pModel, rApd90, rApd50, rUpstroke, rPeak, rPeakTime, rCaMax, rCaMin, s1_period,
             maximum_time_step, printingTimeStep, conc);
     }
 
@@ -306,7 +307,8 @@ void AbstractActionPotentialMethod::PushModelForwardOneS1Interval(
 
 OdeSolution AbstractActionPotentialMethod::PerformAnalysisOfTwoPaces(
     boost::shared_ptr<AbstractCvodeCell> pModel,
-    double& rApd90, double& rApd50, double& rUpstroke, double& rPeak, double& rCaMax, double& rCaMin,
+    double& rApd90, double& rApd50, double& rUpstroke, double& rPeak, double& rPeakTime,
+    double& rCaMax, double& rCaMin,
     const double s1_period, const double maximumTimeStep,
     const double printingTimeStep, const double conc)
 {
@@ -353,6 +355,7 @@ OdeSolution AbstractActionPotentialMethod::PerformAnalysisOfTwoPaces(
             rUpstroke = voltage_properties.GetMaxUpstrokeVelocities()[0];
             peak_voltages = voltage_properties.GetPeakPotentials();
             rPeak = peak_voltages[0];
+            rPeakTime = voltage_properties.GetTimesAtPeakPotentials()[0];
         }
         else
         {
@@ -361,6 +364,7 @@ OdeSolution AbstractActionPotentialMethod::PerformAnalysisOfTwoPaces(
             rApd50 = voltage_properties.GetLastActionPotentialDuration(50);
             rUpstroke = voltage_properties.GetLastCompleteMaxUpstrokeVelocity();
             rPeak = voltage_properties.GetLastCompletePeakPotential();
+            rPeakTime = voltage_properties.GetTimeAtLastCompletePeakPotential();
         }
 
         std::vector<double> calcium = solution.GetAnyVariable("cytosolic_calcium_concentration");
@@ -517,4 +521,9 @@ void AbstractActionPotentialMethod::
 void AbstractActionPotentialMethod::SetControlActionPotentialDuration90(double apd90)
 {
     mDefaultParametersApd90 = apd90;
+}
+
+void AbstractActionPotentialMethod::SetControlTimeOfPeakVoltage(double timeVMax)
+{
+    mDefaultParametersTimeOfVMax = timeVMax;
 }
