@@ -49,7 +49,8 @@ private:
                     bool printTrace = false,
                     double voltageThreshold = DOUBLE_UNSET,
                     double defaultApd90 = DOUBLE_UNSET,
-                    std::string fileSuffix = "")
+                    std::string fileSuffix = "",
+                    double defaultTimePeakVm = DOUBLE_UNSET)
     {
         SingleActionPotentialPrediction runner(pModel);
         runner.SetMaxNumPaces(maxNumPaces);
@@ -62,6 +63,10 @@ private:
         if (defaultApd90 != DOUBLE_UNSET)
         {
             runner.SetControlActionPotentialDuration90(defaultApd90);
+        }
+        if (defaultTimePeakVm != DOUBLE_UNSET)
+        {
+            runner.SetControlTimeOfPeakVoltage(defaultTimePeakVm);
         }
         OdeSolution soln = runner.RunSteadyPacingExperiment();
 
@@ -266,7 +271,7 @@ public:
                       << std::endl;
             p_model->SetStateVariables(steady_state);
             p_model->SetParameter(gkr_name, gKr_max * 0.0407);
-            message = Run(p_model, 100, false, voltage_threshold, default_apd, "_gKr_0.0407");
+            message = Run(p_model, 100, true, voltage_threshold, default_apd, "_gKr_0.0407");
             TS_ASSERT_EQUALS(message, "NoActionPotential_3");
         }
 
@@ -275,7 +280,7 @@ public:
                       << std::endl;
             p_model->SetStateVariables(steady_state);
             p_model->SetParameter(gkr_name, gKr_max * 0.0408);
-            message = Run(p_model, 100, false, voltage_threshold, default_apd, "_gKr_0.0408");
+            message = Run(p_model, 100, true, voltage_threshold, default_apd, "_gKr_0.0408");
             TS_ASSERT_EQUALS(message, "NoActionPotential_3");
         }
 
@@ -284,7 +289,7 @@ public:
                       << std::endl;
             p_model->SetStateVariables(steady_state);
             p_model->SetParameter(gkr_name, gKr_max * 0.0409);
-            message = Run(p_model, 100, false, voltage_threshold, default_apd, "_gKr_0.0409");
+            message = Run(p_model, 100, true, voltage_threshold, default_apd, "_gKr_0.0409");
             TS_ASSERT_EQUALS(message, "NoActionPotential_6");
         }
 
@@ -294,9 +299,22 @@ public:
             p_model->SetStateVariables(steady_state);
             p_model->SetParameter(gkr_name, gKr_max * 0.697631);
             p_model->SetParameter(gna_name, gNa_max * 0.0992804);
-            message = Run(p_model, 100, false, voltage_threshold, default_apd, "_gNa_0.0992804_gKr_0.697631");
+            message = Run(p_model, 100, true, voltage_threshold, default_apd, "_gNa_0.0992804_gKr_0.697631");
             // These are long alternans, but caused by depolarisation failure, so should get error code 4.
             TS_ASSERT_EQUALS(message, "NoActionPotential_4");
+        }
+
+        const double default_time_of_peak_Vm = 6.0;
+
+        {
+            std::cout << "\nCase 10: Only-just-firing sodium channels:\n"
+                      << std::endl;
+            p_model->SetStateVariables(steady_state);
+            p_model->SetParameter(gkr_name, gKr_max * 0.6266);
+            p_model->SetParameter(gna_name, gNa_max * 0.1);
+            message = Run(p_model, 100, true, voltage_threshold, default_apd, "_gNa_0.1_gKr_0.6266", default_time_of_peak_Vm);
+            // These are long alternans, but caused by depolarisation failure, so should get error code 4.
+            TS_ASSERT_EQUALS(message, "NoActionPotential_7");
         }
 
         DeleteVector(steady_state);

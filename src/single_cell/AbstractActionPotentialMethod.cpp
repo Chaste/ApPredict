@@ -286,7 +286,7 @@ OdeSolution AbstractActionPotentialMethod::SteadyStatePacingExperiment(
 
     if (mRepeat)
     {
-        // std::cout << "Repeating simulation to order alternans APs better...\n";
+        // std::cout << "Repeating simulation to order alternans APs consistently...\n";
         // If we might benefit from pushing forward one period and re-analysing...
         PushModelForwardOneS1Interval(pModel, s1_period, maximum_time_step);
 
@@ -366,6 +366,9 @@ OdeSolution AbstractActionPotentialMethod::PerformAnalysisOfTwoPaces(
             rPeak = voltage_properties.GetLastCompletePeakPotential();
             rPeakTime = voltage_properties.GetTimeAtLastCompletePeakPotential();
         }
+        // It makes sense to return the peak voltage time relative to start of stimulus application.
+        boost::shared_ptr<RegularStimulus> p_reg_stim = boost::static_pointer_cast<RegularStimulus>(pModel->GetStimulusFunction());
+        rPeakTime = std::fmod(rPeakTime - p_reg_stim->GetStartTime(), s1_period);
 
         std::vector<double> calcium = solution.GetAnyVariable("cytosolic_calcium_concentration");
         rCaMax = *(std::max_element(calcium.begin(), calcium.end()));
@@ -470,6 +473,16 @@ OdeSolution AbstractActionPotentialMethod::PerformAnalysisOfTwoPaces(
                 std::string message_string = message.str();
                 WriteMessageToFile(message_string);
             }
+        }
+
+        // If we want to create an error code for 'struggling to depolarise'
+        // This will overwrite alternans errors (it's more useful).
+        if (mDefaultParametersTimeOfVMax != DOUBLE_UNSET
+            && rPeakTime > mDefaultParametersTimeOfVMax + 50) //ms MAGIC NUMBER!
+        {
+            mErrorCode = 7u;
+            mErrorMessage = "NoActionPotential_7";
+            mSuccessful = false;
         }
 
         // Deal with the case when there was only one AP but two stimuli
