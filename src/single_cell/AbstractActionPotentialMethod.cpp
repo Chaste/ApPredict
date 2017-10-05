@@ -477,7 +477,7 @@ OdeSolution AbstractActionPotentialMethod::PerformAnalysisOfTwoPaces(
             // If we want to create an error code for 'struggling to depolarise'
             // This will overwrite alternans errors (it's more useful).
             if (mDefaultParametersTimeOfVMax != DOUBLE_UNSET
-                && rPeakTime > mDefaultParametersTimeOfVMax + 100) //ms MAGIC NUMBER!
+                && rPeakTime > mDefaultParametersTimeOfVMax + 80) //ms MAGIC NUMBER!
             {
                 mErrorCode = 7u;
                 mErrorMessage = "NoActionPotential_7";
