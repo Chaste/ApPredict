@@ -314,7 +314,7 @@ public:
             p_model->SetParameter(gna_name, gNa_max * 0.1);
             message = Run(p_model, 100, true, voltage_threshold, default_apd, "_gNa_0.1_gKr_0.6266", default_time_of_peak_Vm);
             // These are long alternans, but caused by depolarisation failure, so should get error code 4.
-            TS_ASSERT_EQUALS(message, "NoActionPotential_7");
+            TS_ASSERT_EQUALS(message, "No error");
         }
 
         DeleteVector(steady_state);
