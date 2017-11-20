@@ -38,8 +38,8 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "AbstractActionPotentialMethod.hpp"
 #include "AbstractCvodeCell.hpp"
-#include "OutputFileHandler.hpp"
 #include "LookupTableGenerator.hpp"
+#include "OutputFileHandler.hpp"
 
 const unsigned TABLE_DIM = 4u;
 
@@ -145,16 +145,19 @@ private:
      * A vector of pairs used to store the credible regions for APD90s,
      * calculated in the main method if a suitable Lookup Table is present.
      */
-    std::vector<std::pair<double,double> > mApd90CredibleRegions;
+    std::vector<std::pair<double, double> > mApd90CredibleRegions;
+
+    /**
+     * The maximum concentration to use in the DoseCalculator if we are doing a Pkpd run.
+     */
+    double mMaxConcForPkpd;
 
 protected:
-
     /** Whether the simulation completed successfully */
     bool mComplete;
 
     /** A vector used to store the APD90s calculated in the main method */
     std::vector<double> mApd90s;
-
 
     /** A vector used to store the Drug Concentrations at which APDs are calculated*/
     std::vector<double> mConcs;
@@ -245,6 +248,14 @@ public:
     virtual void Run();
 
     /**
+     * Override the usual command line arguments for maximum concentrations and use one
+     * dictated by Pkpd.
+     *
+     * @param maxConcentration
+     */
+    void SetMaxConcentrationForPkpd(double maxConcentration);
+
+    /**
      * Set the output directory
      *
      * @param rOuputDirectory  The directory to write results to - WILL BE WIPED!
@@ -272,8 +283,7 @@ public:
      * @return The 95% credible regions that are associated with the APD90 predictions given by
      * #GetApd90s().
      */
-    std::vector<std::pair<double,double> > GetApd90CredibleRegions(void);
-
+    std::vector<std::pair<double, double> > GetApd90CredibleRegions(void);
 };
 
 #endif //_APPREDICTMETHODS_HPP_

@@ -378,9 +378,15 @@ void ApPredictMethods::ApplyDrugBlock(
     }
 }
 
+void ApPredictMethods::SetMaxConcentrationForPkpd(double maxConcentration)
+{
+    mMaxConcForPkpd = maxConcentration;
+}
+
 ApPredictMethods::ApPredictMethods()
         : AbstractActionPotentialMethod(),
           mLookupTableAvailable(false),
+          mMaxConcForPkpd(DOUBLE_UNSET),
           mComplete(false)
 {
     // Here we list the possible drug blocks that can be applied with ApPredict
@@ -836,9 +842,19 @@ void ApPredictMethods::CommonRunMethod()
         saturations.push_back(unset);
     }
 
-    // Dose calculator asks for some arguments to do with plasma concentrations.
-    DoseCalculator dose_calculator;
-    mConcs = dose_calculator.GetConcentrations();
+    if (mMaxConcForPkpd != DOUBLE_UNSET)
+    // We have requested a particular top concentration to go with PKPD simulations.
+    {
+        DoseCalculator dose_calculator(mMaxConcForPkpd);
+        dose_calculator.SetNumSubdivisions(30);
+        mConcs = dose_calculator.GetConcentrations();
+    }
+    else
+    // Dose calculator asks for some command line arguments to do with plasma concentrations.
+    {
+        DoseCalculator dose_calculator;
+        mConcs = dose_calculator.GetConcentrations();
+    }
 
     // We check the desired parameters are present in the model, warn if not.
     // This method also changes some metadata names if the model has variants that
