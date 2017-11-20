@@ -850,7 +850,8 @@ void ApPredictMethods::CommonRunMethod()
         mConcs = dose_calculator.GetConcentrations();
     }
     else
-    // Dose calculator asks for some command line arguments to do with plasma concentrations.
+    // this default DoseCalculator constructor reads command line arguments
+    // to set the plasma concentrations.
     {
         DoseCalculator dose_calculator;
         mConcs = dose_calculator.GetConcentrations();
