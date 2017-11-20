@@ -120,17 +120,16 @@ void LookupTableGenerator<DIM>::GenerateLookupTable()
     *p_file << std::setprecision(8);
 
     // Write out the header line - understood by LookupTableReader (NOW OBSELETE
-    // WAY OF USING LOOKUP TABLE!)
-    *p_file << mParameterNames.size() << "\t" << mQuantitiesToRecord.size()
-            << "\t";
+    // WAY OF USING LOOKUP TABLE!) but easy to read by eye so we keep it.
+    *p_file << mParameterNames.size() << "\t" << mQuantitiesToRecord.size();
     for (unsigned i = 0; i < mParameterNames.size(); i++)
     {
-        *p_file << mParameterNames[i] << "\t";
+        *p_file << "\t" << mParameterNames[i];
     }
     for (unsigned i = 0; i < mQuantitiesToRecord.size(); i++)
     {
         // Write out enum as ints and then convert back in LookupTableReader.
-        *p_file << (int)(mQuantitiesToRecord[i]) << "\t";
+        *p_file << "\t" << (int)(mQuantitiesToRecord[i]);
     }
     *p_file << std::endl;
 
@@ -171,10 +170,8 @@ void LookupTableGenerator<DIM>::GenerateLookupTable()
 
         mGenerationHasBegun = true;
     }
-    else // If generation has already begun then dump the existing results to
-    // file.
-    // (we are probably recovering an archive and the pre-existing .dat file may
-    // be gone.
+    else // If generation has already begun then dump the existing results to file.
+    // (we are probably recovering an archive and the pre-existing .dat file may be gone).
     {
         std::cout << "Generation has already begun" << std::endl;
         for (unsigned i = 0; i < mParameterPointData.size(); i++)
@@ -185,19 +182,18 @@ void LookupTableGenerator<DIM>::GenerateLookupTable()
             {
                 line_of_output << mParameterPoints[i][j] << "\t";
             }
-            line_of_output << mParameterPointData[i]->GetErrorCode() << "\t";
+            line_of_output << mParameterPointData[i]->GetErrorCode();
             for (unsigned j = 0; j < mParameterPointData[i]->rGetQoIs().size(); j++)
             {
-                line_of_output << mParameterPointData[i]->rGetQoIs()[j] << "\t";
+                line_of_output << "\t" << mParameterPointData[i]->rGetQoIs()[j];
             }
             if (mParameterPointData[i]->HasErrorEstimates())
             {
                 unsigned num_estimates = mParameterPointData[i]->rGetQoIErrorEstimates().size();
-                line_of_output << num_estimates << "\t";
+                line_of_output << "\t" << num_estimates;
                 for (unsigned j = 0; j < num_estimates; j++)
                 {
-                    line_of_output << mParameterPointData[i]->rGetQoIErrorEstimates()[j]
-                                   << "\t";
+                    line_of_output << "\t" << mParameterPointData[i]->rGetQoIErrorEstimates()[j];
                 }
             }
             *p_file << line_of_output.str() << std::endl;
@@ -334,18 +330,18 @@ void LookupTableGenerator<DIM>::RunEvaluationsForThesePoints(
             {
                 line_of_output << (*p_scalings)[j] << "\t";
             }
-            line_of_output << error_occurred << "\t";
+            line_of_output << error_occurred;
             for (unsigned j = 0; j < results.size(); j++)
             {
-                line_of_output << results[j] << "\t";
+                line_of_output << "\t" << results[j];
             }
             if (data->HasErrorEstimates())
             {
                 unsigned num_estimates = data->rGetQoIErrorEstimates().size();
-                line_of_output << num_estimates << "\t";
+                line_of_output << "\t" << num_estimates;
                 for (unsigned j = 0; j < num_estimates; j++)
                 {
-                    line_of_output << data->rGetQoIErrorEstimates()[j] << "\t";
+                    line_of_output << "\t" << data->rGetQoIErrorEstimates()[j];
                 }
             }
             *rFile << line_of_output.str() << std::endl;

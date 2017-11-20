@@ -40,9 +40,9 @@ void AbstractDataStructure::LoadDataFromFile(const std::string& rFileName, unsig
 {
     std::ifstream indata; // indata is like cin
     indata.open(rFileName.c_str()); // opens the file
-    if(!indata.good())
+    if (!indata.good())
     { // file couldn't be opened
-       EXCEPTION("Couldn't open data file: " + rFileName);
+        EXCEPTION("Couldn't open data file: " + rFileName);
     }
 
     bool first_line = true;
@@ -50,39 +50,44 @@ void AbstractDataStructure::LoadDataFromFile(const std::string& rFileName, unsig
 
     while (indata.good())
     {
-       std::string this_line;
-       getline(indata, this_line);
-       num_lines_read++;
+        std::string this_line;
+        getline(indata, this_line);
+        num_lines_read++;
 
-       if (this_line=="" || this_line=="\r")
-       {
-           if (indata.eof())
-           {    // If the blank line is the last line carry on OK.
-               break;
-           }
-           else
-           {
-               EXCEPTION("No data found on line " << num_lines_read);
-           }
-       }
-       std::stringstream line(this_line);
+        if (this_line == "" || this_line == "\r")
+        {
+            if (indata.eof())
+            { // If the blank line is the last line carry on OK.
+                break;
+            }
+            else
+            {
+                EXCEPTION("No data found on line " << num_lines_read);
+            }
+        }
+        std::stringstream line(this_line);
 
-       if (first_line || (numHeaderLines>0u && num_lines_read<=numHeaderLines))
-       {
-           first_line = false;
-           // Try and read a header line if present
-           if(LoadHeaderLine(line))
-           {
-               continue;
-           }
-       }
-       // Load a standard data line.
-       LoadALine(line);
+        if (first_line || (numHeaderLines > 0u && num_lines_read <= numHeaderLines))
+        {
+            first_line = false;
+            // Try and read a header line if present
+            if (LoadHeaderLine(line))
+            {
+                continue;
+            }
+        }
+        // Load a standard data line.
+        LoadALine(line);
+
+        if (line.good())
+        {
+            EXCEPTION("These are unread items on line " << num_lines_read << ", data reading structures may have bugs.");
+        }
     }
 
     if (!indata.eof())
     {
-       EXCEPTION("A file reading error occurred");
+        EXCEPTION("A file reading error occurred");
     }
 }
 
@@ -90,6 +95,3 @@ bool AbstractDataStructure::LoadHeaderLine(std::stringstream& rLine)
 {
     return false;
 }
-
-
-

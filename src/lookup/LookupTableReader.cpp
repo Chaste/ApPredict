@@ -61,6 +61,18 @@ void LookupTableReader<DIM>::LoadALine(std::stringstream& rLine)
 
     mParameterPoints.push_back(params);
     mQuantitiesOfInterest.push_back(quantities);
+
+    unsigned num_error_estimates = 0u;
+    if (rLine.good()) // If the line isn't finished yet
+    {
+        rLine >> num_error_estimates;
+        std::vector<double> errors_these_params(num_error_estimates);
+        for (unsigned i = 0; i < num_error_estimates; i++)
+        {
+            rLine >> errors_these_params[i];
+        }
+        mErrorEstimates.push_back(errors_these_params);
+    }
 }
 
 template <unsigned DIM>
@@ -85,15 +97,6 @@ bool LookupTableReader<DIM>::LoadHeaderLine(std::stringstream& rLine)
         rLine >> qoi;
         mQuantitiesToRecord.push_back((QuantityOfInterest)(qoi));
     }
-    unsigned num_error_estimates = 0u;
-    rLine >> num_error_estimates;
-    std::vector<double> errors_these_params;
-    errors_these_params.resize(num_error_estimates);
-    for (unsigned i = 0; i < num_error_estimates; i++)
-    {
-        rLine >> errors_these_params[i];
-    }
-    mErrorEstimates.push_back(errors_these_params);
 
     return true;
 }
