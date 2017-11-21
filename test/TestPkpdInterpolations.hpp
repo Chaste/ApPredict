@@ -64,7 +64,22 @@ public:
         CommandLineArgumentsMocker wrapper("--pkpd-file projects/ApPredict/test/data/pkpd_data.txt --model 2 --pic50-herg 6");
 
         PkpdInterpolator pkpd_runner;
-        pkpd_runner.RunApPredict();
+
+        {  // Test some interpolation methods
+            std::vector<double> x{0.0,1.0,2.0,3.0};
+            std::vector<double> y{1.0,1.1,-0.1,0.0};
+            TS_ASSERT_DELTA(pkpd_runner.DoLinearInterpolation(-0.1,x,y), 1.0, 1e-6);
+            TS_ASSERT_DELTA(pkpd_runner.DoLinearInterpolation(0.0,x,y),  1.0, 1e-6);
+            TS_ASSERT_DELTA(pkpd_runner.DoLinearInterpolation(1.0,x,y),  1.1, 1e-6);
+            TS_ASSERT_DELTA(pkpd_runner.DoLinearInterpolation(0.5,x,y), 1.05, 1e-6);
+            TS_ASSERT_DELTA(pkpd_runner.DoLinearInterpolation(1.5,x,y),  0.5, 1e-6);
+            TS_ASSERT_DELTA(pkpd_runner.DoLinearInterpolation(2.5,x,y),-0.05, 1e-6);
+            TS_ASSERT_DELTA(pkpd_runner.DoLinearInterpolation(3.0,x,y),  0.0, 1e-6);
+            TS_ASSERT_DELTA(pkpd_runner.DoLinearInterpolation(3.1,x,y),  0.0, 1e-6);
+        }
+
+        // Run a real simulation
+        pkpd_runner.Run();
     }
 };
 

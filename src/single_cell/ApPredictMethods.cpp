@@ -846,7 +846,7 @@ void ApPredictMethods::CommonRunMethod()
     // We have requested a particular top concentration to go with PKPD simulations.
     {
         DoseCalculator dose_calculator(mMaxConcForPkpd);
-        dose_calculator.SetNumSubdivisions(30);
+        dose_calculator.SetNumSubdivisions(97); // Loads of detail for these sims to be accurately interpolated later.
         mConcs = dose_calculator.GetConcentrations();
     }
     else

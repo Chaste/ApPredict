@@ -46,16 +46,27 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 class PkpdInterpolator
 {
   private:
+    friend class TestPkpdInterpolations; // To test interpolations.
+
     /** A data reader class to hold information read from the PKPD file */
     boost::shared_ptr<PkpdDataStructure> mpPkpdReader;
+    
+    /** 
+      * Perform linear interpolation to get an estimate of y_star at x_star 
+      * @param x_star The independent variable at which to get an interpolated value
+      * @param rX  The vector of independent variables.
+      * @param rY  The vector of dependent variables to interpolate between.
+      */
+    double DoLinearInterpolation(double x_star,const std::vector<double>& rX, const std::vector<double>& rY) const;
 
   public:
     /** Constructor */
     PkpdInterpolator();
     
-    void RunApPredict();
-    
-    void PerformInterpolation(){};
+    /** The main method to perform all the analysis for this class, 
+     * Runs ApPredictMethods and then does interpolation on the results 
+     */
+    void Run();
 };
 
 #endif // PKPDINTERPOLATOR_HPP

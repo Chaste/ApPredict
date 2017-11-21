@@ -57,7 +57,7 @@ PkpdInterpolator::PkpdInterpolator()
     mpPkpdReader = boost::shared_ptr<PkpdDataStructure>(new PkpdDataStructure(pkpd_file));
 }
 
-void PkpdInterpolator::RunApPredict()
+void PkpdInterpolator::Run()
 {
     // Calculate maximum concentration to use... add 10% to the maximum we saw.
     double max_conc = 1.1 * mpPkpdReader->GetMaximumConcentration();
@@ -74,16 +74,88 @@ void PkpdInterpolator::RunApPredict()
         EXCEPTION("The argument --plasma-concs will be ignored. Using PKPD file to set concentrations. Please remove it to avoid confustion!");
     }
 
-    ApPredictMethods ap_predict;
-    ap_predict.SetMaxConcentrationForPkpd(max_conc);
-    ap_predict.Run();
+    std::vector<double> concs;
+    std::vector<double> apd90s;
 
-    std::vector<double> concs = ap_predict.GetConcentrations();
-    std::vector<double> apd90s = ap_predict.GetApd90s();
+    // Restrict the scope of ApPredictMethods to avoid any funny file conflicts etc.
+    // and ensure it is tidy before doing PKPD.
+    {
+        ApPredictMethods ap_predict;
+        ap_predict.SetMaxConcentrationForPkpd(max_conc);
+        ap_predict.Run();
+
+        concs = ap_predict.GetConcentrations();
+        apd90s = ap_predict.GetApd90s();
+    }
 
     std::cout << "Conc\tApd90" << std::endl;
     for (unsigned i = 0; i < concs.size(); i++)
     {
         std::cout << concs[i] << "\t" << apd90s[i] << std::endl;
     }
+
+    // Open up the existing output folder
+    OutputFileHandler handler("ApPredict_output", false); // false = don't wipe
+
+    // Copy the PKPD data file into the output folder for posterity
+    FileFinder pkpd_file(CommandLineArguments::Instance()->GetStringCorrespondingToOption("--pkpd-file"),
+                         RelativeTo::AbsoluteOrCwd);
+    handler.CopyFileTo(pkpd_file);
+
+    // Open a results file - in a try catch as it is conceivable someone could have named their PK file this!
+    out_stream p_output_file;
+    try
+    {
+        p_output_file = handler.OpenOutputFile("pkpd_results.txt");
+    }
+    catch (Exception& e)
+    {
+        EXCEPTION("Could not open a new output file called pkpd_results.txt. Error was " << e.GetMessage());
+    }
+    *p_output_file << "Time";
+    for (unsigned i = 0; i < mpPkpdReader->GetNumberOfPatients(); i++)
+    {
+        *p_output_file << "\tConc_for_patient_" << i << "(uM)";
+    }
+    *p_output_file << std::endl;
+
+    std::vector<double> times = mpPkpdReader->GetTimes();
+    for (unsigned i = 0; i < times.size(); i++)
+    {
+        *p_output_file << times[i];
+        const std::vector<double>& r_concs_at_this_time = mpPkpdReader->GetConcentrationsAtTimeIndex(i);
+        for (unsigned p=0; p<r_concs_at_this_time.size(); p++)
+        {
+            double interpolated_apd90 = DoLinearInterpolation(r_concs_at_this_time[p],concs,apd90s);
+            *p_output_file << "\t" << interpolated_apd90;
+        }
+        *p_output_file << std::endl;
+    }
+    p_output_file->close();
 }
+
+/* Perform linear interpolation to get an estimate of y_star at x_star */
+double PkpdInterpolator::DoLinearInterpolation(double x_star, const std::vector<double>& rX, const std::vector<double>& rY) const
+{
+    if (x_star <= rX[0])
+    {
+        return rY[0];
+    }
+    if (x_star >= rX.back())
+    {
+        return rY.back();
+    }
+    
+    auto lower = std::lower_bound(rX.cbegin(), rX.cend(), x_star);
+    unsigned lower_idx = lower - rX.cbegin();
+    
+    // I'll let the compiler tidy all this up!
+    double lower_x = rX[lower_idx-1u];
+    double upper_x = rX[lower_idx];
+    double lower_y = rY[lower_idx-1u];
+    double upper_y = rY[lower_idx];
+
+    return lower_y + ((x_star-lower_x)/(upper_x-lower_x))*(upper_y-lower_y);
+}
+
+

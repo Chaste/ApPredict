@@ -93,7 +93,7 @@ public:
         LoadDataFromFile(rFileFinder.GetAbsolutePath());
     };
 
-    std::vector<double> GetConcentrationsAtTimeIndex(unsigned index)
+    std::vector<double>& GetConcentrationsAtTimeIndex(unsigned index)
     {
         return mClinicalDoses[index];
     }
