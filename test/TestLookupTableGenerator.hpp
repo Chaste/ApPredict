@@ -85,7 +85,7 @@ public:
         /*
          * For this first test create a 1D hERG block APD90 lookup table.
          */
-        unsigned model_index = 2u;
+        unsigned model_index = 2u; // Ten Tusscher 2006 epi
 
         std::string file_name = "1d_test";
         OutputFileHandler handler("TestLookupTables"); // Wipe the folder for a fresh test each time.
@@ -166,9 +166,10 @@ public:
 
     void TestVoltageThresholdDetectionAlgorithm() throw(Exception)
     {
-        std::vector<double> thresholds_for_each_model = boost::assign::list_of(-51.3122)(36.8717)(-41.4010)(-41.9142)(-34.6760)(-44.3969);
+        std::vector<double> thresholds_for_each_model = boost::assign::list_of(-46.6219) /*Shannon etc.*/
+            (-44.3656)(-34.5941)(-35.9230)(-28.3257)(-38.4384);
 
-        for (unsigned model_index = 1; model_index < 7; model_index++)
+        for (unsigned model_index = 1; model_index < 7u; model_index++)
         {
             SetupModel setup(1.0, model_index); // models at 1 Hz
             boost::shared_ptr<AbstractCvodeCell> p_model = setup.GetModel();

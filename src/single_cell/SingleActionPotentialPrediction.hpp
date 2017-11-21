@@ -51,16 +51,15 @@ public:
      * Constructor
      */
     SingleActionPotentialPrediction(boost::shared_ptr<AbstractCvodeCell> pModel)
-      : AbstractActionPotentialMethod(),
-        mApd90(DOUBLE_UNSET),
-        mApd50(DOUBLE_UNSET),
-        mUpstroke(DOUBLE_UNSET),
-        mPeak(DOUBLE_UNSET),
-        mCaMin(DOUBLE_UNSET),
-        mCaMax(DOUBLE_UNSET),
-        mpModel(pModel)
-    {
-    };
+            : AbstractActionPotentialMethod(),
+              mApd90(DOUBLE_UNSET),
+              mApd50(DOUBLE_UNSET),
+              mUpstroke(DOUBLE_UNSET),
+              mPeak(DOUBLE_UNSET),
+              mPeakTime(DOUBLE_UNSET),
+              mCaMin(DOUBLE_UNSET),
+              mCaMax(DOUBLE_UNSET),
+              mpModel(pModel){};
 
     /**
      * Run the steady state pacing and evaluate action potential markers (APD90, APD50, Peak and upstroke velocity).
@@ -74,6 +73,7 @@ public:
                                                                           mApd50,
                                                                           mUpstroke,
                                                                           mPeak,
+                                                                          mPeakTime,
                                                                           mCaMax,
                                                                           mCaMin,
                                                                           printing_timestep);
@@ -93,6 +93,7 @@ public:
                                                                           mApd50,
                                                                           mUpstroke,
                                                                           mPeak,
+                                                                          mPeakTime,
                                                                           mCaMax,
                                                                           mCaMin,
                                                                           printing_timestep,
@@ -136,6 +137,15 @@ public:
     }
 
     /**
+     * @return The time at which peak voltage occurred during the action potential (mV).
+     */
+    double GetTimeOfPeakVoltage()
+    {
+        CheckItRan();
+        return mPeakTime;
+    }
+
+    /**
      * @return The diastolic (minimum) of Calcium transient (mM)
      */
     double GetCaMin()
@@ -154,7 +164,6 @@ public:
     }
 
 private:
-
     /**
      * Check whether the run has completed and was unsuccessful,
      * or has not been run yet,
@@ -172,10 +181,10 @@ private:
     double mApd50;
     double mUpstroke;
     double mPeak;
+    double mPeakTime;
     double mCaMin;
     double mCaMax;
     boost::shared_ptr<AbstractCvodeCell> mpModel;
-
 };
 
 #endif // SINGLEACTIONPOTENTIALPREDICTION_HPP_

@@ -46,31 +46,31 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 class DoseCalculator
 {
 private:
-	/** Whether to use pre-specified concentrations or not */
-	bool mUseSpecifiedConcs;
+    /** Whether to use pre-specified concentrations or not */
+    bool mUseSpecifiedConcs;
 
-	/** Whether to space out test concentrations on a log scale */
-	bool mLogScale;
+    /** Whether to space out test concentrations on a log scale */
+    bool mLogScale;
 
-	/**
+    /**
 	 * Either the number of sub-divisions between low and high concentrations
 	 * OR
 	 * the number of sub-divisions between specified concentrations
 	 */
-	unsigned mNumSubConcentrations;
+    unsigned mNumSubConcentrations;
 
-	/** Top of a specified concentration range */
-	double mTopDose;
+    /** Top of a specified concentration range */
+    double mTopDose;
 
-	/** Bottom of a specified concentration range */
-	double mBottomDose;
+    /** Bottom of a specified concentration range */
+    double mBottomDose;
 
     /**
      * The specified concentrations to return
      */
     std::vector<double> mConcentrations;
 
-	/**
+    /**
 	 * Generate a set of concentrations between two values (lowest is never included).
 	 *
 	 * @param low lowest concentration
@@ -79,59 +79,54 @@ private:
 	 *
 	 * @return a vector of mNumSubConcentrations equally/log spaced concentrations between low and high tests
 	 */
-	std::vector<double> GetEquallySpacedBetween(double low, double high, bool includeTopDose);
+    std::vector<double> GetEquallySpacedBetween(double low, double high, bool includeTopDose);
 
 public:
-	/**
+    /**
 	 * Constructor for precise test concentrations, to match e.g. an experiment
 	 *
 	 * @param rPreciseDoses  The exact test concentrations to cover.
 	 */
-	DoseCalculator(const std::vector<double>& rPreciseDoses);
+    DoseCalculator(const std::vector<double>& rPreciseDoses);
 
-	/**
+    /**
 	 * Constructor for equally spaced concentrations between a max and min
 	 *
 	 * @param highDose  maximum test concentration
 	 * @param lowDose  minimum test concentration (a control may be added)
 	 */
-	DoseCalculator(double highDose, double lowDose=0);
+    DoseCalculator(double highDose, double lowDose = 0);
 
-	/**
+    /**
 	 * Constructor to take advantage of command line arguments.
 	 */
-	DoseCalculator();
+    DoseCalculator();
 
-
-	/**
+    /**
 	 * Instruct GetConcentrations() to return entries on a log scale or not
 	 * @param logScale whether to spread test concentrations on a log scale.
 	 */
-	void SetLogScale(bool logScale)
-	{
-		mLogScale = logScale;
-	}
+    void SetLogScale(bool logScale)
+    {
+        mLogScale = logScale;
+    }
 
-	/**
+    /**
 	 * Specify how many sub-intervals you would like to be returned
 	 *
 	 * @note GetConcentrations() will add in control (0nM, and 1nM for log scales).
 	 */
-	void SetNumSubdivisions(unsigned numDivisions)
-	{
-		mNumSubConcentrations = numDivisions;
-	}
+    void SetNumSubdivisions(unsigned numDivisions)
+    {
+        mNumSubConcentrations = numDivisions;
+    }
 
-	/**
+    /**
 	 * Calculates the drug concentrations to test using the settings applied to the class.
 	 *
 	 * @return Concentrations at which to test drug action
 	 */
-	std::vector<double> GetConcentrations(void);
-
+    std::vector<double> GetConcentrations(void);
 };
 
 #endif // DOSECALCULATOR_HPP_
-
-
-

@@ -119,17 +119,17 @@ void LookupTableGenerator<DIM>::GenerateLookupTable()
 
     *p_file << std::setprecision(8);
 
-    // Write out the header line - understood by LookupTableReader (NOW OBSELETE WAY OF USING LOOKUP TABLE!)
-    *p_file << mParameterNames.size() << "\t" << mQuantitiesToRecord.size()
-            << "\t";
+    // Write out the header line - understood by LookupTableReader (NOW OBSELETE
+    // WAY OF USING LOOKUP TABLE!) but easy to read by eye so we keep it.
+    *p_file << mParameterNames.size() << "\t" << mQuantitiesToRecord.size();
     for (unsigned i = 0; i < mParameterNames.size(); i++)
     {
-        *p_file << mParameterNames[i] << "\t";
+        *p_file << "\t" << mParameterNames[i];
     }
     for (unsigned i = 0; i < mQuantitiesToRecord.size(); i++)
     {
         // Write out enum as ints and then convert back in LookupTableReader.
-        *p_file << (int)(mQuantitiesToRecord[i]) << "\t";
+        *p_file << "\t" << (int)(mQuantitiesToRecord[i]);
     }
     *p_file << std::endl;
 
@@ -170,10 +170,8 @@ void LookupTableGenerator<DIM>::GenerateLookupTable()
 
         mGenerationHasBegun = true;
     }
-    else // If generation has already begun then dump the existing results to
-    // file.
-    // (we are probably recovering an archive and the pre-existing .dat file may
-    // be gone.
+    else // If generation has already begun then dump the existing results to file.
+    // (we are probably recovering an archive and the pre-existing .dat file may be gone).
     {
         std::cout << "Generation has already begun" << std::endl;
         for (unsigned i = 0; i < mParameterPointData.size(); i++)
@@ -184,19 +182,18 @@ void LookupTableGenerator<DIM>::GenerateLookupTable()
             {
                 line_of_output << mParameterPoints[i][j] << "\t";
             }
-            line_of_output << mParameterPointData[i]->GetErrorCode() << "\t";
+            line_of_output << mParameterPointData[i]->GetErrorCode();
             for (unsigned j = 0; j < mParameterPointData[i]->rGetQoIs().size(); j++)
             {
-                line_of_output << mParameterPointData[i]->rGetQoIs()[j] << "\t";
+                line_of_output << "\t" << mParameterPointData[i]->rGetQoIs()[j];
             }
             if (mParameterPointData[i]->HasErrorEstimates())
             {
                 unsigned num_estimates = mParameterPointData[i]->rGetQoIErrorEstimates().size();
-                line_of_output << num_estimates << "\t";
+                line_of_output << "\t" << num_estimates;
                 for (unsigned j = 0; j < num_estimates; j++)
                 {
-                    line_of_output << mParameterPointData[i]->rGetQoIErrorEstimates()[j]
-                                   << "\t";
+                    line_of_output << "\t" << mParameterPointData[i]->rGetQoIErrorEstimates()[j];
                 }
             }
             *p_file << line_of_output.str() << std::endl;
@@ -257,8 +254,8 @@ void LookupTableGenerator<DIM>::RunEvaluationsForThesePoints(
     int i;
 
     /**
-	 *This loop launches each of the threads.
-	 */
+     *This loop launches each of the threads.
+     */
     for (iter = setOfPoints.begin(), i = 0; iter != setOfPoints.end();
          ++iter, ++i)
     {
@@ -277,27 +274,29 @@ void LookupTableGenerator<DIM>::RunEvaluationsForThesePoints(
         thread_data[i].mFrequency = mFrequency;
         thread_data[i].mVoltageThreshold = mVoltageThreshold;
 
-        //std::cout << "Launching pthread[" << i << "]" << std::endl;
+        // std::cout << "Launching pthread[" << i << "]" << std::endl;
 
         // Launch the ThreadedActionPotential method on this thread
         return_code = pthread_create(&threads[i], NULL, ThreadedActionPotential,
                                      (void*)&thread_data[i]);
 
         assert(0 == return_code); // Check launch worked OK
+        EXCEPT_IF_NOT(0 == return_code);
 
         // Horrific seg. faults without the below line - bug in p_threads?
         usleep(1e5); // 0.1 second pause to allow thread to launch properly!
     }
 
     /*
-     *This loop gets the answers back from all the threads.
-     */
+ *This loop gets the answers back from all the threads.
+ */
     for (iter = setOfPoints.begin(), i = 0; iter != setOfPoints.end();
          ++iter, ++i)
     {
         // Get the answers back
         return_code = pthread_join(threads[i], &answers[i]);
         assert(0 == return_code);
+        EXCEPT_IF_NOT(0 == return_code);
 
         // Translate back from the structs to sensible formats.
         ThreadReturnData* thread_results = (ThreadReturnData*)answers[i];
@@ -331,18 +330,18 @@ void LookupTableGenerator<DIM>::RunEvaluationsForThesePoints(
             {
                 line_of_output << (*p_scalings)[j] << "\t";
             }
-            line_of_output << error_occurred << "\t";
+            line_of_output << error_occurred;
             for (unsigned j = 0; j < results.size(); j++)
             {
-                line_of_output << results[j] << "\t";
+                line_of_output << "\t" << results[j];
             }
             if (data->HasErrorEstimates())
             {
                 unsigned num_estimates = data->rGetQoIErrorEstimates().size();
-                line_of_output << num_estimates << "\t";
+                line_of_output << "\t" << num_estimates;
                 for (unsigned j = 0; j < num_estimates; j++)
                 {
-                    line_of_output << data->rGetQoIErrorEstimates()[j] << "\t";
+                    line_of_output << "\t" << data->rGetQoIErrorEstimates()[j];
                 }
             }
             *rFile << line_of_output.str() << std::endl;
@@ -614,6 +613,11 @@ double LookupTableGenerator<DIM>::DetectVoltageThresholdForActionPotential(
     ap_runner.SuppressOutput();
     ap_runner.SetMaxNumPaces(100u);
 
+    OdeSolution baseline_solution = ap_runner.RunSteadyPacingExperiment();
+    std::vector<double> baseline_voltages = baseline_solution.GetAnyVariable("membrane_voltage");
+    double max_baseline_voltage = *(std::max_element(baseline_voltages.begin(), baseline_voltages.end()));
+    double min_baseline_voltage = *(std::min_element(baseline_voltages.begin(), baseline_voltages.end()));
+
     // We switch off the sodium current and see how high the stimulus makes the
     // voltage go.
     if (pModel->HasParameter("membrane_fast_sodium_current_conductance"))
@@ -631,14 +635,22 @@ double LookupTableGenerator<DIM>::DetectVoltageThresholdForActionPotential(
         double max_voltage = *(std::max_element(voltages.begin(), voltages.end()));
         double min_voltage = *(std::min_element(voltages.begin(), voltages.end()));
 
-        // Go 20% over the depolarization jump at gNa=0 as a threshold for 'this
-        // really is an AP'.
-        return min_voltage + 1.2 * (max_voltage - min_voltage);
+        // Go 25% over the depolarization jump at gNa=0 as a threshold for 'this
+        // really is an AP'. This should be sensible for all models that fail to depolarise with gNa=0.
+        const double proposed_threshold = min_voltage + 1.25 * (max_voltage - min_voltage);
+
+        // BUT some models with a big stimulus fire off almost fully with gNa=0 anyway (e.g. ten Tusscher 2006)
+        // and so we need to prevent this proposed threshold being above (or near) the usual peak voltage
+        // (if we set threshold above we'd always get NoAP1 error codes, even when there are APs!)
+        const double two_thirds_of_full_AP = min_baseline_voltage + 0.666 * (max_baseline_voltage - min_baseline_voltage);
+        if (proposed_threshold <= two_thirds_of_full_AP)
+        {
+            return proposed_threshold;
+        }
     }
-    else
-    {
-        return -50.0; // mV
-    }
+
+    // Otherwise we give a sensible default of 1/3 of the way up an AP.
+    return min_baseline_voltage + 0.333 * (max_baseline_voltage - min_baseline_voltage); // mV
 }
 
 #include "SerializationExportWrapperForCpp.hpp"

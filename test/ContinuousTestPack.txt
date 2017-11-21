@@ -10,4 +10,5 @@ TestLookupTableGenerator.hpp
 TestLogisticDistribution.hpp
 TestMetadataCellmlModels.hpp
 TestParameterBox.hpp
+TestPkpdReader.hpp
 TestTorsadePredict.hpp

@@ -118,6 +118,6 @@ double AbstractDrugDataStructure<NUM_CHANNELS>::GetSaturationLevel(unsigned drug
 template class AbstractDrugDataStructure<3u>;
 template class AbstractDrugDataStructure<4u>;
 template class AbstractDrugDataStructure<5u>;
-
+template class AbstractDrugDataStructure<7u>;
 
 
