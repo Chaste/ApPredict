@@ -47,6 +47,9 @@ private:
     /** The maximum concentration that has been encountered */
     double mMaxConc;
 
+    /** The number of patients / concentration traces in the file*/
+    unsigned mNumPatients;
+
 protected:
     virtual void LoadALine(std::stringstream& rLine)
     {
@@ -65,6 +68,15 @@ protected:
             }
         }
 
+        if (mNumPatients == UNSIGNED_UNSET)
+        {
+            mNumPatients = concs_at_this_time.size();
+        }
+        else
+        {
+            EXCEPT_IF_NOT(mNumPatients == concs_at_this_time.size());
+        }
+
         mTimes.push_back(time);
         mClinicalDoses.push_back(concs_at_this_time);
     }
@@ -75,7 +87,8 @@ protected:
 public:
     PkpdDataStructure(FileFinder& rFileFinder)
             : AbstractDataStructure(),
-              mMaxConc(-DBL_MAX)
+              mMaxConc(-DBL_MAX),
+              mNumPatients(UNSIGNED_UNSET)
     {
         LoadDataFromFile(rFileFinder.GetAbsolutePath());
     };
@@ -85,11 +98,6 @@ public:
         return mClinicalDoses[index];
     }
 
-    unsigned GetNumPatients()
-    {
-        return mClinicalDoses[0].size();
-    }
-
     double GetMaximumConcentration()
     {
         return mMaxConc;
@@ -97,6 +105,11 @@ public:
 
     std::vector<double> GetConcentrationsForPatient(unsigned patientIndex)
     {
+        if (patientIndex >= mNumPatients)
+        {
+            EXCEPTION("Patient index " << patientIndex << " requested but there are only " << mNumPatients << " in the data file.");
+        }
+
         std::vector<double> conc_through_time_this_patient(mTimes.size());
 
         for (unsigned t = 0; t < mTimes.size(); t++)
@@ -105,6 +118,11 @@ public:
         }
 
         return conc_through_time_this_patient;
+    }
+
+    unsigned GetNumberOfPatients()
+    {
+        return mNumPatients;
     }
 
     std::vector<double> GetTimes()

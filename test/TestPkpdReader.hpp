@@ -57,10 +57,13 @@ public:
         std::vector<double> times = pkpd_data.GetTimes();
         TS_ASSERT_EQUALS(times.size(), 749u);
 
-        TS_ASSERT_EQUALS(pkpd_data.GetNumPatients(), 57u);
+        TS_ASSERT_EQUALS(pkpd_data.GetNumberOfPatients(), 57u);
 
         std::vector<double> concs = pkpd_data.GetConcentrationsForPatient(0u);
         TS_ASSERT_EQUALS(concs.size(), times.size());
+
+        TS_ASSERT_THROWS_THIS(pkpd_data.GetConcentrationsForPatient(57u),
+                              "Patient index 57 requested but there are only 57 in the data file.");
 
         // Test concentration interpolation methods
         TS_ASSERT_DELTA(times[0], 0.0, 1e-6);
