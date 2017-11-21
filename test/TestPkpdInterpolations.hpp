@@ -50,11 +50,11 @@ class TestPkpdInterpolations : public CxxTest::TestSuite
 public:
     void TestPkpdExceptions() throw(Exception)
     {
-        CommandLineArgumentsMocker wrapper("--pkpd-file nonsense.txt");
+        CommandLineArgumentsMocker wrapper("--pkpd-file nonsense.txt --model 1");
 
-        TS_ASSERT_THROWS_CONTAINS(
-            ApPredictMethods bad_pkpd_runner,
-            "does not exist. Please give a relative or absolute path.");
+        ApPredictMethods bad_pkpd_runner;
+        TS_ASSERT_THROWS_CONTAINS(bad_pkpd_runner.Run(),
+                                  "does not exist. Please give a relative or absolute path.");
     }
 
     void TestPkpdSimulations() throw(Exception)
