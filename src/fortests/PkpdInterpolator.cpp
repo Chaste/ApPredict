@@ -115,7 +115,7 @@ void PkpdInterpolator::Run()
     *p_output_file << "Time";
     for (unsigned i = 0; i < mpPkpdReader->GetNumberOfPatients(); i++)
     {
-        *p_output_file << "\tConc_for_patient_" << i << "(uM)";
+        *p_output_file << "\tAPD90_for_patient_" << i << "(ms)";
     }
     *p_output_file << std::endl;
 
@@ -124,9 +124,9 @@ void PkpdInterpolator::Run()
     {
         *p_output_file << times[i];
         const std::vector<double>& r_concs_at_this_time = mpPkpdReader->GetConcentrationsAtTimeIndex(i);
-        for (unsigned p=0; p<r_concs_at_this_time.size(); p++)
+        for (unsigned p = 0; p < r_concs_at_this_time.size(); p++)
         {
-            double interpolated_apd90 = DoLinearInterpolation(r_concs_at_this_time[p],concs,apd90s);
+            double interpolated_apd90 = DoLinearInterpolation(r_concs_at_this_time[p], concs, apd90s);
             *p_output_file << "\t" << interpolated_apd90;
         }
         *p_output_file << std::endl;
@@ -145,17 +145,15 @@ double PkpdInterpolator::DoLinearInterpolation(double x_star, const std::vector<
     {
         return rY.back();
     }
-    
+
     auto lower = std::lower_bound(rX.cbegin(), rX.cend(), x_star);
     unsigned lower_idx = lower - rX.cbegin();
-    
+
     // I'll let the compiler tidy all this up!
-    double lower_x = rX[lower_idx-1u];
+    double lower_x = rX[lower_idx - 1u];
     double upper_x = rX[lower_idx];
-    double lower_y = rY[lower_idx-1u];
+    double lower_y = rY[lower_idx - 1u];
     double upper_y = rY[lower_idx];
 
-    return lower_y + ((x_star-lower_x)/(upper_x-lower_x))*(upper_y-lower_y);
+    return lower_y + ((x_star - lower_x) / (upper_x - lower_x)) * (upper_y - lower_y);
 }
-
-
