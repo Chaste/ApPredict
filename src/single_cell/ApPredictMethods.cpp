@@ -168,7 +168,7 @@ std::string ApPredictMethods::PrintCommonArguments()
                           "* --saturation-herg   saturation level effect of drug (optional - "
                           "defaults to 0%)\n"
                           "*\n"
-                          "* SPECIFYING CONCENTRATIONS:\n"
+                          "* SPECIFYING CONCENTRATIONS AT COMMAND LINE:\n"
                           "* --plasma-concs  A list of (space separated) plasma concentrations at "
                           "which to test (uM)\n"
                           "* OR alternatively:\n"
@@ -184,6 +184,13 @@ std::string ApPredictMethods::PrintCommonArguments()
                           "(for --plasma-conc-high))\n"
                           "* --plasma-conc-logscale <True/False> Whether to use log spacing for "
                           "the plasma concentrations \n"
+                          "*\n"
+                          "* SPECIFYING CONCENTRATIONS IN A FILE (for PKPD runs):\n"
+                          "* if you want to run at concentrations in a file instead of specifying at command line, you can do:\n"
+                          "* --pkpd-file <relative or absolute filepath>\n"
+                          "*   To evaluate APD90s throughout a PKPD profile please provide a file with the data format:\n"
+                          "*   Time(any units)<tab>Conc_trace_1(uM)<tab>Conc_trace_2(uM)<tab>...Conc_trace_N(uM)\n"
+                          "*   on each row.\n"
                           "*\n"
                           "* UNCERTAINTY QUANTIFICATION:\n"
                           "* --credible-intervals  This flag must be present to do uncertainty "
@@ -204,7 +211,6 @@ std::string ApPredictMethods::PrintCommonArguments()
                           "*                    traces, but you can switch this off by calling "
                           "this option.\n"
                           "*\n";
-
     return message;
 }
 
@@ -381,6 +387,7 @@ void ApPredictMethods::ApplyDrugBlock(
 ApPredictMethods::ApPredictMethods()
         : AbstractActionPotentialMethod(),
           mLookupTableAvailable(false),
+          mConcentrationsFromFile(false),
           mComplete(false)
 {
     // Here we list the possible drug blocks that can be applied with ApPredict
@@ -836,9 +843,41 @@ void ApPredictMethods::CommonRunMethod()
         saturations.push_back(unset);
     }
 
-    // Dose calculator asks for some arguments to do with plasma concentrations.
-    DoseCalculator dose_calculator;
-    mConcs = dose_calculator.GetConcentrations();
+    if (CommandLineArguments::Instance()->OptionExists("--pkpd-file"))
+    {
+        FileFinder pkpd_file(CommandLineArguments::Instance()->GetStringCorrespondingToOption("--pkpd-file"),
+                             RelativeTo::AbsoluteOrCwd);
+        if (!pkpd_file.IsFile())
+        {
+            EXCEPTION("The File '" << pkpd_file.GetAbsolutePath() << "' does not exist. Please give a relative or absolute path.");
+        }
+
+        if (CommandLineArguments::Instance()->OptionExists("--plasma-conc-high"))
+        {
+            EXCEPTION("The argument --plasma-conc-high will be ignored. Using PKPD file to set concentrations. Please remove it to avoid confusion!");
+        }
+
+        if (CommandLineArguments::Instance()->OptionExists("--plasma-concs"))
+        {
+            EXCEPTION("The argument --plasma-concs will be ignored. Using PKPD file to set concentrations. Please remove it to avoid confusion!");
+        }
+
+        // Set up a structure to read the PK concentrations in.
+        mpPkpdReader = boost::shared_ptr<PkpdDataStructure>(new PkpdDataStructure(pkpd_file));
+        mConcentrationsFromFile = true;
+
+        // Calculate maximum concentration to use... add 10% to the maximum we saw.
+        DoseCalculator dose_calculator(1.1 * mpPkpdReader->GetMaximumConcentration());
+        dose_calculator.SetNumSubdivisions(97); // Loads of detail for these sims to be accurately interpolated later.
+        mConcs = dose_calculator.GetConcentrations();
+    }
+    else
+    // this default DoseCalculator constructor reads command line arguments
+    // to set the plasma concentrations.
+    {
+        DoseCalculator dose_calculator;
+        mConcs = dose_calculator.GetConcentrations();
+    }
 
     // We check the desired parameters are present in the model, warn if not.
     // This method also changes some metadata names if the model has variants that
@@ -1109,9 +1148,7 @@ void ApPredictMethods::CommonRunMethod()
             mpModel->GetStimulusFunction());
         double s1_period = p_default_stimulus->GetPeriod();
         double s_start = p_default_stimulus->GetStartTime();
-        std::vector<double> voltages = solution.GetVariableAtIndex(
-            mpModel->GetSystemInformation()->GetStateVariableIndex(
-                "membrane_voltage")); // Voltage should always be zero
+        std::vector<double> voltages = solution.GetVariableAtIndex(mpModel->GetSystemInformation()->GetStateVariableIndex("membrane_voltage"));
         double window = s1_period;
         if (this->mPeriodTwoBehaviour)
         {
@@ -1127,6 +1164,44 @@ void ApPredictMethods::CommonRunMethod()
     steady_voltage_results_file_html->close();
     steady_voltage_results_file->close();
 
+    if (mConcentrationsFromFile)
+    {
+        // Copy the input file to the results folder, for posterity...
+        FileFinder pkpd_file(CommandLineArguments::Instance()->GetStringCorrespondingToOption("--pkpd-file"),
+                             RelativeTo::AbsoluteOrCwd);
+        mpFileHandler->CopyFileTo(pkpd_file);
+
+        // Open a results file - in a try catch as it is conceivable someone could have named their PK file this!
+        out_stream p_output_file;
+        try
+        {
+            p_output_file = mpFileHandler->OpenOutputFile("pkpd_results.txt");
+        }
+        catch (Exception& e)
+        {
+            EXCEPTION("Could not open a new output file called pkpd_results.txt. Error was " << e.GetMessage());
+        }
+        *p_output_file << "Time";
+        for (unsigned i = 0; i < mpPkpdReader->GetNumberOfPatients(); i++)
+        {
+            *p_output_file << "\tAPD90_for_patient_" << i << "(ms)";
+        }
+        *p_output_file << std::endl;
+
+        std::vector<double> times = mpPkpdReader->GetTimes();
+        for (unsigned i = 0; i < times.size(); i++)
+        {
+            *p_output_file << times[i];
+            const std::vector<double>& r_concs_at_this_time = mpPkpdReader->GetConcentrationsAtTimeIndex(i);
+            for (unsigned p = 0; p < r_concs_at_this_time.size(); p++)
+            {
+                double interpolated_apd90 = DoLinearInterpolation(r_concs_at_this_time[p], mConcs, mApd90s);
+                *p_output_file << "\t" << interpolated_apd90;
+            }
+            *p_output_file << std::endl;
+        }
+        p_output_file->close();
+    }
     mComplete = true;
 }
 
@@ -1220,4 +1295,30 @@ void ApPredictMethods::ParameterWrapper(
 void ApPredictMethods::SetOutputDirectory(const std::string& rOuputDirectory)
 {
     mOutputFolder = rOuputDirectory;
+}
+
+/* Perform linear interpolation to get an estimate of y_star at x_star */
+double ApPredictMethods::DoLinearInterpolation(double x_star,
+                                               const std::vector<double>& rX,
+                                               const std::vector<double>& rY) const
+{
+    if (x_star <= rX[0])
+    {
+        return rY[0];
+    }
+    if (x_star >= rX.back())
+    {
+        return rY.back();
+    }
+
+    auto lower = std::lower_bound(rX.cbegin(), rX.cend(), x_star);
+    unsigned lower_idx = lower - rX.cbegin();
+
+    // I'll let the compiler tidy all this up!
+    double lower_x = rX[lower_idx - 1u];
+    double upper_x = rX[lower_idx];
+    double lower_y = rY[lower_idx - 1u];
+    double upper_y = rY[lower_idx];
+
+    return lower_y + ((x_star - lower_x) / (upper_x - lower_x)) * (upper_y - lower_y);
 }

@@ -36,15 +36,15 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
 #include <string>
 
-#include "ExecutableSupport.hpp"
-#include "Exception.hpp"
-#include "CommandLineArguments.hpp"
 #include "ApPredictMethods.hpp"
+#include "CommandLineArguments.hpp"
+#include "Exception.hpp"
+#include "ExecutableSupport.hpp"
 
-#include "PetscTools.hpp"
 #include "PetscException.hpp"
+#include "PetscTools.hpp"
 
-int main(int argc, char *argv[])
+int main(int argc, char* argv[])
 {
     // This sets up PETSc and prints out copyright information, etc.
     ExecutableSupport::StandardStartup(&argc, &argv);
@@ -57,8 +57,9 @@ int main(int argc, char *argv[])
     try
     {
         //////////// DEFINE PARAMETERS ///////////////
-        unsigned num_args = argc-1;
-        std::cout << "# " << num_args << " arguments supplied.\n" << std::flush;
+        unsigned num_args = argc - 1;
+        std::cout << "# " << num_args << " arguments supplied." << std::endl
+                  << std::flush;
 
         if (num_args == 0 || CommandLineArguments::Instance()->OptionExists("--help"))
         {
@@ -67,7 +68,7 @@ int main(int argc, char *argv[])
             return ExecutableSupport::EXIT_BAD_ARGUMENTS;
         }
 
-        ApPredictMethods methods; // No Torsade Predictions.
+        ApPredictMethods methods;
         methods.Run();
     }
     catch (const Exception& e)

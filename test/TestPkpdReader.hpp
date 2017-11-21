@@ -33,65 +33,52 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 */
 
-#include "AbstractDataStructure.hpp"
-#include "Exception.hpp"
+#ifndef TESTPKPDREADER_HPP_
+#define TESTPKPDREADER_HPP_
 
-void AbstractDataStructure::LoadDataFromFile(const std::string& rFileName, unsigned numHeaderLines)
+#include <cxxtest/TestSuite.h>
+
+#include "PkpdDataStructure.hpp"
+
+/**
+ * A test that checks we are reading in concentration information correctly.
+ */
+class TestPkpdReader : public CxxTest::TestSuite
 {
-    std::ifstream indata; // indata is like cin
-    indata.open(rFileName.c_str()); // opens the file
-    if (!indata.good())
-    { // file couldn't be opened
-        EXCEPTION("Couldn't open data file: " + rFileName);
-    }
-
-    bool first_line = true;
-    unsigned num_lines_read = 0u;
-
-    while (indata.good())
+public:
+    void TestPkPdDataReader() throw(Exception)
     {
-        std::string this_line;
-        getline(indata, this_line);
-        num_lines_read++;
+        FileFinder pkpd_data_file("projects/ApPredict/test/data/pkpd_data.txt",
+                                  RelativeTo::ChasteSourceRoot);
+        TS_ASSERT_EQUALS(pkpd_data_file.IsFile(), true);
 
-        if (this_line == "" || this_line == "\r")
-        {
-            if (indata.eof())
-            { // If the blank line is the last line carry on OK.
-                break;
-            }
-            else
-            {
-                EXCEPTION("No data found on line " << num_lines_read);
-            }
-        }
-        std::stringstream line(this_line);
+        PkpdDataStructure pkpd_data(pkpd_data_file);
 
-        if (first_line || (numHeaderLines > 0u && num_lines_read <= numHeaderLines))
-        {
-            first_line = false;
-            // Try and read a header line if present
-            if (LoadHeaderLine(line))
-            {
-                continue;
-            }
-        }
-        // Load a standard data line.
-        LoadALine(line);
+        std::vector<double> times = pkpd_data.GetTimes();
+        TS_ASSERT_EQUALS(times.size(), 749u);
 
-        if (line.good())
-        {
-            EXCEPTION("These are unread items on line " << num_lines_read << ", data reading structures may have bugs.");
-        }
+        TS_ASSERT_EQUALS(pkpd_data.GetNumberOfPatients(), 57u);
+
+        std::vector<double> concs = pkpd_data.GetConcentrationsForPatient(0u);
+        TS_ASSERT_EQUALS(concs.size(), times.size());
+
+        TS_ASSERT_THROWS_THIS(pkpd_data.GetConcentrationsForPatient(57u),
+                              "Patient index 57 requested but there are only 57 in the data file.");
+
+        // Test concentration interpolation methods
+        TS_ASSERT_DELTA(times[0], 0.0, 1e-6);
+        TS_ASSERT_DELTA(times.back(), 748, 1e-6);
+        TS_ASSERT_DELTA(concs[0], 0, 1e-9);
+        TS_ASSERT_DELTA(concs.back(), 0.0195722, 1e-9); // uM
+
+        std::vector<double> concs2 = pkpd_data.GetConcentrationsForPatient(56u);
+        TS_ASSERT_EQUALS(concs2.size(), times.size());
+
+        TS_ASSERT_DELTA(concs2[0], 0, 1e-9);
+        TS_ASSERT_DELTA(concs2.back(), 1.11562, 1e-9); // uM
+
+        TS_ASSERT_DELTA(pkpd_data.GetMaximumConcentration(), 4.1515, 1e-4); // uM
     }
+};
 
-    if (!indata.eof())
-    {
-        EXCEPTION("A file reading error occurred");
-    }
-}
-
-bool AbstractDataStructure::LoadHeaderLine(std::stringstream& rLine)
-{
-    return false;
-}
+#endif // TESTPKPDREADER_HPP_
