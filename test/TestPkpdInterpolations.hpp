@@ -38,44 +38,44 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <cxxtest/TestSuite.h>
 
+#include "ApPredictMethods.hpp"
 #include "CommandLineArgumentsMocker.hpp"
-#include "PkpdInterpolator.hpp"
 
 /**
- * A test that checks we can do interpolations with ApPredict runs based on a PKPD file.
+ * A test that checks we can do interpolations with ApPredict runs based on a
+ * PKPD file.
  */
 class TestPkpdInterpolations : public CxxTest::TestSuite
 {
 public:
     void TestPkpdExceptions() throw(Exception)
     {
-
-        TS_ASSERT_THROWS_THIS(PkpdInterpolator bad_pkpd_runner,
-                              "PkpdInterpolator class needs a PKPD file to be specified with --pkpd-file <file_path> argument.");
-
         CommandLineArgumentsMocker wrapper("--pkpd-file nonsense.txt");
 
-        TS_ASSERT_THROWS_CONTAINS(PkpdInterpolator bad_pkpd_runner,
-                                  "does not exist. Please give a relative or absolute path.");
+        TS_ASSERT_THROWS_CONTAINS(
+            ApPredictMethods bad_pkpd_runner,
+            "does not exist. Please give a relative or absolute path.");
     }
 
     void TestPkpdSimulations() throw(Exception)
     {
-        CommandLineArgumentsMocker wrapper("--pkpd-file projects/ApPredict/test/data/pkpd_data.txt --model 2 --pic50-herg 6");
+        CommandLineArgumentsMocker wrapper(
+            "--pkpd-file projects/ApPredict/test/data/pkpd_data.txt --model 2 --pic50-herg 6");
 
-        PkpdInterpolator pkpd_runner;
+        ApPredictMethods pkpd_runner;
 
-        {  // Test some interpolation methods
-            std::vector<double> x{0.0,1.0,2.0,3.0};
-            std::vector<double> y{1.0,1.1,-0.1,0.0};
-            TS_ASSERT_DELTA(pkpd_runner.DoLinearInterpolation(-0.1,x,y), 1.0, 1e-6);
-            TS_ASSERT_DELTA(pkpd_runner.DoLinearInterpolation(0.0,x,y),  1.0, 1e-6);
-            TS_ASSERT_DELTA(pkpd_runner.DoLinearInterpolation(1.0,x,y),  1.1, 1e-6);
-            TS_ASSERT_DELTA(pkpd_runner.DoLinearInterpolation(0.5,x,y), 1.05, 1e-6);
-            TS_ASSERT_DELTA(pkpd_runner.DoLinearInterpolation(1.5,x,y),  0.5, 1e-6);
-            TS_ASSERT_DELTA(pkpd_runner.DoLinearInterpolation(2.5,x,y),-0.05, 1e-6);
-            TS_ASSERT_DELTA(pkpd_runner.DoLinearInterpolation(3.0,x,y),  0.0, 1e-6);
-            TS_ASSERT_DELTA(pkpd_runner.DoLinearInterpolation(3.1,x,y),  0.0, 1e-6);
+        { // Test some interpolation methods
+            std::vector<double> x{ 0.0, 1.0, 2.0, 3.0 };
+            std::vector<double> y{ 1.0, 1.1, -0.1, 0.0 };
+            TS_ASSERT_DELTA(pkpd_runner.DoLinearInterpolation(-0.1, x, y), 1.0, 1e-6);
+            TS_ASSERT_DELTA(pkpd_runner.DoLinearInterpolation(0.0, x, y), 1.0, 1e-6);
+            TS_ASSERT_DELTA(pkpd_runner.DoLinearInterpolation(1.0, x, y), 1.1, 1e-6);
+            TS_ASSERT_DELTA(pkpd_runner.DoLinearInterpolation(0.5, x, y), 1.05, 1e-6);
+            TS_ASSERT_DELTA(pkpd_runner.DoLinearInterpolation(1.5, x, y), 0.5, 1e-6);
+            TS_ASSERT_DELTA(pkpd_runner.DoLinearInterpolation(2.5, x, y), -0.05,
+                            1e-6);
+            TS_ASSERT_DELTA(pkpd_runner.DoLinearInterpolation(3.0, x, y), 0.0, 1e-6);
+            TS_ASSERT_DELTA(pkpd_runner.DoLinearInterpolation(3.1, x, y), 0.0, 1e-6);
         }
 
         // Run a real simulation

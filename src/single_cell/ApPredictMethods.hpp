@@ -40,6 +40,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "AbstractCvodeCell.hpp"
 #include "LookupTableGenerator.hpp"
 #include "OutputFileHandler.hpp"
+#include "PkpdDataStructure.hpp"
 
 const unsigned TABLE_DIM = 4u;
 
@@ -64,6 +65,7 @@ const unsigned TABLE_DIM = 4u;
 class ApPredictMethods : public AbstractActionPotentialMethod
 {
 private:
+    friend class TestPkpdInterpolations; // To test linear interpolation private method.
     /**
      * A method to avoid lots of copying and pasting in the main drug block application method.
      *
@@ -109,6 +111,14 @@ private:
     void InterpolateFromLookupTableForThisConcentration(const unsigned concIndex,
                                                         const std::vector<double>& rMedianSaturationLevels);
 
+    /**
+      * Perform linear interpolation to get an estimate of y_star at x_star
+      * @param x_star The independent variable at which to get an interpolated value
+      * @param rX  The vector of independent variables.
+      * @param rY  The vector of dependent variables to interpolate between.
+      */
+    double DoLinearInterpolation(double x_star, const std::vector<double>& rX, const std::vector<double>& rY) const;
+
     /** The Oxford metadata names of the conductances we may modify with this class */
     std::vector<std::string> mMetadataNames;
 
@@ -148,9 +158,12 @@ private:
     std::vector<std::pair<double, double> > mApd90CredibleRegions;
 
     /**
-     * The maximum concentration to use in the DoseCalculator if we are doing a Pkpd run.
+     * Whether we are running a Pharmacokinetics simulation with concentrations read from file.
      */
-    double mMaxConcForPkpd;
+    bool mConcentrationsFromFile;
+
+    /** A data reader class to hold information read from the PKPD file */
+    boost::shared_ptr<PkpdDataStructure> mpPkpdReader;
 
 protected:
     /** Whether the simulation completed successfully */
@@ -213,12 +226,12 @@ protected:
     /**
      * This is a helper method to print out the available arguments.
      *
-     * @return the arguments both ApPredict and TorsadePredict take.
+     * @return the arguments ApPredict, TorsadePredict, PkpdInterpolator all take.
      */
     static std::string PrintCommonArguments();
 
     /**
-     * A run method common to both ApPredict and TorsadePredict.
+     * A run method common to both ApPredict, TorsadePredict and PkpdInterpolator.
      *
      * Does the majority of the work!
      */
@@ -246,14 +259,6 @@ public:
      * Main running command.
      */
     virtual void Run();
-
-    /**
-     * Override the usual command line arguments for maximum concentrations and use one
-     * dictated by Pkpd.
-     *
-     * @param maxConcentration
-     */
-    void SetMaxConcentrationForPkpd(double maxConcentration);
 
     /**
      * Set the output directory
