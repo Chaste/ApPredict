@@ -64,17 +64,17 @@ public:
 
         // Test concentration interpolation methods
         TS_ASSERT_DELTA(times[0], 0.0, 1e-6);
-        TS_ASSERT_DELTA(times.back(), 749, 1e-6);
+        TS_ASSERT_DELTA(times.back(), 748, 1e-6);
         TS_ASSERT_DELTA(concs[0], 0, 1e-9);
         TS_ASSERT_DELTA(concs.back(), 0.0195722, 1e-9); // uM
 
-        std::vector<double> concs2 = pkpd_data.GetConcentrationsForPatient(57u);
+        std::vector<double> concs2 = pkpd_data.GetConcentrationsForPatient(56u);
         TS_ASSERT_EQUALS(concs2.size(), times.size());
 
         TS_ASSERT_DELTA(concs2[0], 0, 1e-9);
         TS_ASSERT_DELTA(concs2.back(), 1.11562, 1e-9); // uM
 
-        TS_ASSERT_DELTA(pkpd_data.GetMaximumConcentration(), 4.15, 1e-4); // uM
+        TS_ASSERT_DELTA(pkpd_data.GetMaximumConcentration(), 4.1515, 1e-4); // uM
     }
 };
 
