@@ -55,26 +55,26 @@ public:
         PkpdDataStructure pkpd_data(pkpd_data_file);
 
         std::vector<double> times = pkpd_data.GetTimes();
-        TS_ASSERT_EQUALS(times.size(), 45177u);
+        TS_ASSERT_EQUALS(times.size(), 749u);
 
-        TS_ASSERT_EQUALS(pkpd_data.GetNumPatients(), 100u);
+        TS_ASSERT_EQUALS(pkpd_data.GetNumPatients(), 57u);
 
         std::vector<double> concs = pkpd_data.GetConcentrationsForPatient(0u);
         TS_ASSERT_EQUALS(concs.size(), times.size());
 
         // Test concentration interpolation methods
         TS_ASSERT_DELTA(times[0], 0.0, 1e-6);
-        TS_ASSERT_DELTA(times.back(), 768, 1e-6);
+        TS_ASSERT_DELTA(times.back(), 749, 1e-6);
         TS_ASSERT_DELTA(concs[0], 0, 1e-9);
-        TS_ASSERT_DELTA(concs.back(), 0.05439003090282063, 1e-9); // uM
+        TS_ASSERT_DELTA(concs.back(), 0.0195722, 1e-9); // uM
 
-        std::vector<double> concs2 = pkpd_data.GetConcentrationsForPatient(99u);
+        std::vector<double> concs2 = pkpd_data.GetConcentrationsForPatient(57u);
         TS_ASSERT_EQUALS(concs2.size(), times.size());
 
         TS_ASSERT_DELTA(concs2[0], 0, 1e-9);
-        TS_ASSERT_DELTA(concs2.back(), 0.06027942037499662, 1e-9); // uM
+        TS_ASSERT_DELTA(concs2.back(), 1.11562, 1e-9); // uM
 
-        TS_ASSERT_DELTA(pkpd_data.GetMaximumConcentration(), 0.1478, 1e-4); // uM
+        TS_ASSERT_DELTA(pkpd_data.GetMaximumConcentration(), 4.15, 1e-4); // uM
     }
 };
 
