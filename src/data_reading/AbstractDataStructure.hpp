@@ -40,8 +40,8 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <vector>
 
 #include "Exception.hpp"
-#include "UblasVectorInclude.hpp"
 #include "FileFinder.hpp"
+#include "UblasVectorInclude.hpp"
 
 /**
  * A class which is designed to read in data from a text file, subclassed for particular formats.
@@ -50,8 +50,10 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 class AbstractDataStructure
 {
-protected:
+private:
+    std::istream& SafeGetline(std::istream& is, std::string& t);
 
+protected:
     /**
      * Main method for loading the data file, line by line it calls
      * the overloaded method LoadALine
@@ -59,7 +61,7 @@ protected:
      * @param rFileName  of the drug data file
      * @param numHeaderLines  the number of header lines in the file to skip
      */
-    void LoadDataFromFile(const std::string& rFileName, unsigned numHeaderLines=0);
+    void LoadDataFromFile(const std::string& rFileName, unsigned numHeaderLines = 0);
 
     /**
      * This method must be overridden by subclasses to fill in the
@@ -67,7 +69,7 @@ protected:
      *
      * @param rLine  a line in stringsteam format.
      */
-    virtual void LoadALine(std::stringstream& rLine)=0;
+    virtual void LoadALine(std::stringstream& rLine) = 0;
 
     /**
      * Read a header line if present.
@@ -78,7 +80,6 @@ protected:
     virtual bool LoadHeaderLine(std::stringstream& rLine);
 
 public:
-
     /**
      * Default Constructor (empty)
      */
@@ -113,7 +114,7 @@ public:
         }
 
         // To avoid divide-by-zero style stuff, if there is no drug, conductance must be unchanged.
-        if (rConc==0)
+        if (rConc == 0)
         {
             return 1.0;
         }
@@ -129,7 +130,7 @@ public:
             hill = 1.0;
         }
 
-        return 1.0 - ((100.0-saturation)/100.0)*(1.0 - 1.0/(1.0 + pow((rConc/rIC50), hill)));
+        return 1.0 - ((100.0 - saturation) / 100.0) * (1.0 - 1.0 / (1.0 + pow((rConc / rIC50), hill)));
     }
 
     /**
@@ -139,7 +140,7 @@ public:
      */
     static double ConvertIc50ToPic50(const double& rIc50)
     {
-        double result = -log10((1e-6)*rIc50);
+        double result = -log10((1e-6) * rIc50);
         // Handle very small IC50 values gracefully (result = -Inf)
         if (!std::isfinite(result))
         {
@@ -155,7 +156,7 @@ public:
      */
     static double ConvertPic50ToIc50(const double& rPic50)
     {
-        double result = pow(10.0,6.0-rPic50);
+        double result = pow(10.0, 6.0 - rPic50);
 
         // Handle large negative IC50 values gracefully (result = -Inf or Inf)
         if (!std::isfinite(result))
@@ -164,7 +165,6 @@ public:
         }
         return result;
     }
-
 };
 
 #endif // ABSTRACTDATASTRUCTURE_HPP_
