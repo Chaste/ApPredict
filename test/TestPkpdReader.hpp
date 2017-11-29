@@ -79,6 +79,34 @@ public:
 
         TS_ASSERT_DELTA(pkpd_data.GetMaximumConcentration(), 4.1515, 1e-4); // uM
     }
+
+    void TestPkPdDataReaderDos() throw(Exception)
+    {
+        FileFinder pkpd_data_file("projects/ApPredict/test/data/DosTestFile.txt",
+                                  RelativeTo::ChasteSourceRoot);
+        TS_ASSERT_EQUALS(pkpd_data_file.IsFile(), true);
+
+        PkpdDataStructure pkpd_data(pkpd_data_file);
+
+        std::vector<double> times = pkpd_data.GetTimes();
+        TS_ASSERT_EQUALS(times.size(), 10u);
+
+        TS_ASSERT_EQUALS(pkpd_data.GetNumberOfPatients(), 4u);
+    }
+
+    void TestPkPdDataReaderUnix() throw(Exception)
+    {
+        FileFinder pkpd_data_file("projects/ApPredict/test/data/UnixTestFile.txt",
+                                  RelativeTo::ChasteSourceRoot);
+        TS_ASSERT_EQUALS(pkpd_data_file.IsFile(), true);
+
+        PkpdDataStructure pkpd_data(pkpd_data_file);
+
+        std::vector<double> times = pkpd_data.GetTimes();
+        TS_ASSERT_EQUALS(times.size(), 10u);
+
+        TS_ASSERT_EQUALS(pkpd_data.GetNumberOfPatients(), 4u);
+    }
 };
 
 #endif // TESTPKPDREADER_HPP_

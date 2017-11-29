@@ -34,9 +34,9 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include "TorsadePredictMethods.hpp"
-#include "SetupModel.hpp"
 #include "CardiovascRes2011DataStructure.hpp"
 #include "FileFinder.hpp"
+#include "SetupModel.hpp"
 
 std::string TorsadePredictMethods::PrintArguments()
 {
@@ -46,7 +46,7 @@ std::string TorsadePredictMethods::PrintArguments()
 }
 
 TorsadePredictMethods::TorsadePredictMethods()
- : ApPredictMethods()
+        : ApPredictMethods()
 {
     mProgramName = "Torsade PreDiCT";
     mOutputFolder = "TorsadePredict_output";
@@ -74,7 +74,7 @@ void TorsadePredictMethods::Run()
 
 void TorsadePredictMethods::MakeTorsadePredictions()
 {
-    if (mApd90s.size()==0)
+    if (mApd90s.size() == 0)
     {
         EXCEPTION("APDs do not appear to have been recorded.");
     }
@@ -83,18 +83,18 @@ void TorsadePredictMethods::MakeTorsadePredictions()
     // Work out the Measure
     std::vector<double> largest_percent_change;
     largest_percent_change.push_back(0.0); // First is always control
-    for (unsigned i=1; i<mApd90s.size(); i++)
+    for (unsigned i = 1; i < mApd90s.size(); i++)
     {
-        double percent = 100*(mApd90s[i]-mApd90s[0])/mApd90s[0];
+        double percent = 100 * (mApd90s[i] - mApd90s[0]) / mApd90s[0];
         largest_percent_change.push_back(percent);
     }
 
     // Second pass to check for largest +ve effect at low dose...
     // This makes the measure "Largest Effect Dose" rather than just "dose".
-    for (unsigned i=1; i<mApd90s.size(); i++)
+    for (unsigned i = 1; i < mApd90s.size(); i++)
     {
         // Check over lower doses
-        for (unsigned j=0; j<i; j++)
+        for (unsigned j = 0; j < i; j++)
         {
             // If the lower dose made the AP longer than control (and longer than this dose) then replace this APD with that one.
             if (largest_percent_change[j] > 0 && largest_percent_change[j] > largest_percent_change[i])
@@ -106,11 +106,11 @@ void TorsadePredictMethods::MakeTorsadePredictions()
 
     // Perform the LDA
     LinearDiscriminantAnalysis lda = LoadLdaFromDrugData();
-    for (unsigned i=0; i<mApd90s.size(); i++)
+    for (unsigned i = 0; i < mApd90s.size(); i++)
     {
         vector<double> test_point(1);
         test_point(0) = largest_percent_change[i];
-        mTorsadePredictions.push_back(lda.ClassifyThisPoint(test_point)+2u); // We add two because our redfern categories start at 2 not 0.
+        mTorsadePredictions.push_back(lda.ClassifyThisPoint(test_point) + 2u); // We add two because our redfern categories start at 2 not 0.
     }
 }
 
@@ -130,15 +130,15 @@ void TorsadePredictMethods::WriteTorsadeResultsToFile()
     colours.push_back("Orange");
     colours.push_back("Limegreen");
     colours.push_back("Limegreen");
-    for (unsigned i=0; i<mTorsadePredictions.size(); i++)
+    for (unsigned i = 0; i < mTorsadePredictions.size(); i++)
     {
-        if (!mSuppressOutput) std::cout << "Conc = " << mConcs[i] << "uM, APD90 = " << mApd90s[i] << "ms, risk prediction =  " << mTorsadePredictions[i] << "\n";// << std::flush;
-        *torsade_results_file << "<tr style=\"background-color:" << colours[mTorsadePredictions[i]-2] << "\"><td>"<< mConcs[i] << "</td><td>" << mApd90s[i] << "</td><td>" << mTorsadePredictions[i] << "</td></tr>\n";
+        if (!mSuppressOutput)
+            std::cout << "Conc = " << mConcs[i] << "uM, APD90 = " << mApd90s[i] << "ms, risk prediction =  " << mTorsadePredictions[i] << "\n"; // << std::flush;
+        *torsade_results_file << "<tr style=\"background-color:" << colours[mTorsadePredictions[i] - 2] << "\"><td>" << mConcs[i] << "</td><td>" << mApd90s[i] << "</td><td>" << mTorsadePredictions[i] << "</td></tr>\n";
     }
     *torsade_results_file << "</table>\n</body>\n</html>\n";
     torsade_results_file->close();
 }
-
 
 LinearDiscriminantAnalysis TorsadePredictMethods::LoadLdaFromDrugData()
 {
@@ -156,14 +156,14 @@ LinearDiscriminantAnalysis TorsadePredictMethods::LoadLdaFromDrugData()
     }
     CardiovascRes2011DataStructure drug_data(*p_file_finder);
 
-    matrix<double> cat1and2 (1,1);
-    matrix<double> cat3 (1,1);
-    matrix<double> cat4 (1,1);
-    matrix<double> cat5 (1,1);
-    cat1and2(0,0) = cat3(0,0) = cat4(0,0) = cat5(0,0) = DBL_MAX;
+    matrix<double> cat1and2(1, 1);
+    matrix<double> cat3(1, 1);
+    matrix<double> cat4(1, 1);
+    matrix<double> cat5(1, 1);
+    cat1and2(0, 0) = cat3(0, 0) = cat4(0, 0) = cat5(0, 0) = DBL_MAX;
 
     // Generate structures for training data...
-    for (unsigned i=0; i<drug_data.GetNumDrugs(); i++)
+    for (unsigned i = 0; i < drug_data.GetNumDrugs(); i++)
     {
         double grandi_measure;
         try
@@ -172,48 +172,48 @@ LinearDiscriminantAnalysis TorsadePredictMethods::LoadLdaFromDrugData()
         }
         catch (Exception& e)
         {
-            assert(e.GetShortMessage()=="No data available on Grandi measure for this drug.");
+            assert(e.GetShortMessage() == "No data available on Grandi measure for this drug.");
             continue;
         }
 
-        if (drug_data.GetDrugName(i)=="Ranolazine")
-        {   // We aren't currently using Ranolazine for the training.
+        if (drug_data.GetDrugName(i) == "Ranolazine")
+        { // We aren't currently using Ranolazine for the training.
             continue;
         }
 
         unsigned redfern = drug_data.GetRedfernCategory(i);
-        if (redfern==1 || redfern==2)
+        if (redfern == 1 || redfern == 2)
         {
-            if (cat1and2(0,0) != DBL_MAX)
+            if (cat1and2(0, 0) != DBL_MAX)
             {
-                cat1and2.resize(cat1and2.size1()+1,1);
+                cat1and2.resize(cat1and2.size1() + 1, 1);
             }
-            cat1and2(cat1and2.size1()-1,0) = grandi_measure;
+            cat1and2(cat1and2.size1() - 1, 0) = grandi_measure;
         }
-        else if (redfern==3)
+        else if (redfern == 3)
         {
-            if (cat3(0,0) != DBL_MAX)
+            if (cat3(0, 0) != DBL_MAX)
             {
-                cat3.resize(cat3.size1()+1,1);
+                cat3.resize(cat3.size1() + 1, 1);
             }
-            cat3(cat3.size1()-1,0) = grandi_measure;
+            cat3(cat3.size1() - 1, 0) = grandi_measure;
         }
-        else if (redfern==4)
+        else if (redfern == 4)
         {
-            if (cat4(0,0) != DBL_MAX)
+            if (cat4(0, 0) != DBL_MAX)
             {
-                cat4.resize(cat4.size1()+1,1);
+                cat4.resize(cat4.size1() + 1, 1);
             }
-            cat4(cat4.size1()-1,0) = grandi_measure;
+            cat4(cat4.size1() - 1, 0) = grandi_measure;
         }
         else
         {
-            assert(redfern==5);
-            if (cat5(0,0) != DBL_MAX)
+            assert(redfern == 5);
+            if (cat5(0, 0) != DBL_MAX)
             {
-                cat5.resize(cat5.size1()+1,1);
+                cat5.resize(cat5.size1() + 1, 1);
             }
-            cat5(cat5.size1()-1,0) = grandi_measure;
+            cat5(cat5.size1() - 1, 0) = grandi_measure;
         }
     }
 
@@ -227,7 +227,6 @@ LinearDiscriminantAnalysis TorsadePredictMethods::LoadLdaFromDrugData()
     return lda;
 }
 
-
 std::vector<unsigned> TorsadePredictMethods::GetTorsadePredictions(void)
 {
     if (!mComplete)
@@ -236,5 +235,3 @@ std::vector<unsigned> TorsadePredictMethods::GetTorsadePredictions(void)
     }
     return mTorsadePredictions;
 }
-
-

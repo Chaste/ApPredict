@@ -36,6 +36,42 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "AbstractDataStructure.hpp"
 #include "Exception.hpp"
 
+// Copied from https://stackoverflow.com/questions/6089231/getting-std-ifstream-to-handle-lf-cr-and-crlf
+std::istream& AbstractDataStructure::SafeGetline(std::istream& is, std::string& t)
+{
+    t.clear();
+
+    // The characters in the stream are read one-by-one using a std::streambuf.
+    // That is faster than reading them one-by-one using the std::istream.
+    // Code that uses streambuf this way must be guarded by a sentry object.
+    // The sentry object performs various tasks,
+    // such as thread synchronization and updating the stream state.
+
+    std::istream::sentry se(is, true);
+    std::streambuf* sb = is.rdbuf();
+
+    for (;;)
+    {
+        int c = sb->sbumpc();
+        switch (c)
+        {
+            case '\n':
+                return is;
+            case '\r':
+                if (sb->sgetc() == '\n')
+                    sb->sbumpc();
+                return is;
+            case EOF:
+                // Also handle the case when the last line has no line ending
+                if (t.empty())
+                    is.setstate(std::ios::eofbit);
+                return is;
+            default:
+                t += (char)c;
+        }
+    }
+}
+
 void AbstractDataStructure::LoadDataFromFile(const std::string& rFileName, unsigned numHeaderLines)
 {
     std::ifstream indata; // indata is like cin
@@ -51,7 +87,7 @@ void AbstractDataStructure::LoadDataFromFile(const std::string& rFileName, unsig
     while (indata.good())
     {
         std::string this_line;
-        getline(indata, this_line);
+        SafeGetline(indata, this_line);
         num_lines_read++;
 
         if (this_line == "" || this_line == "\r")
@@ -76,12 +112,15 @@ void AbstractDataStructure::LoadDataFromFile(const std::string& rFileName, unsig
                 continue;
             }
         }
+
         // Load a standard data line.
         LoadALine(line);
 
         if (line.good())
         {
-            EXCEPTION("These are unread items on line " << num_lines_read << ", data reading structures may have bugs.");
+            std::string whats_left;
+            line >> whats_left;
+            EXCEPTION("These are unread items :'" << whats_left << "' on line " << num_lines_read << ", data reading structures may have bugs.");
         }
     }
 
