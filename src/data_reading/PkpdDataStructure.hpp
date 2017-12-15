@@ -39,7 +39,10 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "AbstractDataStructure.hpp"
 
 /**
- * Helper class to read in PKPD data
+ * Helper class to read in PKPD data.
+ *
+ * Data can be in any time units (not used), but concentrations
+ * need to be in MicroMolar.
  */
 class PkpdDataStructure : public AbstractDataStructure
 {
@@ -50,10 +53,22 @@ private:
     /** The number of patients / concentration traces in the file*/
     unsigned mNumPatients;
 
+    /**
+     * We store the times, which are actually doubles, as std::string to avoid floating point
+     * problems when we print them out again later...
+     */
+    std::vector<std::string> mTimes;
+
+    /**
+     * A vector (through time) of vectors (through patients) of clinical concentrations
+     * through time.
+     */
+    std::vector<std::vector<double> > mClinicalDoses;
+
 protected:
     virtual void LoadALine(std::stringstream& rLine)
     {
-        double time;
+        std::string time;
         std::vector<double> concs_at_this_time;
 
         rLine >> time;
@@ -80,9 +95,6 @@ protected:
         mTimes.push_back(time);
         mClinicalDoses.push_back(concs_at_this_time);
     }
-
-    std::vector<double> mTimes;
-    std::vector<std::vector<double> > mClinicalDoses;
 
 public:
     PkpdDataStructure(FileFinder& rFileFinder)
@@ -125,7 +137,7 @@ public:
         return mNumPatients;
     }
 
-    std::vector<double> GetTimes()
+    std::vector<std::string> GetTimes()
     {
         return mTimes;
     }
