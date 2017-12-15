@@ -1188,7 +1188,7 @@ void ApPredictMethods::CommonRunMethod()
         }
         *p_output_file << std::endl;
 
-        std::vector<double> times = mpPkpdReader->GetTimes();
+        std::vector<std::string> times = mpPkpdReader->GetTimes();
         for (unsigned i = 0; i < times.size(); i++)
         {
             *p_output_file << times[i];

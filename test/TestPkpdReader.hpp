@@ -54,7 +54,7 @@ public:
 
         PkpdDataStructure pkpd_data(pkpd_data_file);
 
-        std::vector<double> times = pkpd_data.GetTimes();
+        std::vector<std::string> times = pkpd_data.GetTimes();
         TS_ASSERT_EQUALS(times.size(), 749u);
 
         TS_ASSERT_EQUALS(pkpd_data.GetNumberOfPatients(), 57u);
@@ -66,8 +66,8 @@ public:
                               "Patient index 57 requested but there are only 57 in the data file.");
 
         // Test concentration interpolation methods
-        TS_ASSERT_DELTA(times[0], 0.0, 1e-6);
-        TS_ASSERT_DELTA(times.back(), 748, 1e-6);
+        TS_ASSERT_EQUALS(times[0], "0");
+        TS_ASSERT_EQUALS(times.back(), "748");
         TS_ASSERT_DELTA(concs[0], 0, 1e-9);
         TS_ASSERT_DELTA(concs.back(), 0.0195722, 1e-9); // uM
 
@@ -88,7 +88,7 @@ public:
 
         PkpdDataStructure pkpd_data(pkpd_data_file);
 
-        std::vector<double> times = pkpd_data.GetTimes();
+        std::vector<std::string> times = pkpd_data.GetTimes();
         TS_ASSERT_EQUALS(times.size(), 10u);
 
         TS_ASSERT_EQUALS(pkpd_data.GetNumberOfPatients(), 4u);
@@ -102,7 +102,7 @@ public:
 
         PkpdDataStructure pkpd_data(pkpd_data_file);
 
-        std::vector<double> times = pkpd_data.GetTimes();
+        std::vector<std::string> times = pkpd_data.GetTimes();
         TS_ASSERT_EQUALS(times.size(), 10u);
 
         TS_ASSERT_EQUALS(pkpd_data.GetNumberOfPatients(), 4u);
