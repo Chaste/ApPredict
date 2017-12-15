@@ -10,3 +10,5 @@ apps/src/ApPredict\.o
 apps/src/TorsadePredict
 
 apps/src/TorsadePredict\.o
+
+*.m~
