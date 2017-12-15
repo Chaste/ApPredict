@@ -89,8 +89,8 @@ public:
     {
         return "* EITHER --model\n"
                "*   options: 1 = Shannon, 2 = TenTusscher (06), 3 = Mahajan,\n"
-               "*            4 = Hund-Rudy, 5 = Grandi, 6 = O'Hara-Rudy (endo),\n"
-               "*            7 = Paci (ventricular).\n"
+               "*            4 = Hund-Rudy, 5 = Grandi, 6 = O'Hara-Rudy 2011 (endo),\n"
+               "*            7 = Paci (ventricular), 8 = O'Hara-Rudy CiPA v1 2017 (endo)\n"
                "* OR --cellml <file>\n";
     }
 
