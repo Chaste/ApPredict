@@ -124,7 +124,7 @@ public:
         double e = 0.5;
         double f = 0.4;
 
-        for (unsigned model_index = 1u; model_index <= 12u; model_index++)
+        for (unsigned model_index = 1u; model_index <= 13u; model_index++)
         {
             AbstractCardiacCell* p_chaste_cell;
             AbstractCardiacCell* p_chaste_cell_opt;
@@ -254,7 +254,7 @@ public:
                         p_solver, p_stimulus);
                     break;
                 }
-                case 12u:
+                case 13u:
                 {
                     p_chaste_cell = new Cellfaber_rudy_2000FromCellML(p_solver, p_stimulus);
                     p_chaste_cell_opt = new Cellfaber_rudy_2000FromCellMLOpt(p_solver, p_stimulus);
