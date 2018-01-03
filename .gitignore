@@ -14,3 +14,7 @@ apps/src/TorsadePredict\.o
 *.m~
 
 \.project
+
+apps/src/DoseResponseFitter
+
+apps/src/DoseResponseFitter\.o
