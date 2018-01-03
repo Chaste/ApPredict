@@ -5,6 +5,7 @@ TestConvertLookupTableArchiveToBinary.hpp
 TestDataReaders.hpp
 TestDavies2012Paper.hpp
 TestDoseCalculator.hpp
+TestDoseResponseFitting.hpp
 TestLinearDiscriminantAnalysis.hpp
 TestLookupTableGenerator.hpp
 TestLogisticDistribution.hpp
