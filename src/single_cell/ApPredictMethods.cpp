@@ -526,7 +526,7 @@ void ApPredictMethods::SetUpLookupTables()
             std::cout << "\n\nAttempting to download an action potential lookup "
                          "table from:\n"
                       << lookup_table_URL << "\n\n";
-            EXPECT0(system, "wget " + lookup_table_URL);
+            EXPECT0(system, "wget --dns-timeout=10 --connect-timeout=10 " + lookup_table_URL);
             std::cout << "Download succeeded, unpacking...\n";
             EXPECT0(system,
                     "tar xzf " + lookup_table_archive_name.str() + ".arch.tgz");
