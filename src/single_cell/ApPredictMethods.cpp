@@ -417,7 +417,7 @@ ApPredictMethods::ApPredictMethods()
     mShortNames.push_back("nal");
 
     // We'll use DOUBLE_UNSET to start with for these spread parameters.
-    for (unsigned i = 0; i < 6u; i++)
+    for (unsigned i = 0; i < mMetadataNames.size(); i++)
     {
         mPic50Spreads.push_back(DOUBLE_UNSET);
         mHillSpreads.push_back(DOUBLE_UNSET);
