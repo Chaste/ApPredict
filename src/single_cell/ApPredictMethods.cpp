@@ -533,8 +533,7 @@ void ApPredictMethods::SetUpLookupTables()
         std::string lookup_table_URL = "http://www.cs.ox.ac.uk/people/gary.mirams/files/" + lookup_table_archive_name.str() + ".arch.tgz";
         try
         {
-            std::cout << "\n\nAttempting to download an action potential lookup "
-                         "table from:\n"
+            std::cout << "\n\nAttempting to download an action potential lookup table from:\n"
                       << lookup_table_URL << "\n\n";
             EXPECT0(system, "wget --dns-timeout=10 --connect-timeout=10 " + lookup_table_URL);
             std::cout << "Download succeeded, unpacking...\n";
@@ -544,8 +543,7 @@ void ApPredictMethods::SetUpLookupTables()
         }
         catch (Exception& e)
         {
-            std::cout << "Could not download and unpack the Lookup Table archive, "
-                         "continuing without it...\n";
+            std::cout << "Could not download and unpack the Lookup Table archive, continuing without it..." << std::endl;
             return;
         }
     }
@@ -554,9 +552,7 @@ void ApPredictMethods::SetUpLookupTables()
     // creating a binary one for next time.
     if (ascii_archive_file.IsFile())
     {
-        std::cout << "Loading lookup table from file into memory, this can take a "
-                     "few seconds..."
-                  << std::flush;
+        std::cout << "Loading lookup table from file into memory, this can take a few seconds..." << std::flush;
         Timer::Reset();
 
         // Create a pointer to the input archive
@@ -572,14 +568,11 @@ void ApPredictMethods::SetUpLookupTables()
         mLookupTableAvailable = true;
 
         std::cout << " loaded in " << Timer::GetElapsedTime()
-                  << " secs.\nLookup table is available for generation of credible "
-                     "intervals.\n";
+                  << " secs.\nLookup table is available for generation of credible intervals.\n";
 
         try
         {
-            std::cout << "Saving a binary version of the archive for faster loading "
-                         "next time..."
-                      << std::flush;
+            std::cout << "Saving a binary version of the archive for faster loading next time..." << std::flush;
             // Save a binary version to speed things up next time round.
             LookupTableGenerator<TABLE_DIM>* const p_arch_generator = p_generator;
             std::ofstream binary_ofs(binary_archive_file.GetAbsolutePath().c_str(),
@@ -732,6 +725,8 @@ void ApPredictMethods::InterpolateFromLookupTableForThisConcentration(
         return;
     }
 
+    const unsigned table_dim = mpLookupTable->GetDimension();
+
     std::pair<double, double> credible_interval;
 
     // If this is the first concentration (control) say the percent change must be
@@ -753,11 +748,14 @@ void ApPredictMethods::InterpolateFromLookupTableForThisConcentration(
 
     // In the lookup table the order of parameters is given in the filename:
     // "4d_hERG_IKs_INa_ICaL_generator.arch"
-    std::vector<std::string> required_channels(TABLE_DIM);
-    required_channels[0] = "herg";
-    required_channels[1] = "iks";
-    required_channels[2] = "na";
-    required_channels[3] = "cal";
+    std::vector<std::string> required_channels;
+    required_channels.push_back("herg");
+    if (table_dim > 3u)
+    {
+        required_channels.push_back("iks");
+    }
+    required_channels.push_back("na");
+    required_channels.push_back("cal");
 
     // This slightly complicated loop is just seeing which entry in
     // mSampledIC50/Hills corresponds
@@ -765,7 +763,7 @@ void ApPredictMethods::InterpolateFromLookupTableForThisConcentration(
     // for them in
     // mShortNames here.
     std::map<unsigned, unsigned> map_to_metadata_idx;
-    for (unsigned channel_idx = 0; channel_idx < TABLE_DIM; channel_idx++)
+    for (unsigned channel_idx = 0; channel_idx < table_dim; channel_idx++)
     {
         for (unsigned i = 0; i < mShortNames.size(); i++)
         {
@@ -776,14 +774,14 @@ void ApPredictMethods::InterpolateFromLookupTableForThisConcentration(
             }
         }
     }
-    assert(map_to_metadata_idx.size() == TABLE_DIM);
+    assert(map_to_metadata_idx.size() == table_dim);
 
     std::cout << "Calculating confidence intervals from Lookup Table...";
     std::vector<c_vector<double, 4u> > sampling_points;
     for (unsigned rand_idx = 0; rand_idx < num_samples; rand_idx++)
     {
         c_vector<double, TABLE_DIM> sample_required_at;
-        for (unsigned i = 0; i < TABLE_DIM; i++)
+        for (unsigned i = 0; i < table_dim; i++)
         {
             sample_required_at[i] = AbstractDataStructure::CalculateConductanceFactor(
                 mConcs[concIndex], mSampledIc50s[map_to_metadata_idx[i]][rand_idx],

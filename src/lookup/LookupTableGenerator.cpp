@@ -606,51 +606,9 @@ void LookupTableGenerator<DIM>::SetPacingFrequency(double frequency)
 }
 
 template <unsigned DIM>
-double LookupTableGenerator<DIM>::DetectVoltageThresholdForActionPotential(
-    boost::shared_ptr<AbstractCvodeCell> pModel)
+const unsigned LookupTableGenerator<DIM>::GetDimension() const
 {
-    SingleActionPotentialPrediction ap_runner(pModel);
-    ap_runner.SuppressOutput();
-    ap_runner.SetMaxNumPaces(100u);
-
-    OdeSolution baseline_solution = ap_runner.RunSteadyPacingExperiment();
-    std::vector<double> baseline_voltages = baseline_solution.GetAnyVariable("membrane_voltage");
-    double max_baseline_voltage = *(std::max_element(baseline_voltages.begin(), baseline_voltages.end()));
-    double min_baseline_voltage = *(std::min_element(baseline_voltages.begin(), baseline_voltages.end()));
-
-    // We switch off the sodium current and see how high the stimulus makes the
-    // voltage go.
-    if (pModel->HasParameter("membrane_fast_sodium_current_conductance"))
-    {
-        const double original_na_conductance = pModel->GetParameter("membrane_fast_sodium_current_conductance");
-        pModel->SetParameter("membrane_fast_sodium_current_conductance", 0u);
-
-        OdeSolution solution = ap_runner.RunSteadyPacingExperiment();
-
-        // Put it back where it was! The calling method will reset state variables.
-        pModel->SetParameter("membrane_fast_sodium_current_conductance",
-                             original_na_conductance);
-
-        std::vector<double> voltages = solution.GetAnyVariable("membrane_voltage");
-        double max_voltage = *(std::max_element(voltages.begin(), voltages.end()));
-        double min_voltage = *(std::min_element(voltages.begin(), voltages.end()));
-
-        // Go 25% over the depolarization jump at gNa=0 as a threshold for 'this
-        // really is an AP'. This should be sensible for all models that fail to depolarise with gNa=0.
-        const double proposed_threshold = min_voltage + 1.25 * (max_voltage - min_voltage);
-
-        // BUT some models with a big stimulus fire off almost fully with gNa=0 anyway (e.g. ten Tusscher 2006)
-        // and so we need to prevent this proposed threshold being above (or near) the usual peak voltage
-        // (if we set threshold above we'd always get NoAP1 error codes, even when there are APs!)
-        const double two_thirds_of_full_AP = min_baseline_voltage + 0.666 * (max_baseline_voltage - min_baseline_voltage);
-        if (proposed_threshold <= two_thirds_of_full_AP)
-        {
-            return proposed_threshold;
-        }
-    }
-
-    // Otherwise we give a sensible default of 1/3 of the way up an AP.
-    return min_baseline_voltage + 0.333 * (max_baseline_voltage - min_baseline_voltage); // mV
+    return DIM;
 }
 
 #include "SerializationExportWrapperForCpp.hpp"
