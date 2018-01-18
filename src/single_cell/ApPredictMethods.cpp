@@ -444,22 +444,32 @@ void ApPredictMethods::SetUpLookupTables()
         return;
     }
 
-    // We've only generated (up to) 4D lookup tables for now,
+    // Here we will attempt to use any lookup table associated with this model and
+    // pacing rate.
+    std::stringstream lookup_table_archive_name;
+    lookup_table_archive_name << mpModel->GetSystemName();
+
+    // We've only generated (up to) 3D and 4D lookup tables for now,
+    // we want to use the lowest dimension table possible in general.
     // so don't bother if we are asking for ion channel blocks of other things
     if (p_args->OptionExists("--ic50-ik1") || p_args->OptionExists("--pic50-ik1") || p_args->OptionExists("--ic50-ito") || p_args->OptionExists("--pic50-ito") || p_args->OptionExists("--ic50-nal") || p_args->OptionExists("--pic50-nal"))
     {
         EXCEPTION(
-            "Lookup table (for --credible-intervals) is currently only including "
+            "Lookup table (for --credible-intervals) is currently only including up to"
             "IKr, IKs, INa and ICaL block, you have specified additional ones so "
             "quitting.");
     }
 
-    // Here we will attempt to use any lookup table associated with this model and
-    // pacing rate.
-    std::stringstream lookup_table_archive_name;
-    lookup_table_archive_name << mpModel->GetSystemName()
-                              << "_4d_hERG_IKs_INa_ICaL_" << this->mHertz
-                              << "Hz_generator";
+    if (p_args->OptionExists("--ic50-iks") || p_args->OptionExists("--pic50-iks")
+        || fabs(this->mHertz - 0.5) < 1e-4) // At present we don't have 3D lookup tables for 0.5Hz, so use 4D.
+    {
+        lookup_table_archive_name << "_4d_hERG_IKs_INa_ICaL_";
+    }
+    else
+    {
+        lookup_table_archive_name << "_3d_hERG_INa_ICaL_";
+    }
+    lookup_table_archive_name << this->mHertz << "Hz_generator";
 
     // First see if there is a table available already in absolute or current
     // working directory.
@@ -528,8 +538,7 @@ void ApPredictMethods::SetUpLookupTables()
                       << lookup_table_URL << "\n\n";
             EXPECT0(system, "wget --dns-timeout=10 --connect-timeout=10 " + lookup_table_URL);
             std::cout << "Download succeeded, unpacking...\n";
-            EXPECT0(system,
-                    "tar xzf " + lookup_table_archive_name.str() + ".arch.tgz");
+            EXPECT0(system, "tar xzf " + lookup_table_archive_name.str() + ".arch.tgz");
             std::cout << "Unpacking succeeded, removing .tgz file...\n";
             EXPECT0(system, "rm -f " + lookup_table_archive_name.str() + ".arch.tgz");
         }
