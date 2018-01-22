@@ -42,8 +42,6 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "OutputFileHandler.hpp"
 #include "PkpdDataStructure.hpp"
 
-const unsigned TABLE_DIM = 4u;
-
 /**
  * Common code to allow this to be run as a test via scons and also as a
  * executable application from the apps folder.
@@ -149,7 +147,7 @@ private:
     bool mLookupTableAvailable;
 
     /** A pointer to a lookup table */
-    boost::shared_ptr<LookupTableGenerator<TABLE_DIM> > mpLookupTable;
+    boost::shared_ptr<AbstractUntemplatedLookupTableGenerator> mpLookupTable;
 
     /**
      * A vector of pairs used to store the credible regions for APD90s,

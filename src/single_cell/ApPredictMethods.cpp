@@ -186,10 +186,14 @@ std::string ApPredictMethods::PrintCommonArguments()
                           "the plasma concentrations \n"
                           "*\n"
                           "* SPECIFYING CONCENTRATIONS IN A FILE (for PKPD runs):\n"
-                          "* if you want to run at concentrations in a file instead of specifying at command line, you can do:\n"
+                          "* if you want to run at concentrations in a file instead of specifying "
+                          "at command line, you can do:\n"
                           "* --pkpd-file <relative or absolute filepath>\n"
-                          "*   To evaluate APD90s throughout a PKPD profile please provide a file with the data format:\n"
-                          "*   Time(any units)<tab>Conc_trace_1(uM)<tab>Conc_trace_2(uM)<tab>...Conc_trace_N(uM)\n"
+                          "*   To evaluate APD90s throughout a PKPD profile please provide a file "
+                          "with the data format:\n"
+                          "*   Time(any "
+                          "units)<tab>Conc_trace_1(uM)<tab>Conc_trace_2(uM)<tab>...Conc_trace_N(uM)"
+                          "\n"
                           "*   on each row.\n"
                           "*\n"
                           "* UNCERTAINTY QUANTIFICATION:\n"
@@ -452,21 +456,27 @@ void ApPredictMethods::SetUpLookupTables()
     // We've only generated (up to) 3D and 4D lookup tables for now,
     // we want to use the lowest dimension table possible in general.
     // so don't bother if we are asking for ion channel blocks of other things
-    if (p_args->OptionExists("--ic50-ik1") || p_args->OptionExists("--pic50-ik1") || p_args->OptionExists("--ic50-ito") || p_args->OptionExists("--pic50-ito") || p_args->OptionExists("--ic50-nal") || p_args->OptionExists("--pic50-nal"))
+    if (p_args->OptionExists("--ic50-ik1") || p_args->OptionExists("--pic50-ik1")
+        || p_args->OptionExists("--ic50-ito") || p_args->OptionExists("--pic50-ito")
+        || p_args->OptionExists("--ic50-nal") || p_args->OptionExists("--pic50-nal"))
     {
         EXCEPTION(
-            "Lookup table (for --credible-intervals) is currently only including up to"
+            "Lookup table (for --credible-intervals) is currently only including "
+            "up to"
             "IKr, IKs, INa and ICaL block, you have specified additional ones so "
             "quitting.");
     }
 
+    unsigned table_dim;
     if (p_args->OptionExists("--ic50-iks") || p_args->OptionExists("--pic50-iks")
         || fabs(this->mHertz - 0.5) < 1e-4) // At present we don't have 3D lookup tables for 0.5Hz, so use 4D.
     {
+        table_dim = 4u;
         lookup_table_archive_name << "_4d_hERG_IKs_INa_ICaL_";
     }
     else
     {
+        table_dim = 3u;
         lookup_table_archive_name << "_3d_hERG_INa_ICaL_";
     }
     lookup_table_archive_name << this->mHertz << "Hz_generator";
@@ -493,9 +503,8 @@ void ApPredictMethods::SetUpLookupTables()
         boost::archive::binary_iarchive input_arch(ifs);
 
         // restore from the archive
-        LookupTableGenerator<TABLE_DIM>* p_generator;
+        AbstractUntemplatedLookupTableGenerator* p_generator;
         input_arch >> p_generator;
-
         mpLookupTable.reset(p_generator);
         mLookupTableAvailable = true;
 
@@ -552,7 +561,9 @@ void ApPredictMethods::SetUpLookupTables()
     // creating a binary one for next time.
     if (ascii_archive_file.IsFile())
     {
-        std::cout << "Loading lookup table from file into memory, this can take a few seconds..." << std::flush;
+        std::cout << "Loading lookup table from file into memory, this can take a "
+                     "few seconds..."
+                  << std::flush;
         Timer::Reset();
 
         // Create a pointer to the input archive
@@ -561,24 +572,50 @@ void ApPredictMethods::SetUpLookupTables()
         boost::archive::text_iarchive input_arch(ifs);
 
         // restore from the archive
-        LookupTableGenerator<TABLE_DIM>* p_generator;
-        input_arch >> p_generator;
-
-        mpLookupTable.reset(p_generator);
+        // \todo When all lookup tables are 'new' or converted from old format
+        // we can swap this to loading an AbstractUntemplatedLookupTableGenerator as standard as we
+        // do for binary files.
+        if (table_dim == 4u)
+        {
+            LookupTableGenerator<4u>* p_generator;
+            input_arch >> p_generator;
+            mpLookupTable.reset(p_generator);
+        }
+        else if (table_dim == 3u)
+        {
+            LookupTableGenerator<3u>* p_generator;
+            input_arch >> p_generator;
+            mpLookupTable.reset(p_generator);
+        }
+        else
+        {
+            EXCEPTION("Loading lookup tables of dimension "
+                      << table_dim << " is not configured yet.");
+        }
         mLookupTableAvailable = true;
 
         std::cout << " loaded in " << Timer::GetElapsedTime()
-                  << " secs.\nLookup table is available for generation of credible intervals.\n";
+                  << " secs.\nLookup table is available for generation of credible "
+                     "intervals.\n";
 
         try
         {
-            std::cout << "Saving a binary version of the archive for faster loading next time..." << std::flush;
+            std::cout << "Saving a binary version of the archive for faster loading "
+                         "next time..."
+                      << std::flush;
             // Save a binary version to speed things up next time round.
-            LookupTableGenerator<TABLE_DIM>* const p_arch_generator = p_generator;
+            AbstractUntemplatedLookupTableGenerator* const p_arch_generator = mpLookupTable.get();
             std::ofstream binary_ofs(binary_archive_file.GetAbsolutePath().c_str(),
                                      std::ios::binary);
             boost::archive::binary_oarchive output_arch(binary_ofs);
             output_arch << p_arch_generator;
+            std::cout << "done!\n";
+
+            std::cout << "Saving a new version of the ascii archive..." << std::flush;
+            // Just an experiment...
+            std::ofstream ofs((ascii_archive_file.GetAbsolutePath() + "_NEW").c_str());
+            boost::archive::text_oarchive output_arch2(ofs);
+            output_arch2 << p_arch_generator;
             std::cout << "done!\n";
         }
         catch (Exception& e)
@@ -600,9 +637,9 @@ void ApPredictMethods::CalculateDoseResponseParameterSamples(
     }
 
     /*
-   * Prepare an inferred set of IC50s and Hill coefficients
-   * for use with the Lookup Table and credible interval calculations.
-   */
+*Prepare an inferred set of IC50s and Hill coefficients
+*for use with the Lookup Table and credible interval calculations.
+*/
     mSampledIc50s.resize(mMetadataNames.size());
     mSampledHills.resize(mMetadataNames.size());
 
@@ -777,10 +814,10 @@ void ApPredictMethods::InterpolateFromLookupTableForThisConcentration(
     assert(map_to_metadata_idx.size() == table_dim);
 
     std::cout << "Calculating confidence intervals from Lookup Table...";
-    std::vector<c_vector<double, 4u> > sampling_points;
+    std::vector<std::vector<double> > sampling_points;
     for (unsigned rand_idx = 0; rand_idx < num_samples; rand_idx++)
     {
-        c_vector<double, TABLE_DIM> sample_required_at;
+        std::vector<double> sample_required_at(table_dim);
         for (unsigned i = 0; i < table_dim; i++)
         {
             sample_required_at[i] = AbstractDataStructure::CalculateConductanceFactor(
@@ -795,9 +832,9 @@ void ApPredictMethods::InterpolateFromLookupTableForThisConcentration(
     assert(predictions.size() == mSampledIc50s[0].size());
 
     /*
-   * Compile all the lookup table predictions into a vector that we can sort to
-   * get percentiles.
-   */
+	 *Compile all the lookup table predictions into a vector that we can sort to
+	 *get percentiles.
+	 */
     // std::vector<double> apd_50_predictions;
     std::vector<double> apd_90_predictions;
     for (unsigned rand_idx = 0; rand_idx < num_samples; rand_idx++)
@@ -852,21 +889,30 @@ void ApPredictMethods::CommonRunMethod()
 
     if (CommandLineArguments::Instance()->OptionExists("--pkpd-file"))
     {
-        FileFinder pkpd_file(CommandLineArguments::Instance()->GetStringCorrespondingToOption("--pkpd-file"),
-                             RelativeTo::AbsoluteOrCwd);
+        FileFinder pkpd_file(
+            CommandLineArguments::Instance()->GetStringCorrespondingToOption(
+                "--pkpd-file"),
+            RelativeTo::AbsoluteOrCwd);
         if (!pkpd_file.IsFile())
         {
-            EXCEPTION("The File '" << pkpd_file.GetAbsolutePath() << "' does not exist. Please give a relative or absolute path.");
+            EXCEPTION(
+                "The File '"
+                << pkpd_file.GetAbsolutePath()
+                << "' does not exist. Please give a relative or absolute path.");
         }
 
         if (CommandLineArguments::Instance()->OptionExists("--plasma-conc-high"))
         {
-            EXCEPTION("The argument --plasma-conc-high will be ignored. Using PKPD file to set concentrations. Please remove it to avoid confusion!");
+            EXCEPTION(
+                "The argument --plasma-conc-high will be ignored. Using PKPD file to "
+                "set concentrations. Please remove it to avoid confusion!");
         }
 
         if (CommandLineArguments::Instance()->OptionExists("--plasma-concs"))
         {
-            EXCEPTION("The argument --plasma-concs will be ignored. Using PKPD file to set concentrations. Please remove it to avoid confusion!");
+            EXCEPTION(
+                "The argument --plasma-concs will be ignored. Using PKPD file to set "
+                "concentrations. Please remove it to avoid confusion!");
         }
 
         // Set up a structure to read the PK concentrations in.
@@ -875,7 +921,9 @@ void ApPredictMethods::CommonRunMethod()
 
         // Calculate maximum concentration to use... add 10% to the maximum we saw.
         DoseCalculator dose_calculator(1.1 * mpPkpdReader->GetMaximumConcentration());
-        dose_calculator.SetNumSubdivisions(97); // Loads of detail for these sims to be accurately interpolated later.
+        dose_calculator.SetNumSubdivisions(97); // Loads of detail for these sims
+        // to be accurately interpolated
+        // later.
         mConcs = dose_calculator.GetConcentrations();
     }
     else
@@ -973,9 +1021,9 @@ void ApPredictMethods::CommonRunMethod()
                                          "(%)</td></tr>\n"; // Header line
 
     /*
-   * Work out the median IC50, Hill and saturation to use if more than one were
-   * provided
-   */
+*Work out the median IC50, Hill and saturation to use if more than one were
+*provided
+*/
     std::vector<double> median_ic50; // vector is over channel indices
     std::vector<double> median_hill; //               ""
     std::vector<double> median_saturation; //               ""
@@ -1041,8 +1089,8 @@ void ApPredictMethods::CommonRunMethod()
     }
 
     /*
-   * START LOOP OVER EACH CONCENTRATION TO TEST WITH
-   */
+*START LOOP OVER EACH CONCENTRATION TO TEST WITH
+*/
     mApd90CredibleRegions.resize(mConcs.size());
     double control_apd90 = 0;
     for (unsigned conc_index = 0; conc_index < mConcs.size(); conc_index++)
@@ -1061,8 +1109,9 @@ void ApPredictMethods::CommonRunMethod()
         }
 
         double apd90, apd50, upstroke, peak, peak_time, ca_max, ca_min;
-        OdeSolution solution = SteadyStatePacingExperiment(mpModel, apd90, apd50, upstroke, peak, peak_time, ca_max, ca_min,
-                                                           0.1 /*ms printing timestep*/, mConcs[conc_index]);
+        OdeSolution solution = SteadyStatePacingExperiment(
+            mpModel, apd90, apd50, upstroke, peak, peak_time, ca_max, ca_min,
+            0.1 /*ms printing timestep*/, mConcs[conc_index]);
 
         // Store some things as member variables for returning later (mainly for
         // testing)
@@ -1155,7 +1204,9 @@ void ApPredictMethods::CommonRunMethod()
             mpModel->GetStimulusFunction());
         double s1_period = p_default_stimulus->GetPeriod();
         double s_start = p_default_stimulus->GetStartTime();
-        std::vector<double> voltages = solution.GetVariableAtIndex(mpModel->GetSystemInformation()->GetStateVariableIndex("membrane_voltage"));
+        std::vector<double> voltages = solution.GetVariableAtIndex(
+            mpModel->GetSystemInformation()->GetStateVariableIndex(
+                "membrane_voltage"));
         double window = s1_period;
         if (this->mPeriodTwoBehaviour)
         {
@@ -1174,11 +1225,14 @@ void ApPredictMethods::CommonRunMethod()
     if (mConcentrationsFromFile)
     {
         // Copy the input file to the results folder, for posterity...
-        FileFinder pkpd_file(CommandLineArguments::Instance()->GetStringCorrespondingToOption("--pkpd-file"),
-                             RelativeTo::AbsoluteOrCwd);
+        FileFinder pkpd_file(
+            CommandLineArguments::Instance()->GetStringCorrespondingToOption(
+                "--pkpd-file"),
+            RelativeTo::AbsoluteOrCwd);
         mpFileHandler->CopyFileTo(pkpd_file);
 
-        // Open a results file - in a try catch as it is conceivable someone could have named their PK file this!
+        // Open a results file - in a try catch as it is conceivable someone could
+        // have named their PK file this!
         out_stream p_output_file;
         try
         {
@@ -1186,7 +1240,9 @@ void ApPredictMethods::CommonRunMethod()
         }
         catch (Exception& e)
         {
-            EXCEPTION("Could not open a new output file called pkpd_results.txt. Error was " << e.GetMessage());
+            EXCEPTION(
+                "Could not open a new output file called pkpd_results.txt. Error was "
+                << e.GetMessage());
         }
         *p_output_file << "Time";
         for (unsigned i = 0; i < mpPkpdReader->GetNumberOfPatients(); i++)
@@ -1305,9 +1361,9 @@ void ApPredictMethods::SetOutputDirectory(const std::string& rOuputDirectory)
 }
 
 /* Perform linear interpolation to get an estimate of y_star at x_star */
-double ApPredictMethods::DoLinearInterpolation(double x_star,
-                                               const std::vector<double>& rX,
-                                               const std::vector<double>& rY) const
+double ApPredictMethods::DoLinearInterpolation(
+    double x_star, const std::vector<double>& rX,
+    const std::vector<double>& rY) const
 {
     if (x_star <= rX[0])
     {

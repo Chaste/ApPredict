@@ -37,20 +37,11 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define ABSTRACTUNTEMPLATEDLOOKUPTABLEGENERATOR_HPP_
 
 #include <boost/shared_ptr.hpp>
-#include <set>
-// Seems that whatever version of ublas I am using now contains boost
-// serialization
-// methods for c_vector, which is nice.
-#include <boost/serialization/shared_ptr.hpp>
-#include <boost/serialization/vector.hpp>
-#include "ChasteSerialization.hpp" // Should be included before any other Chaste headers.
-#include "ChasteSerializationVersion.hpp"
+
+#include "ChasteSerialization.hpp"
+#include "ClassIsAbstract.hpp"
 
 #include "AbstractCvodeCell.hpp"
-#include "Exception.hpp"
-#include "OutputFileHandler.hpp"
-#include "ParameterBox.hpp"
-#include "ParameterPointData.hpp"
 #include "QuantityOfInterest.hpp"
 #include "SingleActionPotentialPrediction.hpp"
 #include "UblasVectorInclude.hpp" // Chaste helper header to get c_vectors included with right namespace.
@@ -58,10 +49,25 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /**
  * A class to allow a nice interface for ApPredictMethods to use any dimension Lookup table.
  *
- * No member variables so no involvement in archiving...
+ * No member variables
  */
 class AbstractUntemplatedLookupTableGenerator
 {
+private:
+    /** Needed for serialization. */
+    friend class boost::serialization::access;
+    /**
+     * Main boost serialization method, some member variables are handled by Save/Load constructs.
+     *
+     * @param archive  the archive file.
+     * @param version  the version of archiving, defined in the macro at the bottom of the class.
+     */
+    template <class Archive>
+    void serialize(Archive& archive, const unsigned int version)
+    {
+        // No private members to archive, but helpful to have in hierarchy.
+    }
+
 public:
     /**
 	* Constructor
@@ -90,7 +96,8 @@ public:
     //	 * @return The points in NUM_PARAMS-dimensional parameter space at which the
     //	 * quantities of interest have been evaluated.
     //	 */
-    //    virtual std::vector<c_vector<double, DIM> > GetParameterPoints() = 0;
+    //    template <unsigned DIM>
+    //    std::vector<c_vector<double, DIM> > GetParameterPoints();
 
     /**
 	 * @return The quantities of interest that have been evaluated at points in
@@ -173,8 +180,17 @@ public:
     //	 * like to estimate QoIs.
     //	 * @return The QoI estimates at these points.
     //	 */
-    //    std::vector<std::vector<double> > Interpolate(
-    //        const std::vector<c_vector<double, DIM> >& rParameterPoints);
+    //    template <unsigned DIM>
+    //    std::vector<std::vector<double> > Interpolate(const std::vector<c_vector<double, DIM> >& rParameterPoints);
+
+    /**
+	 * Provide an interpolated estimate for the quantities of interest throughout
+	 * parameter space.
+	 *
+	 * @param rParameterPoints  The points in parameter space at which we would like to estimate QoIs.
+	 * @return The QoI estimates at these points.
+	 */
+    virtual std::vector<std::vector<double> > Interpolate(const std::vector<std::vector<double> >& rParameterPoints) = 0;
 
     /**
 	 * @return The number of evaluations (points in the lookup table at which
@@ -208,7 +224,22 @@ public:
     virtual const unsigned GetDimension() const = 0;
 };
 
+//// Horrific code to allow templated methods and return types in this untemplated class.
+//template <unsigned DIM>
+//std::vector<c_vector<double, DIM> > AbstractUntemplatedLookupTableGenerator::GetParameterPoints()
+//{
+//    return dynamic_cast<LookupTableGenerator<DIM>&>(*this).GetParameterPoints();
+//}
+
+//template <unsigned DIM>
+//std::vector<std::vector<double> > AbstractUntemplatedLookupTableGenerator::Interpolate(const std::vector<c_vector<double, DIM> >& rParameterPoints)
+//{
+//    return dynamic_cast<LookupTableGenerator<DIM>&>(*this).Interpolate(rParameterPoints);
+//}
+
 //#include "SerializationExportWrapper.hpp"
 //EXPORT_TEMPLATE_CLASS_SAME_DIMS(AbstractUntemplatedLookupTableGenerator)
+
+CLASS_IS_ABSTRACT(AbstractUntemplatedLookupTableGenerator)
 
 #endif // ABSTRACTUNTEMPLATEDLOOKUPTABLEGENERATOR_HPP_

@@ -38,9 +38,9 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <boost/shared_ptr.hpp>
 #include <set>
-// Seems that whatever version of ublas I am using now contains boost
-// serialization
-// methods for c_vector, which is nice.
+// Seems that whatever version of ublas we are using now contains
+// boost serialization methods for c_vector, which is nice.
+#include <boost/serialization/base_object.hpp>
 #include <boost/serialization/shared_ptr.hpp>
 #include <boost/serialization/vector.hpp>
 #include "ChasteSerialization.hpp" // Should be included before any other Chaste headers.
@@ -89,6 +89,11 @@ private:
     template <class Archive>
     void serialize(Archive& archive, const unsigned int version)
     {
+        std::cout << "Archive version = " << version << std::endl;
+        if (version > 2u)
+        {
+            archive& boost::serialization::base_object<AbstractUntemplatedLookupTableGenerator>(*this);
+        }
         archive& mModelIndex;
         if (version > 0u)
         {
@@ -328,8 +333,16 @@ public:
 	 * like to estimate QoIs.
 	 * @return The QoI estimates at these points.
 	 */
-    std::vector<std::vector<double> > Interpolate(
-        const std::vector<c_vector<double, DIM> >& rParameterPoints);
+    std::vector<std::vector<double> > Interpolate(const std::vector<c_vector<double, DIM> >& rParameterPoints);
+
+    /**
+	 * Provide an interpolated estimate for the quantities of interest throughout
+	 * parameter space. N.B. the same as the method above, but takes a std::vector instead of c_vector.
+	 *
+	 * @param rParameterPoints  The points in parameter space at which we would like to estimate QoIs.
+	 * @return The QoI estimates at these points.
+	 */
+    std::vector<std::vector<double> > Interpolate(const std::vector<std::vector<double> >& rParameterPoints);
 
     /**
 	 * @return The number of evaluations (points in the lookup table at which
@@ -367,7 +380,7 @@ namespace serialization
     template <unsigned DIM>
     struct version<LookupTableGenerator<DIM> >
     {
-        CHASTE_VERSION_CONTENT(2); // Increment this on serialize method changes.
+        CHASTE_VERSION_CONTENT(3); // Increment this on serialize method changes.
     };
 } // namespace serialization
 } // namespace boost

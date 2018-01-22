@@ -582,6 +582,26 @@ std::vector<std::vector<double> > LookupTableGenerator<DIM>::Interpolate(
 }
 
 template <unsigned DIM>
+std::vector<std::vector<double> > LookupTableGenerator<DIM>::Interpolate(
+    const std::vector<std::vector<double> >& rParameterPoints)
+{
+    // Convert std::vector to c_vector...
+    std::vector<c_vector<double, DIM> > c_vec_parameter_points;
+    for (unsigned i = 0; i < rParameterPoints.size(); i++)
+    {
+        assert(rParameterPoints[i].size() == DIM);
+        c_vector<double, DIM> c_vec_point;
+        for (unsigned j = 0; j < DIM; j++)
+        {
+            c_vec_point[j] = rParameterPoints[i][j];
+        }
+        c_vec_parameter_points.push_back(c_vec_point);
+    }
+    // Now just call the method above.
+    return Interpolate(c_vec_parameter_points);
+}
+
+template <unsigned DIM>
 unsigned LookupTableGenerator<DIM>::GetNumEvaluations()
 {
     return mNumEvaluations;
