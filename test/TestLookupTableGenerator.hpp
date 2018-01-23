@@ -57,6 +57,9 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 class TestLookupTableGenerator : public CxxTest::TestSuite
 {
+private:
+    AbstractUntemplatedLookupTableGenerator* mpGenerator;
+
 public:
     void TestSingleRun() throw(Exception)
     {
@@ -186,24 +189,25 @@ public:
         unsigned model_index = 2u; // Ten tusscher '06 (table generated for 1 Hz at present)
 
         std::string file_name = "5d_test";
-        LookupTableGenerator<5> generator(model_index, file_name, "TestLookupTables");
+        mpGenerator = new LookupTableGenerator<5>(model_index, file_name, "TestLookupTables");
 
-        generator.SetParameterToScale("membrane_rapid_delayed_rectifier_potassium_current_conductance", 0.0, 1.0);
-        generator.SetParameterToScale("membrane_L_type_calcium_current_conductance", 0.0, 1.0);
-        generator.SetParameterToScale("membrane_fast_sodium_current_conductance", 0.0, 1.0);
-        generator.SetParameterToScale("membrane_slow_delayed_rectifier_potassium_current_conductance", 0.0, 1.0);
-        generator.SetParameterToScale("membrane_fast_transient_outward_current_conductance", 0.0, 1.0);
+        mpGenerator->SetParameterToScale("membrane_rapid_delayed_rectifier_potassium_current_conductance", 0.0, 1.0);
+        mpGenerator->SetParameterToScale("membrane_L_type_calcium_current_conductance", 0.0, 1.0);
+        mpGenerator->SetParameterToScale("membrane_fast_sodium_current_conductance", 0.0, 1.0);
+        mpGenerator->SetParameterToScale("membrane_slow_delayed_rectifier_potassium_current_conductance", 0.0, 1.0);
+        mpGenerator->SetParameterToScale("membrane_fast_transient_outward_current_conductance", 0.0, 1.0);
 
-        generator.AddQuantityOfInterest(Apd90, 0.5 /*ms*/);
-        generator.AddQuantityOfInterest(Apd50, 0.5 /*ms*/);
-        generator.AddQuantityOfInterest(UpstrokeVelocity, 10.0 /* mV/ms */);
-        generator.AddQuantityOfInterest(PeakVoltage, 5 /* mV */);
+        mpGenerator->AddQuantityOfInterest(Apd90, 0.5 /*ms*/);
+        mpGenerator->AddQuantityOfInterest(Apd50, 0.5 /*ms*/);
+        mpGenerator->AddQuantityOfInterest(UpstrokeVelocity, 10.0 /* mV/ms */);
+        mpGenerator->AddQuantityOfInterest(PeakVoltage, 5 /* mV */);
 
-        generator.SetMaxNumEvaluations(1u); // This will still do a load of things, for first run, but won't do any refinement.
-        generator.GenerateLookupTable();
+        mpGenerator->SetMaxNumEvaluations(1u); // This will still do a load of things, for first run, but won't do any refinement.
+        mpGenerator->GenerateLookupTable();
 
-        std::vector<c_vector<double, 5u> > parameter_values = generator.GetParameterPoints();
-        std::vector<std::vector<double> > quantities_of_interest = generator.GetFunctionValues();
+        LookupTableGenerator<5>* p_temp = dynamic_cast<LookupTableGenerator<5>*>(mpGenerator);
+        std::vector<c_vector<double, 5u> > parameter_values = p_temp->GetParameterPoints();
+        std::vector<std::vector<double> > quantities_of_interest = mpGenerator->GetFunctionValues();
 
         TS_ASSERT_EQUALS(parameter_values.size(), 32u);
         TS_ASSERT_EQUALS(quantities_of_interest.size(), 32u);
@@ -245,10 +249,10 @@ public:
         }
     }
 
-    void TestLookupTablesArchiver() throw(Exception)
+    void TestLookupTablesArchiver1d() throw(Exception)
     {
         OutputFileHandler handler("TestLookupTableArchiving", false);
-        std::string archive_filename = handler.GetOutputDirectoryFullPath() + "Generator.arch";
+        std::string archive_filename = handler.GetOutputDirectoryFullPath() + "Generator1d.arch";
 
         // Create data structures to store variables to test for equality here
         const unsigned num_evals_before_save = 3u;
@@ -301,6 +305,48 @@ public:
 
             TS_ASSERT_EQUALS(points.size(), 2 * num_evals_before_save);
             TS_ASSERT_EQUALS(values.size(), 2 * num_evals_before_save);
+
+            delete p_generator;
+        }
+    }
+
+    void TestLookupTablesArchiver5d() throw(Exception)
+    {
+        OutputFileHandler handler("TestLookupTableArchiving", false);
+        std::string archive_filename = handler.GetOutputDirectoryFullPath() + "Generator5d.arch";
+
+        // Create data structures to store variables to test for equality here
+        const unsigned num_evals_before_save = 32u;
+        {
+            // Save this generator we have sneakily kept a pointer to from a previous test.
+            AbstractUntemplatedLookupTableGenerator* const p_generator = mpGenerator;
+
+            std::ofstream ofs(archive_filename.c_str());
+            boost::archive::text_oarchive output_arch(ofs);
+
+            output_arch << p_generator;
+            delete p_generator; // also deletes mpGenerator...
+        }
+
+        {
+            AbstractUntemplatedLookupTableGenerator* p_abstract_generator;
+
+            // Create an input archive
+            std::ifstream ifs(archive_filename.c_str(), std::ios::binary);
+            boost::archive::text_iarchive input_arch(ifs);
+
+            // restore from the archive
+            input_arch >> p_abstract_generator;
+
+            TS_ASSERT_EQUALS(p_abstract_generator->GetDimension(), 5u);
+
+            LookupTableGenerator<5u>* p_generator = dynamic_cast<LookupTableGenerator<5u>*>(p_abstract_generator);
+
+            std::vector<c_vector<double, 5u> > points = p_generator->GetParameterPoints();
+            std::vector<std::vector<double> > values = p_generator->GetFunctionValues();
+
+            TS_ASSERT_EQUALS(points.size(), num_evals_before_save);
+            TS_ASSERT_EQUALS(values.size(), num_evals_before_save);
 
             delete p_generator;
         }
