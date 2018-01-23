@@ -640,7 +640,11 @@ unsigned LookupTableGenerator<DIM>::GetDimension() const
 }
 
 #include "SerializationExportWrapperForCpp.hpp"
-EXPORT_TEMPLATE_CLASS_SAME_DIMS(LookupTableGenerator)
+EXPORT_TEMPLATE_CLASS1(LookupTableGenerator, 1u)
+EXPORT_TEMPLATE_CLASS1(LookupTableGenerator, 2u)
+EXPORT_TEMPLATE_CLASS1(LookupTableGenerator, 3u)
+EXPORT_TEMPLATE_CLASS1(LookupTableGenerator, 4u)
+EXPORT_TEMPLATE_CLASS1(LookupTableGenerator, 5u)
 
 /////////////////////////////////////////////////////////////////////
 // Explicit instantiation

@@ -70,6 +70,9 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * You should add QoIs in order of importance, as the lookup table will be
  * refined for each in turn.
+ *
+ * If you ever add a new DIM (6 or more) be sure to add new explicit instantiation and boost
+ * serialization export wrappers...
  */
 template <unsigned DIM>
 class LookupTableGenerator : public AbstractUntemplatedLookupTableGenerator
@@ -361,7 +364,11 @@ public:
 };
 
 #include "SerializationExportWrapper.hpp"
-EXPORT_TEMPLATE_CLASS_SAME_DIMS(LookupTableGenerator)
+EXPORT_TEMPLATE_CLASS1(LookupTableGenerator, 1u)
+EXPORT_TEMPLATE_CLASS1(LookupTableGenerator, 2u)
+EXPORT_TEMPLATE_CLASS1(LookupTableGenerator, 3u)
+EXPORT_TEMPLATE_CLASS1(LookupTableGenerator, 4u)
+EXPORT_TEMPLATE_CLASS1(LookupTableGenerator, 5u)
 
 // Keep track of the archive version we are using
 namespace boost
@@ -369,11 +376,11 @@ namespace boost
 namespace serialization
 {
     /**
-* Specify a version number for archive backwards compatibility.
-*
-* This is how to do BOOST_CLASS_VERSION(LookupTableGenerator, 1)
-* with a templated class.
-*/
+     * Specify a version number for archive backwards compatibility.
+	 *
+	 * This is how to do BOOST_CLASS_VERSION(LookupTableGenerator, 1)
+	 * with a templated class.
+	 */
     template <unsigned DIM>
     struct version<LookupTableGenerator<DIM> >
     {
