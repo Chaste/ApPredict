@@ -466,7 +466,6 @@ void ApPredictMethods::SetUpLookupTables()
             "IKr, IKs, INa and ICaL block, you have specified additional ones so quitting.");
     }
 
-    unsigned table_dim;
     if (p_args->OptionExists("--ic50-iks") || p_args->OptionExists("--pic50-iks")
         || fabs(this->mHertz - 0.5) < 1e-4) // At present we don't have 3D lookup tables for 0.5Hz, so use 4D.
     {
