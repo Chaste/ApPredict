@@ -366,22 +366,36 @@ OdeSolution AbstractActionPotentialMethod::PerformAnalysisOfTwoPaces(
             rPeak = voltage_properties.GetLastCompletePeakPotential();
             rPeakTime = voltage_properties.GetTimeAtLastCompletePeakPotential();
         }
-        // It makes sense to return the peak voltage time relative to start of stimulus application.
-        boost::shared_ptr<RegularStimulus> p_reg_stim = boost::static_pointer_cast<RegularStimulus>(pModel->GetStimulusFunction());
+        // It makes sense to return the peak voltage time relative to start of
+        // stimulus application.
+        boost::shared_ptr<RegularStimulus> p_reg_stim = boost::static_pointer_cast<RegularStimulus>(
+            pModel->GetStimulusFunction());
         rPeakTime = std::fmod(rPeakTime - p_reg_stim->GetStartTime(), s1_period);
 
-        std::vector<double> calcium = solution.GetAnyVariable("cytosolic_calcium_concentration");
-        rCaMax = *(std::max_element(calcium.begin(), calcium.end()));
-        rCaMin = *(std::min_element(calcium.begin(), calcium.end()));
+        if (pModel->HasAnyVariable("cytosolic_calcium_concentration"))
+        {
+            if (pModel->HasDerivedQuantity("cytosolic_calcium_concentration"))
+            {
+                solution.CalculateDerivedQuantitiesAndParameters(pModel.get());
+            }
+            std::vector<double> calcium = solution.GetAnyVariable("cytosolic_calcium_concentration");
+            rCaMax = *(std::max_element(calcium.begin(), calcium.end()));
+            rCaMin = *(std::min_element(calcium.begin(), calcium.end()));
+        }
+        else
+        {
+            WARN_ONCE_ONLY(pModel->GetSystemName()
+                           << " does not have 'cytosolic_calcium_concentration' annotated, please tag it if it is present.");
+        }
         mSuccessful = true;
     }
     catch (Exception& e)
     {
         // We didn't get back any action potentials,
-        // which should be because of one of the following errors (if not throw the exception).
-        if (e.GetShortMessage() != "AP did not occur, never exceeded threshold voltage."
-            && e.GetShortMessage() != "No full action potential was recorded"
-            && e.GetShortMessage() != "No MaxUpstrokeVelocity matching a full action potential was recorded.")
+        // which should be because of one of the following errors (if not throw the
+        // exception).
+        if (e.GetShortMessage() != "AP did not occur, never exceeded threshold voltage." && e.GetShortMessage() != "No full action potential was recorded" && e.GetShortMessage() != "No MaxUpstrokeVelocity matching a full action potential was "
+                                                                                                                                                                                     "recorded.")
         {
             throw e;
         }
