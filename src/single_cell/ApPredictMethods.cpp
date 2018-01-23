@@ -33,6 +33,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 */
 
+#include <boost/archive/archive_exception.hpp>
 #include <fstream>
 #include <numeric> // for std::accumulate
 #include <sys/stat.h> // For system commands to download and unpack Lookup Table file.
@@ -500,6 +501,7 @@ void ApPredictMethods::SetUpLookupTables()
 
         // restore from the archive
         AbstractUntemplatedLookupTableGenerator* p_generator;
+
         input_arch >> p_generator;
         mpLookupTable.reset(p_generator);
         mLookupTableAvailable = true;
@@ -562,36 +564,28 @@ void ApPredictMethods::SetUpLookupTables()
         Timer::Reset();
 
         // Create a pointer to the input archive
-        std::ifstream ifs((ascii_archive_file.GetAbsolutePath()).c_str(),
-                          std::ios::binary);
+        std::ifstream ifs((ascii_archive_file.GetAbsolutePath()).c_str(), std::ios::binary);
         boost::archive::text_iarchive input_arch(ifs);
 
         // restore from the archive
         AbstractUntemplatedLookupTableGenerator* p_generator;
-        input_arch >> p_generator;
+        try
+        {
+            input_arch >> p_generator;
+        }
+        catch (boost::archive::archive_exception& e)
+        {
+            if (e.what() == "unsupported version")
+            {
+                EXCEPTION("The lookup table archive was created on a newer version of boost, "
+                          "please upgrade your boost to the latest supported by this version of Chaste.");
+            }
+            else
+            {
+                throw e;
+            }
+        }
         mpLookupTable.reset(p_generator);
-
-        //
-        //        // \todo When all lookup tables are 'new' or converted from old format
-        //        // we can swap this to loading an AbstractUntemplatedLookupTableGenerator as standard as we
-        //        // do for binary files.
-        //        if (table_dim == 4u)
-        //        {
-        //            LookupTableGenerator<4u>* p_generator;
-        //            input_arch >> p_generator;
-        //            mpLookupTable.reset(p_generator);
-        //        }
-        //        else if (table_dim == 3u)
-        //        {
-        //            LookupTableGenerator<3u>* p_generator;
-        //            input_arch >> p_generator;
-        //            mpLookupTable.reset(p_generator);
-        //        }
-        //        else
-        //        {
-        //            EXCEPTION("Loading lookup tables of dimension "
-        //                      << table_dim << " is not configured yet.");
-        //        }
         mLookupTableAvailable = true;
 
         std::cout << " loaded in " << Timer::GetElapsedTime()
