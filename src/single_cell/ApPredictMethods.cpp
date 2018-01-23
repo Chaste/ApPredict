@@ -469,12 +469,10 @@ void ApPredictMethods::SetUpLookupTables()
     if (p_args->OptionExists("--ic50-iks") || p_args->OptionExists("--pic50-iks")
         || fabs(this->mHertz - 0.5) < 1e-4) // At present we don't have 3D lookup tables for 0.5Hz, so use 4D.
     {
-        table_dim = 4u;
         lookup_table_archive_name << "_4d_hERG_IKs_INa_ICaL_";
     }
     else
     {
-        table_dim = 3u;
         lookup_table_archive_name << "_3d_hERG_INa_ICaL_";
     }
     lookup_table_archive_name << this->mHertz << "Hz_generator";
