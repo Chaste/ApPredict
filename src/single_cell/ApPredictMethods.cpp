@@ -461,10 +461,8 @@ void ApPredictMethods::SetUpLookupTables()
         || p_args->OptionExists("--ic50-nal") || p_args->OptionExists("--pic50-nal"))
     {
         EXCEPTION(
-            "Lookup table (for --credible-intervals) is currently only including "
-            "up to"
-            "IKr, IKs, INa and ICaL block, you have specified additional ones so "
-            "quitting.");
+            "Lookup table (for --credible-intervals) is currently only including up to"
+            "IKr, IKs, INa and ICaL block, you have specified additional ones so quitting.");
     }
 
     unsigned table_dim;
@@ -483,8 +481,7 @@ void ApPredictMethods::SetUpLookupTables()
 
     // First see if there is a table available already in absolute or current
     // working directory.
-    FileFinder ascii_archive_file(lookup_table_archive_name.str() + ".arch",
-                                  RelativeTo::AbsoluteOrCwd);
+    FileFinder ascii_archive_file(lookup_table_archive_name.str() + ".arch_NEW", RelativeTo::AbsoluteOrCwd);
     FileFinder binary_archive_file(
         lookup_table_archive_name.str() + "_BINARY.arch",
         RelativeTo::AbsoluteOrCwd);
@@ -492,8 +489,7 @@ void ApPredictMethods::SetUpLookupTables()
     // First we try loading the binary version of the archive, if it exists.
     if (binary_archive_file.IsFile())
     {
-        std::cout << "Loading lookup table from binary archive into memory, this "
-                     "can take a few seconds..."
+        std::cout << "Loading lookup table from binary archive into memory, this can take a few seconds..."
                   << std::flush;
         Timer::Reset();
 
@@ -509,8 +505,7 @@ void ApPredictMethods::SetUpLookupTables()
         mLookupTableAvailable = true;
 
         std::cout << " loaded in " << Timer::GetElapsedTime()
-                  << " secs.\nLookup table is available for generation of credible "
-                     "intervals.\n";
+                  << " secs.\nLookup table is available for generation of credible intervals.\n";
 
         // Since loading the binary archive works, we can try and get rid of the
         // ascii one to clean up.
@@ -572,26 +567,31 @@ void ApPredictMethods::SetUpLookupTables()
         boost::archive::text_iarchive input_arch(ifs);
 
         // restore from the archive
-        // \todo When all lookup tables are 'new' or converted from old format
-        // we can swap this to loading an AbstractUntemplatedLookupTableGenerator as standard as we
-        // do for binary files.
-        if (table_dim == 4u)
-        {
-            LookupTableGenerator<4u>* p_generator;
-            input_arch >> p_generator;
-            mpLookupTable.reset(p_generator);
-        }
-        else if (table_dim == 3u)
-        {
-            LookupTableGenerator<3u>* p_generator;
-            input_arch >> p_generator;
-            mpLookupTable.reset(p_generator);
-        }
-        else
-        {
-            EXCEPTION("Loading lookup tables of dimension "
-                      << table_dim << " is not configured yet.");
-        }
+        AbstractUntemplatedLookupTableGenerator* p_generator;
+        input_arch >> p_generator;
+        mpLookupTable.reset(p_generator);
+
+        //
+        //        // \todo When all lookup tables are 'new' or converted from old format
+        //        // we can swap this to loading an AbstractUntemplatedLookupTableGenerator as standard as we
+        //        // do for binary files.
+        //        if (table_dim == 4u)
+        //        {
+        //            LookupTableGenerator<4u>* p_generator;
+        //            input_arch >> p_generator;
+        //            mpLookupTable.reset(p_generator);
+        //        }
+        //        else if (table_dim == 3u)
+        //        {
+        //            LookupTableGenerator<3u>* p_generator;
+        //            input_arch >> p_generator;
+        //            mpLookupTable.reset(p_generator);
+        //        }
+        //        else
+        //        {
+        //            EXCEPTION("Loading lookup tables of dimension "
+        //                      << table_dim << " is not configured yet.");
+        //        }
         mLookupTableAvailable = true;
 
         std::cout << " loaded in " << Timer::GetElapsedTime()
@@ -609,13 +609,6 @@ void ApPredictMethods::SetUpLookupTables()
                                      std::ios::binary);
             boost::archive::binary_oarchive output_arch(binary_ofs);
             output_arch << p_arch_generator;
-            std::cout << "done!\n";
-
-            std::cout << "Saving a new version of the ascii archive..." << std::flush;
-            // Just an experiment...
-            std::ofstream ofs((ascii_archive_file.GetAbsolutePath() + "_NEW").c_str());
-            boost::archive::text_oarchive output_arch2(ofs);
-            output_arch2 << p_arch_generator;
             std::cout << "done!\n";
         }
         catch (Exception& e)

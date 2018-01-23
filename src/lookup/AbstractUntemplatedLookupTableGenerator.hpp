@@ -44,12 +44,11 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "AbstractCvodeCell.hpp"
 #include "QuantityOfInterest.hpp"
 #include "SingleActionPotentialPrediction.hpp"
-#include "UblasVectorInclude.hpp" // Chaste helper header to get c_vectors included with right namespace.
 
 /**
  * A class to allow a nice interface for ApPredictMethods to use any dimension Lookup table.
  *
- * No member variables
+ * No member variables...
  */
 class AbstractUntemplatedLookupTableGenerator
 {
@@ -70,12 +69,12 @@ private:
 
 public:
     /**
-	* Constructor
+	* Constructor - default.
 	*/
     AbstractUntemplatedLookupTableGenerator(){};
 
     /**
-	 * Destructor - cleans up some memory
+	 * Destructor - default
 	 */
     virtual ~AbstractUntemplatedLookupTableGenerator(){};
 
@@ -221,24 +220,8 @@ public:
     /**
      * Helper method that just returns DIM, to avoid template chaos.
      */
-    virtual const unsigned GetDimension() const = 0;
+    virtual unsigned GetDimension() const = 0;
 };
-
-//// Horrific code to allow templated methods and return types in this untemplated class.
-//template <unsigned DIM>
-//std::vector<c_vector<double, DIM> > AbstractUntemplatedLookupTableGenerator::GetParameterPoints()
-//{
-//    return dynamic_cast<LookupTableGenerator<DIM>&>(*this).GetParameterPoints();
-//}
-
-//template <unsigned DIM>
-//std::vector<std::vector<double> > AbstractUntemplatedLookupTableGenerator::Interpolate(const std::vector<c_vector<double, DIM> >& rParameterPoints)
-//{
-//    return dynamic_cast<LookupTableGenerator<DIM>&>(*this).Interpolate(rParameterPoints);
-//}
-
-//#include "SerializationExportWrapper.hpp"
-//EXPORT_TEMPLATE_CLASS_SAME_DIMS(AbstractUntemplatedLookupTableGenerator)
 
 CLASS_IS_ABSTRACT(AbstractUntemplatedLookupTableGenerator)
 

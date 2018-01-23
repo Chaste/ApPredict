@@ -67,11 +67,19 @@ struct ThreadInputData
     double mVoltageThreshold;
 };
 
+/* Private constructor - just for archiving */
+template <unsigned DIM>
+LookupTableGenerator<DIM>::LookupTableGenerator()
+        : AbstractUntemplatedLookupTableGenerator(),
+          mModelIndex(0u),
+          mpParentBox(NULL){};
+
 template <unsigned DIM>
 LookupTableGenerator<DIM>::LookupTableGenerator(
     const unsigned& rModelIndex, const std::string& rOutputFileName,
     const std::string& rOutputFolder)
-        : mModelIndex(rModelIndex),
+        : AbstractUntemplatedLookupTableGenerator(),
+          mModelIndex(rModelIndex),
           mFrequency(1.0),
           mMaxNumEvaluations(UNSIGNED_UNSET),
           mNumEvaluations(0u),
@@ -626,7 +634,7 @@ void LookupTableGenerator<DIM>::SetPacingFrequency(double frequency)
 }
 
 template <unsigned DIM>
-const unsigned LookupTableGenerator<DIM>::GetDimension() const
+unsigned LookupTableGenerator<DIM>::GetDimension() const
 {
     return DIM;
 }

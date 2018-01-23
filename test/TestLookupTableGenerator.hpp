@@ -41,6 +41,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "CheckpointArchiveTypes.hpp"
 
+#include "AbstractUntemplatedLookupTableGenerator.hpp"
 #include "LookupTableGenerator.hpp"
 #include "LookupTableReader.hpp"
 #include "SetupModel.hpp"
@@ -258,7 +259,7 @@ public:
             unsigned model_index = 2u; // Ten tusscher '06 at 1 Hz
             std::string file_name = "1d_test";
 
-            LookupTableGenerator<1>* const p_generator = new LookupTableGenerator<1>(model_index, file_name, "TestLookupTableArchiving");
+            AbstractUntemplatedLookupTableGenerator* const p_generator = new LookupTableGenerator<1>(model_index, file_name, "TestLookupTableArchiving");
 
             p_generator->SetParameterToScale("membrane_rapid_delayed_rectifier_potassium_current_conductance", 0.0, 1.0);
             p_generator->AddQuantityOfInterest(Apd90, 0.5 /*ms*/); // QoI and tolerance
@@ -273,14 +274,18 @@ public:
         }
 
         {
-            LookupTableGenerator<1>* p_generator;
+            AbstractUntemplatedLookupTableGenerator* p_abstract_generator;
 
             // Create an input archive
             std::ifstream ifs(archive_filename.c_str(), std::ios::binary);
             boost::archive::text_iarchive input_arch(ifs);
 
             // restore from the archive
-            input_arch >> p_generator;
+            input_arch >> p_abstract_generator;
+
+            TS_ASSERT_EQUALS(p_abstract_generator->GetDimension(), 1u);
+
+            LookupTableGenerator<1u>* p_generator = dynamic_cast<LookupTableGenerator<1u>*>(p_abstract_generator);
 
             std::vector<c_vector<double, 1u> > points = p_generator->GetParameterPoints();
             std::vector<std::vector<double> > values = p_generator->GetFunctionValues();

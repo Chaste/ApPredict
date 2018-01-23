@@ -89,7 +89,6 @@ private:
     template <class Archive>
     void serialize(Archive& archive, const unsigned int version)
     {
-        std::cout << "Archive version = " << version << std::endl;
         if (version > 2u)
         {
             archive& boost::serialization::base_object<AbstractUntemplatedLookupTableGenerator>(*this);
@@ -127,10 +126,8 @@ private:
     }
 
     /** Helper wrappers round these long-winded set and iterator names */
-    typedef typename std::set<c_vector<double, DIM>*, c_vector_compare<DIM> >
-        CornerSet;
-    typedef typename std::set<c_vector<double, DIM>*,
-                              c_vector_compare<DIM> >::iterator CornerSetIter;
+    typedef typename std::set<c_vector<double, DIM>*, c_vector_compare<DIM> > CornerSet;
+    typedef typename std::set<c_vector<double, DIM>*, c_vector_compare<DIM> >::iterator CornerSetIter;
 
     /** The model index we are using, refers to options in SetupModel class. */
     unsigned mModelIndex;
@@ -213,18 +210,18 @@ private:
 	 *  This just ensures the pointers are correctly initialised to
 	 *  make sure we can detect and recover the intended state of everything.
 	 */
-    LookupTableGenerator() : mModelIndex(0u), mpParentBox(NULL){};
+    LookupTableGenerator();
 
 public:
     /**
-	* Constructor
-	*
-	* @param rModelIndex  The action potential model to use (see SetupModel for
-	* options).
-	* @param rOutputFileName  The base file name to use for the lookup table.
-	* @param rOutputFolder  The folder to put the output in, defaults to
-	* "LookupTables".
-	*/
+	 * Constructor
+	 *
+	 * @param rModelIndex  The action potential model to use (see SetupModel for
+	 * options).
+	 * @param rOutputFileName  The base file name to use for the lookup table.
+	 * @param rOutputFolder  The folder to put the output in, defaults to
+	 * "LookupTables".
+	 */
     LookupTableGenerator(const unsigned& rModelIndex,
                          const std::string& rOutputFileName,
                          const std::string& rOutputFolder = "LookupTables");
@@ -360,7 +357,7 @@ public:
     /**
      * Helper method that just returns DIM, to avoid template chaos.
      */
-    const unsigned GetDimension() const;
+    unsigned GetDimension() const;
 };
 
 #include "SerializationExportWrapper.hpp"
