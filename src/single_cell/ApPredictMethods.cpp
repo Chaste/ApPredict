@@ -481,7 +481,7 @@ void ApPredictMethods::SetUpLookupTables()
 
     // First see if there is a table available already in absolute or current
     // working directory.
-    FileFinder ascii_archive_file(lookup_table_archive_name.str() + ".arch_NEW", RelativeTo::AbsoluteOrCwd);
+    FileFinder ascii_archive_file(lookup_table_archive_name.str() + ".arch", RelativeTo::AbsoluteOrCwd);
     FileFinder binary_archive_file(
         lookup_table_archive_name.str() + "_BINARY.arch",
         RelativeTo::AbsoluteOrCwd);
