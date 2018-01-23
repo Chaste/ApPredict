@@ -565,24 +565,24 @@ void ApPredictMethods::SetUpLookupTables()
 
         // Create a pointer to the input archive
         std::ifstream ifs((ascii_archive_file.GetAbsolutePath()).c_str(), std::ios::binary);
-        boost::archive::text_iarchive input_arch(ifs);
 
         // restore from the archive
         AbstractUntemplatedLookupTableGenerator* p_generator;
         try
         {
+            boost::archive::text_iarchive input_arch(ifs);
             input_arch >> p_generator;
         }
         catch (boost::archive::archive_exception& e)
         {
-            if (e.what() == "unsupported version")
+            if (std::string(e.what()) == "unsupported version")
             {
                 EXCEPTION("The lookup table archive was created on a newer version of boost, "
                           "please upgrade your boost to the latest supported by this version of Chaste.");
             }
             else
             {
-                throw e;
+                EXCEPTION("Error in loading Lookup Table from boost archive: '" << e.what() << "'.");
             }
         }
         mpLookupTable.reset(p_generator);
