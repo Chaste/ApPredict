@@ -67,11 +67,19 @@ struct ThreadInputData
     double mVoltageThreshold;
 };
 
+/* Private constructor - just for archiving */
+template <unsigned DIM>
+LookupTableGenerator<DIM>::LookupTableGenerator()
+        : AbstractUntemplatedLookupTableGenerator(),
+          mModelIndex(0u),
+          mpParentBox(NULL){};
+
 template <unsigned DIM>
 LookupTableGenerator<DIM>::LookupTableGenerator(
     const unsigned& rModelIndex, const std::string& rOutputFileName,
     const std::string& rOutputFolder)
-        : mModelIndex(rModelIndex),
+        : AbstractUntemplatedLookupTableGenerator(),
+          mModelIndex(rModelIndex),
           mFrequency(1.0),
           mMaxNumEvaluations(UNSIGNED_UNSET),
           mNumEvaluations(0u),
@@ -582,6 +590,26 @@ std::vector<std::vector<double> > LookupTableGenerator<DIM>::Interpolate(
 }
 
 template <unsigned DIM>
+std::vector<std::vector<double> > LookupTableGenerator<DIM>::Interpolate(
+    const std::vector<std::vector<double> >& rParameterPoints)
+{
+    // Convert std::vector to c_vector...
+    std::vector<c_vector<double, DIM> > c_vec_parameter_points;
+    for (unsigned i = 0; i < rParameterPoints.size(); i++)
+    {
+        assert(rParameterPoints[i].size() == DIM);
+        c_vector<double, DIM> c_vec_point;
+        for (unsigned j = 0; j < DIM; j++)
+        {
+            c_vec_point[j] = rParameterPoints[i][j];
+        }
+        c_vec_parameter_points.push_back(c_vec_point);
+    }
+    // Now just call the method above.
+    return Interpolate(c_vec_parameter_points);
+}
+
+template <unsigned DIM>
 unsigned LookupTableGenerator<DIM>::GetNumEvaluations()
 {
     return mNumEvaluations;
@@ -606,51 +634,9 @@ void LookupTableGenerator<DIM>::SetPacingFrequency(double frequency)
 }
 
 template <unsigned DIM>
-double LookupTableGenerator<DIM>::DetectVoltageThresholdForActionPotential(
-    boost::shared_ptr<AbstractCvodeCell> pModel)
+unsigned LookupTableGenerator<DIM>::GetDimension() const
 {
-    SingleActionPotentialPrediction ap_runner(pModel);
-    ap_runner.SuppressOutput();
-    ap_runner.SetMaxNumPaces(100u);
-
-    OdeSolution baseline_solution = ap_runner.RunSteadyPacingExperiment();
-    std::vector<double> baseline_voltages = baseline_solution.GetAnyVariable("membrane_voltage");
-    double max_baseline_voltage = *(std::max_element(baseline_voltages.begin(), baseline_voltages.end()));
-    double min_baseline_voltage = *(std::min_element(baseline_voltages.begin(), baseline_voltages.end()));
-
-    // We switch off the sodium current and see how high the stimulus makes the
-    // voltage go.
-    if (pModel->HasParameter("membrane_fast_sodium_current_conductance"))
-    {
-        const double original_na_conductance = pModel->GetParameter("membrane_fast_sodium_current_conductance");
-        pModel->SetParameter("membrane_fast_sodium_current_conductance", 0u);
-
-        OdeSolution solution = ap_runner.RunSteadyPacingExperiment();
-
-        // Put it back where it was! The calling method will reset state variables.
-        pModel->SetParameter("membrane_fast_sodium_current_conductance",
-                             original_na_conductance);
-
-        std::vector<double> voltages = solution.GetAnyVariable("membrane_voltage");
-        double max_voltage = *(std::max_element(voltages.begin(), voltages.end()));
-        double min_voltage = *(std::min_element(voltages.begin(), voltages.end()));
-
-        // Go 25% over the depolarization jump at gNa=0 as a threshold for 'this
-        // really is an AP'. This should be sensible for all models that fail to depolarise with gNa=0.
-        const double proposed_threshold = min_voltage + 1.25 * (max_voltage - min_voltage);
-
-        // BUT some models with a big stimulus fire off almost fully with gNa=0 anyway (e.g. ten Tusscher 2006)
-        // and so we need to prevent this proposed threshold being above (or near) the usual peak voltage
-        // (if we set threshold above we'd always get NoAP1 error codes, even when there are APs!)
-        const double two_thirds_of_full_AP = min_baseline_voltage + 0.666 * (max_baseline_voltage - min_baseline_voltage);
-        if (proposed_threshold <= two_thirds_of_full_AP)
-        {
-            return proposed_threshold;
-        }
-    }
-
-    // Otherwise we give a sensible default of 1/3 of the way up an AP.
-    return min_baseline_voltage + 0.333 * (max_baseline_voltage - min_baseline_voltage); // mV
+    return DIM;
 }
 
 #include "SerializationExportWrapperForCpp.hpp"
