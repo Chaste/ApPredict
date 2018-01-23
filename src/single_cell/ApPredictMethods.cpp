@@ -630,9 +630,9 @@ void ApPredictMethods::CalculateDoseResponseParameterSamples(
     }
 
     /*
-*Prepare an inferred set of IC50s and Hill coefficients
-*for use with the Lookup Table and credible interval calculations.
-*/
+	 *Prepare an inferred set of IC50s and Hill coefficients
+	 *for use with the Lookup Table and credible interval calculations.
+	 */
     mSampledIc50s.resize(mMetadataNames.size());
     mSampledHills.resize(mMetadataNames.size());
 
@@ -640,8 +640,7 @@ void ApPredictMethods::CalculateDoseResponseParameterSamples(
 
     // Work out vectors of inferred IC50 and Hills
     // Apply drug block on each channel
-    for (unsigned channel_idx = 0; channel_idx < mMetadataNames.size();
-         channel_idx++)
+    for (unsigned channel_idx = 0; channel_idx < mMetadataNames.size(); channel_idx++)
     {
         // First just decide whether there is 'no effect here'.
         assert(rIC50s[channel_idx].size() >= 1u);
@@ -712,22 +711,33 @@ void ApPredictMethods::CalculateDoseResponseParameterSamples(
             // Retrieve Hill spread parameters from stored Command line args.
             if (mHillSpreads[channel_idx] == DOUBLE_UNSET)
             {
-                EXCEPTION("No argument --hill-spread-"
-                          << mShortNames[channel_idx]
-                          << " has been provided. Cannot calculate credible intervals "
-                             "without this.");
+                WARN_ONCE_ONLY("No argument --hill-spread-"
+                               << mShortNames[channel_idx]
+                               << " has been provided. "
+                                  "Approximating credible intervals without Hill spread info, but you will get better answers with it.");
+
+                // If we can't guess the hill spread, then just use mean Hill that we have.
+                std::vector<double> hills_this_channel = rHills[channel_idx];
+                double mean_hill = std::accumulate(hills_this_channel.begin(), hills_this_channel.end(), 0.0) / hills_this_channel.size();
+
+                for (unsigned i = 0; i < num_samples; i++)
+                {
+                    // We aren't going to attempt to do inference on Hills, just IC50s, push back mean Hill.
+                    mSampledHills[channel_idx].push_back(mean_hill);
+                }
             }
+            else
+            {
+                // Infer Hill spread.
+                BayesianInferer hill_inferer(HILL);
+                hill_inferer.SetObservedData(rHills[channel_idx]);
+                // This works with the Beta parameter, not the 1/Beta. So do 1/1/Beta to
+                // get Beta back!
+                hill_inferer.SetSpreadOfUnderlyingDistribution(1.0 / mHillSpreads[channel_idx]);
+                hill_inferer.PerformInference();
 
-            // Infer Hill spread.
-            BayesianInferer hill_inferer(HILL);
-            hill_inferer.SetObservedData(rHills[channel_idx]);
-            // This works with the Beta parameter, not the 1/Beta. So do 1/1/Beta to
-            // get Beta back!
-            hill_inferer.SetSpreadOfUnderlyingDistribution(1.0 / mHillSpreads[channel_idx]);
-            hill_inferer.PerformInference();
-
-            mSampledHills[channel_idx] = hill_inferer.GetSampleMedianValue(
-                num_samples); // Get 1000 inferred Hills
+                mSampledHills[channel_idx] = hill_inferer.GetSampleMedianValue(num_samples); // Get 1000 inferred Hills
+            }
         }
         else
         {
