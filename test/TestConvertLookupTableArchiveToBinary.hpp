@@ -42,17 +42,17 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // enable it if boost_iostreams has been added to boost libraries.
 #ifdef CHASTE_BOOST_IOSTREAMS
 // For compressing output
-#include <boost/iostreams/filtering_stream.hpp>
 #include <boost/iostreams/filter/zlib.hpp>
+#include <boost/iostreams/filtering_stream.hpp>
 #endif
 
-#include "Timer.hpp"
-#include "FileFinder.hpp"
 #include "CheckpointArchiveTypes.hpp"
 
-#include "LookupTableGenerator.hpp"
+#include "FileFinder.hpp"
+#include "Timer.hpp"
 
-const unsigned TABLE_DIM = 4u;
+#include "AbstractUntemplatedLookupTableGenerator.hpp"
+#include "LookupTableGenerator.hpp"
 
 /**
  * Here we want to load an ascii archive file, then convert it into binary for this system.
@@ -78,7 +78,7 @@ private:
     boost::shared_ptr<FileFinder> mpCompressedBinaryArchiveFile;
 
 public:
-    void TestDownloadAsciiArchiveIfMissing() throw (Exception)
+    void TestDownloadAsciiArchiveIfMissing() throw(Exception)
     {
         // Just hard-code to this for now.
         std::string lookup_table_name = "shannon_wang_puglisi_weber_bers_2004_model_updated_4d_hERG_IKs_INa_ICaL_1Hz_generator";
@@ -91,7 +91,8 @@ public:
         if (!mpAsciiArchiveFile->IsFile())
         {
             std::string lookup_table_URL = "http://www.cs.ox.ac.uk/people/gary.mirams/files/" + lookup_table_name + ".arch.tgz";
-            std::cout << "\n\nAttempting to download an action potential lookup table from:\n" << lookup_table_URL << "\n\n";
+            std::cout << "\n\nAttempting to download an action potential lookup table from:\n"
+                      << lookup_table_URL << "\n\n";
             EXPECT0(system, "wget " + lookup_table_URL);
             std::cout << "Download succeeded, unpacking...\n";
             EXPECT0(system, "tar xzf " + lookup_table_name + ".arch.tgz");
@@ -100,7 +101,7 @@ public:
         }
     }
 
-    void TestCreateTheVariousArchiveTypes() throw (Exception)
+    void TestCreateTheVariousArchiveTypes() throw(Exception)
     {
         if (!mpAsciiArchiveFile->IsFile())
         {
@@ -118,13 +119,13 @@ public:
             boost::archive::text_iarchive input_arch(ifs);
 
             // restore from the archive
-            LookupTableGenerator<TABLE_DIM>* p_generator;
+            AbstractUntemplatedLookupTableGenerator* p_generator;
             input_arch >> p_generator;
 
             std::cout << " loaded.\nConverting to binary.\n";
 
             // Now archive in Binary format
-            LookupTableGenerator<TABLE_DIM>* const p_arch_generator = p_generator;
+            AbstractUntemplatedLookupTableGenerator* const p_arch_generator = p_generator;
             std::ofstream binary_ofs(mpBinaryArchiveFile->GetAbsolutePath().c_str(), std::ios::binary);
             boost::archive::binary_oarchive output_arch(binary_ofs);
 
@@ -143,14 +144,14 @@ public:
             boost::archive::binary_iarchive input_arch(ifs);
 
             // restore from the archive
-            LookupTableGenerator<TABLE_DIM>* p_generator;
+            AbstractUntemplatedLookupTableGenerator* p_generator;
             input_arch >> p_generator;
 
             std::cout << " loaded. It took " << Timer::GetElapsedTime() << "s.\nConverting to compressed format...\n";
             Timer::Reset();
 
             // Now archive in Compressed format
-            LookupTableGenerator<TABLE_DIM>* const p_arch_generator = p_generator;
+            AbstractUntemplatedLookupTableGenerator* const p_arch_generator = p_generator;
 
             // Create output file as normal.
             std::ofstream ofs(mpCompressedAsciiArchiveFile->GetAbsolutePath().c_str());
@@ -180,14 +181,14 @@ public:
             boost::archive::binary_iarchive input_arch(ifs);
 
             // restore from the archive
-            LookupTableGenerator<TABLE_DIM>* p_generator;
+            AbstractUntemplatedLookupTableGenerator* p_generator;
             input_arch >> p_generator;
 
             std::cout << " loaded. It took " << Timer::GetElapsedTime() << "s.\nConverting to compressed format...\n";
             Timer::Reset();
 
             // Now archive in Compressed format
-            LookupTableGenerator<TABLE_DIM>* const p_arch_generator = p_generator;
+            AbstractUntemplatedLookupTableGenerator* const p_arch_generator = p_generator;
 
             // Create output file as usual
             std::ofstream ofs(mpCompressedBinaryArchiveFile->GetAbsolutePath().c_str());
@@ -208,7 +209,7 @@ public:
 #endif // CHASTE_BOOST_IOSTREAMS
     }
 
-    void TestTimeLoadingFromEachArchive() throw (Exception)
+    void TestTimeLoadingFromEachArchive() throw(Exception)
     {
         if (mpAsciiArchiveFile->IsFile())
         {
@@ -220,7 +221,7 @@ public:
             boost::archive::text_iarchive input_arch(ifs);
 
             // restore from the archive
-            LookupTableGenerator<TABLE_DIM>* p_generator;
+            AbstractUntemplatedLookupTableGenerator* p_generator;
             input_arch >> p_generator;
 
             std::cout << " loaded.\nIt took " << Timer::GetElapsedTime() << "s\n";
@@ -240,7 +241,7 @@ public:
             boost::archive::binary_iarchive input_arch(ifs);
 
             // restore from the archive
-            LookupTableGenerator<TABLE_DIM>* p_generator;
+            AbstractUntemplatedLookupTableGenerator* p_generator;
             input_arch >> p_generator;
 
             std::cout << " loaded.\nIt took " << Timer::GetElapsedTime() << "s\n";
@@ -269,7 +270,7 @@ public:
             boost::archive::text_iarchive input_arch(in);
 
             // restore from the archive
-            LookupTableGenerator<TABLE_DIM>* p_generator;
+            AbstractUntemplatedLookupTableGenerator* p_generator;
             input_arch >> p_generator;
 
             std::cout << " loaded.\nIt took " << Timer::GetElapsedTime() << "s\n";
@@ -297,7 +298,7 @@ public:
             boost::archive::binary_iarchive input_arch(in);
 
             // restore from the archive
-            LookupTableGenerator<TABLE_DIM>* p_generator;
+            AbstractUntemplatedLookupTableGenerator* p_generator;
             input_arch >> p_generator;
 
             std::cout << " loaded.\nIt took " << Timer::GetElapsedTime() << "s\n";
