@@ -462,7 +462,7 @@ void ApPredictMethods::SetUpLookupTables()
         || p_args->OptionExists("--ic50-nal") || p_args->OptionExists("--pic50-nal"))
     {
         EXCEPTION(
-            "Lookup table (for --credible-intervals) is currently only including up to"
+            "Lookup table (for --credible-intervals) is currently only including up to "
             "IKr, IKs, INa and ICaL block, you have specified additional ones so quitting.");
     }
 
