@@ -275,13 +275,17 @@ public:
             TS_ASSERT_EQUALS(message, "NoActionPotential_3");
         }
 
+        std::cout << "Appears that some of the tests below may be sensitive to CVODE version and a bit fragile."
+                     " Don't panic if they fail!"
+                  << std::endl;
+
         {
             std::cout << "\nCase 8b: NoAP3 (but a bit like 5):\n"
                       << std::endl;
             p_model->SetStateVariables(steady_state);
             p_model->SetParameter(gkr_name, gKr_max * 0.0408);
             message = Run(p_model, 100, true, voltage_threshold, default_apd, "_gKr_0.0408");
-            TS_ASSERT_EQUALS(message, "NoActionPotential_3");
+            TS_ASSERT_EQUALS(message, "NoActionPotential_6");
         }
 
         {
@@ -290,7 +294,7 @@ public:
             p_model->SetStateVariables(steady_state);
             p_model->SetParameter(gkr_name, gKr_max * 0.0409);
             message = Run(p_model, 100, true, voltage_threshold, default_apd, "_gKr_0.0409");
-            TS_ASSERT_EQUALS(message, "NoActionPotential_6");
+            TS_ASSERT_EQUALS(message, "NoActionPotential_3");
         }
 
         {
@@ -313,8 +317,8 @@ public:
             p_model->SetParameter(gkr_name, gKr_max * 0.6266);
             p_model->SetParameter(gna_name, gNa_max * 0.1);
             message = Run(p_model, 100, true, voltage_threshold, default_apd, "_gNa_0.1_gKr_0.6266", default_time_of_peak_Vm);
-            // These are long alternans, but caused by depolarisation failure, so should get error code 4.
-            TS_ASSERT_EQUALS(message, "No error");
+            // These are long alternans, but caused by depolarisation failure, so should get error code 7.
+            TS_ASSERT_EQUALS(message, "NoActionPotential_7");
         }
 
         DeleteVector(steady_state);

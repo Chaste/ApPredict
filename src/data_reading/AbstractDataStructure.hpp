@@ -59,7 +59,7 @@ protected:
      * the overloaded method LoadALine
      *
      * @param rFileName  of the drug data file
-     * @param numHeaderLines  the number of header lines in the file to skip
+     * @param numHeaderLines  the number of header lines in the file to skip (your class MUST implement LoadHeaderLine to use this although it can just return true).
      */
     void LoadDataFromFile(const std::string& rFileName, unsigned numHeaderLines = 0);
 
