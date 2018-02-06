@@ -61,6 +61,9 @@ std::istream& AbstractDataStructure::SafeGetline(std::istream& is, std::string& 
                 if (sb->sgetc() == '\n')
                     sb->sbumpc();
                 return is;
+            case ',': // Convert CSV to space separated.
+                t += ' ';
+                break;
             case EOF:
                 // Also handle the case when the last line has no line ending
                 if (t.empty())
