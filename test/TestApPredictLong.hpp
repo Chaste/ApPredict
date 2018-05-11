@@ -125,14 +125,14 @@ public:
             TS_ASSERT_DELTA(apd90s[1], 213.9762, 1e-3);
             TS_ASSERT_DELTA(apd90s[2], 229.7436, 1e-3);
 
-            std::vector<std::pair<double, double> > apd90_credible_regions = methods.GetApd90CredibleRegions();
+            std::vector<std::vector<double> > apd90_credible_regions = methods.GetApd90CredibleRegions();
             TS_ASSERT_EQUALS(apd90_credible_regions.size(), 3u);
-            TS_ASSERT_DELTA(apd90_credible_regions[0].first, 211.9333, 1e-3);
-            TS_ASSERT_DELTA(apd90_credible_regions[0].second, 211.9333, 1e-3);
-            TS_ASSERT_DELTA(apd90_credible_regions[1].first, 212.5283, 1e-3);
-            TS_ASSERT_DELTA(apd90_credible_regions[1].second, 219.0559, 1e-3);
-            TS_ASSERT_DELTA(apd90_credible_regions[2].first, 217.5297, 1e-3);
-            TS_ASSERT_DELTA(apd90_credible_regions[2].second, 259.3450, 1e-3);
+            TS_ASSERT_DELTA(apd90_credible_regions[0][0], 211.9333, 1e-3);
+            TS_ASSERT_DELTA(apd90_credible_regions[0][1], 211.9333, 1e-3);
+            TS_ASSERT_DELTA(apd90_credible_regions[1][0], 212.5283, 1e-3);
+            TS_ASSERT_DELTA(apd90_credible_regions[1][1], 219.0559, 1e-3);
+            TS_ASSERT_DELTA(apd90_credible_regions[2][0], 217.5297, 1e-3);
+            TS_ASSERT_DELTA(apd90_credible_regions[2][1], 259.3450, 1e-3);
         }
 
         // We should get much reduced credible regions with repeated pIC50 values
@@ -154,14 +154,14 @@ public:
             TS_ASSERT_DELTA(apd90s[1], 213.9730, 1e-3);
             TS_ASSERT_DELTA(apd90s[2], 229.7191, 1e-3);
 
-            std::vector<std::pair<double, double> > apd90_credible_regions = methods.GetApd90CredibleRegions();
+            std::vector<std::vector<double> > apd90_credible_regions = methods.GetApd90CredibleRegions();
             TS_ASSERT_EQUALS(apd90_credible_regions.size(), 3u);
-            TS_ASSERT_DELTA(apd90_credible_regions[0].first, 211.9333, 1e-3);
-            TS_ASSERT_DELTA(apd90_credible_regions[0].second, 211.9333, 1e-3);
-            TS_ASSERT_DELTA(apd90_credible_regions[1].first, 213.1849, 1e-3);
-            TS_ASSERT_DELTA(apd90_credible_regions[1].second, 215.3668, 1e-3);
-            TS_ASSERT_DELTA(apd90_credible_regions[2].first, 223.2300, 1e-3);
-            TS_ASSERT_DELTA(apd90_credible_regions[2].second, 239.4459, 1e-3);
+            TS_ASSERT_DELTA(apd90_credible_regions[0][0], 211.9333, 1e-3);
+            TS_ASSERT_DELTA(apd90_credible_regions[0][1], 211.9333, 1e-3);
+            TS_ASSERT_DELTA(apd90_credible_regions[1][0], 213.1849, 1e-3);
+            TS_ASSERT_DELTA(apd90_credible_regions[1][1], 215.3668, 1e-3);
+            TS_ASSERT_DELTA(apd90_credible_regions[2][0], 223.2300, 1e-3);
+            TS_ASSERT_DELTA(apd90_credible_regions[2][1], 239.4459, 1e-3);
         }
 
         // This is a case Gef found that seems to get 'mean' predictions outside the credible region

@@ -392,6 +392,7 @@ void ApPredictMethods::ApplyDrugBlock(
 ApPredictMethods::ApPredictMethods()
         : AbstractActionPotentialMethod(),
           mLookupTableAvailable(false),
+          mPercentiles(std::vector<double>{2.5,97.5}),
           mConcentrationsFromFile(false),
           mComplete(false)
 {
@@ -758,7 +759,7 @@ void ApPredictMethods::InterpolateFromLookupTableForThisConcentration(
 
     const unsigned table_dim = mpLookupTable->GetDimension();
 
-    std::pair<double, double> credible_interval;
+    std::vector<double> credible_intervals;
 
     // If this is the first concentration (control) say the percent change must be
     // zero
@@ -767,9 +768,11 @@ void ApPredictMethods::InterpolateFromLookupTableForThisConcentration(
     // <x> ).
     if (concIndex == 0u)
     {
-        credible_interval.first = mApd90s[concIndex];
-        credible_interval.second = mApd90s[concIndex];
-        mApd90CredibleRegions[concIndex] = credible_interval;
+        for (unsigned i=0; i<mPercentiles.size(); i++)
+        {
+            credible_intervals.push_back(mApd90s[concIndex]);
+        }
+        mApd90CredibleRegions[concIndex] = credible_intervals;
         return;
     }
 
@@ -826,8 +829,8 @@ void ApPredictMethods::InterpolateFromLookupTableForThisConcentration(
     assert(predictions.size() == mSampledIc50s[0].size());
 
     /*
-	 *Compile all the lookup table predictions into a vector that we can sort to
-	 *get percentiles.
+	 * Compile all the lookup table predictions into a vector that we can sort to
+	 * get percentiles.
 	 */
     // std::vector<double> apd_50_predictions;
     std::vector<double> apd_90_predictions;
@@ -838,13 +841,23 @@ void ApPredictMethods::InterpolateFromLookupTableForThisConcentration(
     }
     std::sort(apd_90_predictions.begin(), apd_90_predictions.end());
 
-    // Now work out the confidence intervals, err on conservative side.
-    double credible_region = 95.0; // %
-    double tails = 0.01 * (100 - credible_region) / 2.0;
-    credible_interval.first = apd_90_predictions[floor(tails * (double)(num_samples))];
-    credible_interval.second = apd_90_predictions[ceil((1 - tails) * (double)(num_samples))];
+    
+    for (unsigned i=0; i<mPercentiles.size(); i++)
+    {
+        // Now work out the confidence intervals, err on conservative side.
+        unsigned index_in_sorted_apd90_vector;
+        if (percentiles[i]<50)
+        {
+            index_in_sorted_apd90_vector = floor(percentiles[i]/100.0 * (double)(num_samples));
+        }
+        else
+        {
+            index_in_sorted_apd90_vector = ceil(percentiles[i]/100.0 * (double)(num_samples));
+        }
+        credible_intervals.push_back(apd_90_predictions[index_in_sorted_apd90_vector]);
+    }
 
-    mApd90CredibleRegions[concIndex] = credible_interval;
+    mApd90CredibleRegions[concIndex] = credible_intervals;
     std::cout << "done.\n";
 }
 
@@ -990,8 +1003,33 @@ void ApPredictMethods::CommonRunMethod()
                                     "ms)\tPeakVm(mV)\tAPD50(ms)\tAPD90(ms)\t";
     if (mLookupTableAvailable)
     {
-        *steady_voltage_results_file
-            << "delta_APD90_lower(%),delta_APD90(%),delta_APD90_upper(%)\n";
+        for (unsigned i=0; i<mParameters.size(); i++)
+        {
+            std::string lower_or_upper = "low";
+            if (mPercentiles[i] > 50)
+            {
+                lower_or_upper = "upp";
+                if (mPercentiles[i-1] < 50)
+                {
+                    *steady_voltage_results_file << "median_delta_APD90" << ",";
+                }
+            }
+            double credible_interval;
+            if (mPercentiles[i]<50)
+            {
+                credible_interval = 100 - 2*mPercentiles[i];
+            }
+            else
+            {
+                credible_interval = 100 - 2*(100-mPercentiles[i]);
+            }
+            *steady_voltage_results_file << "dAp" << credible_interval << lower_or_upper;
+            if (i < mPercentiles.size() - 1u)
+            {
+                *steady_voltage_results_file << ",";
+            }
+        }
+        *steady_voltage_results_file << "\n";
     }
     else
     {
@@ -1015,9 +1053,9 @@ void ApPredictMethods::CommonRunMethod()
                                          "(%)</td></tr>\n"; // Header line
 
     /*
-*Work out the median IC50, Hill and saturation to use if more than one were
-*provided
-*/
+     * Work out the median IC50, Hill and saturation to use if more than one were
+     * provided
+     */
     std::vector<double> median_ic50; // vector is over channel indices
     std::vector<double> median_hill; //               ""
     std::vector<double> median_saturation; //               ""
@@ -1067,31 +1105,27 @@ void ApPredictMethods::CommonRunMethod()
                 std::vector<double> pIC50s;
                 for (unsigned i = 0; i < IC50s[channel_idx].size(); i++)
                 {
-                    pIC50s.push_back(
-                        AbstractDataStructure::ConvertIc50ToPic50(IC50s[channel_idx][i]));
+                    pIC50s.push_back(AbstractDataStructure::ConvertIc50ToPic50(IC50s[channel_idx][i]));
                 }
-                median_ic50.push_back(AbstractDataStructure::ConvertPic50ToIc50(
-                    MedianOfStdVectorDouble(pIC50s)));
+                median_ic50.push_back(AbstractDataStructure::ConvertPic50ToIc50(MedianOfStdVectorDouble(pIC50s)));
                 median_hill.push_back(MedianOfStdVectorDouble(hills[channel_idx]));
             }
 
             // We've no clever way of dealing with this yet, just take median of
             // saturation levels and use that all the time.
-            median_saturation.push_back(
-                MedianOfStdVectorDouble(saturations[channel_idx]));
+            median_saturation.push_back(MedianOfStdVectorDouble(saturations[channel_idx]));
         }
     }
 
     /*
-*START LOOP OVER EACH CONCENTRATION TO TEST WITH
-*/
+     * START LOOP OVER EACH CONCENTRATION TO TEST WITH
+     */
     mApd90CredibleRegions.resize(mConcs.size());
     double control_apd90 = 0;
     for (unsigned conc_index = 0; conc_index < mConcs.size(); conc_index++)
     {
         progress_reporter.Update((double)(conc_index));
-        std::cout << "Drug Conc = " << mConcs[conc_index]
-                  << " uM\n"; //<< std::flush;
+        std::cout << "Drug Conc = " << mConcs[conc_index] << " uM\n"; //<< std::flush;
 
         // Apply drug block on each channel
         for (unsigned channel_idx = 0; channel_idx < mMetadataNames.size();
@@ -1124,10 +1158,13 @@ void ApPredictMethods::CommonRunMethod()
             }
             double delta_apd90 = 100 * (apd90 - control_apd90) / control_apd90;
             double lower_delta_apd90, upper_delta_apd90;
+            std::vector<double> delta_percentiles(mPercentiles.size());
             if (mLookupTableAvailable)
             {
-                lower_delta_apd90 = 100 * (mApd90CredibleRegions[conc_index].first - control_apd90) / control_apd90;
-                upper_delta_apd90 = 100 * (mApd90CredibleRegions[conc_index].second - control_apd90) / control_apd90;
+                for (unsigned i=0; i<mPercentiles.size(); i++)
+                {
+                    delta_percentiles[i] = 100 * (mApd90CredibleRegions[conc_index][i] - control_apd90) / control_apd90;
+                }
             }
 
             if (!mSuppressOutput)
@@ -1137,8 +1174,9 @@ void ApPredictMethods::CommonRunMethod()
                           << ", APD90 = " << apd90 << ", percent change APD90 = ";
                 if (mLookupTableAvailable)
                 {
-                    std::cout << lower_delta_apd90 << "," << delta_apd90 << ","
-                              << upper_delta_apd90 << "\n"; // << std::flush;
+                    
+                    std::cout << delta_percentiles.begin() << "," << delta_apd90 << ","
+                              << delta_percentiles.back() << "\n"; // << std::flush;
                 }
                 else
                 {
@@ -1154,9 +1192,19 @@ void ApPredictMethods::CommonRunMethod()
                                          << apd90 << "\t";
             if (mLookupTableAvailable)
             {
-                *steady_voltage_results_file << lower_delta_apd90 << "," << delta_apd90
-                                             << "," << upper_delta_apd90
-                                             << "\n"; // << std::flush;
+                for (unsigned i=0; i<mPercentiles.size(); i++)
+                {
+                    if (mPercentiles[i] > 50 && mPercentiles[i-1] < 50)
+                    {
+                        *steady_voltage_results_file << delta_apd90 << ",";
+                    }
+                    *steady_voltage_results_file << mPercentiles[i];
+                    if (i < mPercentiles.size()-1u)
+                    {
+                        *steady_voltage_results_file << ",";
+                    }
+                }
+                *steady_voltage_results_file << "\n"; // << std::flush;
             }
             else
             {
@@ -1303,8 +1351,7 @@ std::vector<double> ApPredictMethods::GetApd90s(void)
     return mApd90s;
 }
 
-std::vector<std::pair<double, double> >
-ApPredictMethods::GetApd90CredibleRegions(void)
+std::vector<std::vector<std::pair<double, double> > > ApPredictMethods::GetApd90CredibleRegions(void)
 {
     if (!mComplete)
     {
