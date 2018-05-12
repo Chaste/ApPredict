@@ -1175,8 +1175,8 @@ void ApPredictMethods::CommonRunMethod()
                 if (mLookupTableAvailable)
                 {
                     
-                    std::cout << delta_percentiles.begin() << "," << delta_apd90 << ","
-                              << delta_percentiles.back() << "\n"; // << std::flush;
+                    std::cout << *(delta_percentiles.begin()) << "," << delta_apd90 << ","
+                              << *(delta_percentiles.back()) << "\n"; // << std::flush;
                 }
                 else
                 {
