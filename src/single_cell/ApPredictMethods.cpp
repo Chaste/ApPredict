@@ -846,13 +846,13 @@ void ApPredictMethods::InterpolateFromLookupTableForThisConcentration(
     {
         // Now work out the confidence intervals, err on conservative side.
         unsigned index_in_sorted_apd90_vector;
-        if (percentiles[i]<50)
+        if (mPercentiles[i]<50)
         {
-            index_in_sorted_apd90_vector = floor(percentiles[i]/100.0 * (double)(num_samples));
+            index_in_sorted_apd90_vector = floor(mPercentiles[i]/100.0 * (double)(num_samples));
         }
         else
         {
-            index_in_sorted_apd90_vector = ceil(percentiles[i]/100.0 * (double)(num_samples));
+            index_in_sorted_apd90_vector = ceil(mPercentiles[i]/100.0 * (double)(num_samples));
         }
         credible_intervals.push_back(apd_90_predictions[index_in_sorted_apd90_vector]);
     }
@@ -1003,7 +1003,7 @@ void ApPredictMethods::CommonRunMethod()
                                     "ms)\tPeakVm(mV)\tAPD50(ms)\tAPD90(ms)\t";
     if (mLookupTableAvailable)
     {
-        for (unsigned i=0; i<mParameters.size(); i++)
+        for (unsigned i=0; i<mPercentiles.size(); i++)
         {
             std::string lower_or_upper = "low";
             if (mPercentiles[i] > 50)
@@ -1157,7 +1157,6 @@ void ApPredictMethods::CommonRunMethod()
                 control_apd90 = apd90;
             }
             double delta_apd90 = 100 * (apd90 - control_apd90) / control_apd90;
-            double lower_delta_apd90, upper_delta_apd90;
             std::vector<double> delta_percentiles(mPercentiles.size());
             if (mLookupTableAvailable)
             {
@@ -1175,8 +1174,8 @@ void ApPredictMethods::CommonRunMethod()
                 if (mLookupTableAvailable)
                 {
                     
-                    std::cout << *(delta_percentiles.begin()) << "," << delta_apd90 << ","
-                              << *(delta_percentiles.back()) << "\n"; // << std::flush;
+                    std::cout << delta_percentiles[0] << "," << delta_apd90 << ","
+                              << delta_percentiles[mPercentiles.size() - 1u] << "\n"; // << std::flush;
                 }
                 else
                 {
