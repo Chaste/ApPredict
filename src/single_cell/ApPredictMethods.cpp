@@ -1351,7 +1351,7 @@ std::vector<double> ApPredictMethods::GetApd90s(void)
     return mApd90s;
 }
 
-std::vector<std::vector<std::pair<double, double> > > ApPredictMethods::GetApd90CredibleRegions(void)
+std::vector<std::vector<double> > ApPredictMethods::GetApd90CredibleRegions(void)
 {
     if (!mComplete)
     {

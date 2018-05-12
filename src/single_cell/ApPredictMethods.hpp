@@ -295,7 +295,7 @@ public:
      * @return The 95% credible regions that are associated with the APD90 predictions given by
      * #GetApd90s().
      */
-    std::vector<std::vector<std::pair<double, double> > > GetApd90CredibleRegions(void);
+    std::vector<std::vector<double> > GetApd90CredibleRegions(void);
 };
 
 #endif //_APPREDICTMETHODS_HPP_
