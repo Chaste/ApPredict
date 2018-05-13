@@ -198,8 +198,8 @@ std::string ApPredictMethods::PrintCommonArguments()
                           "*   on each row.\n"
                           "*\n"
                           "* UNCERTAINTY QUANTIFICATION:\n"
-                          "* --credible-intervals  This flag must be present to do uncertainty "
-                          "calculations.\n"
+                          "* --credible-intervals [x y z...] This flag must be present to do uncertainty "
+                          "calculations. It can optionally be followed by a specific list of percentiles that are required (not including 0 or 100).\n"
                           "* Then to specify 'spread' parameters for assay variability - for use "
                           "with Lookup Tables:\n"
                           "* --pic50-spread-herg      (for each channel that you are providing "
@@ -449,6 +449,16 @@ void ApPredictMethods::SetUpLookupTables()
         // The flag mLookupTableAvailable remains false, and we carry on as normal.
         return;
     }
+    else
+    {
+        // Get list of percentiles to use.
+        std::vector<double> percentile_ranges = p_args->GetDoublesCorrespondingToOption("--credible-intervals");
+        for (unsigned i=0; i<percentile_ranges.size(); i++)
+        {
+            std::out <<percentile_ranges[i] << "\n";
+            assert(0);
+        }
+    }
 
     // Here we will attempt to use any lookup table associated with this model and
     // pacing rate.
@@ -587,8 +597,7 @@ void ApPredictMethods::SetUpLookupTables()
         mLookupTableAvailable = true;
 
         std::cout << " loaded in " << Timer::GetElapsedTime()
-                  << " secs.\nLookup table is available for generation of credible "
-                     "intervals.\n";
+                  << " secs.\nLookup table is available for generation of credible intervals.\n";
 
         try
         {
