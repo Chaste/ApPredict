@@ -1197,7 +1197,7 @@ void ApPredictMethods::CommonRunMethod()
                     {
                         *steady_voltage_results_file << delta_apd90 << ",";
                     }
-                    *steady_voltage_results_file << mPercentiles[i];
+                    *steady_voltage_results_file << delta_percentiles[i];
                     if (i < mPercentiles.size()-1u)
                     {
                         *steady_voltage_results_file << ",";
