@@ -451,12 +451,22 @@ void ApPredictMethods::SetUpLookupTables()
     }
     else
     {
-        // Get list of percentiles to use.
-        std::vector<double> percentile_ranges = p_args->GetDoublesCorrespondingToOption("--credible-intervals");
-        for (unsigned i=0; i<percentile_ranges.size(); i++)
+        if (p_args->GetNumberOfArgumentsForOption("--credible-intervals") > 0u)
         {
-            std::cout <<percentile_ranges[i] << "\n";
-            assert(0);
+            // Get list of percentiles to use.
+            std::vector<double> percentile_ranges = p_args->GetDoublesCorrespondingToOption("--credible-intervals");
+            mPercentiles.clear();
+            for (unsigned i=0; i<percentile_ranges.size(); i++)
+            {
+                if (percentile_ranges<=0 || percentile_ranges >= 100)
+                {
+                    EXCEPTION("'--credible-intervals' arguments should be given as widths of credible interval in percentages. For instance 90 will result in 5th and 95th percentiles being reported. You specified " << percentile_ranges[i] << "% but this should be more than zero and less than 100.");
+                }
+                double remainder = 100 - percentile_ranges[i];
+                mPercentiles.push_back(0.5*remainder);
+                mPercentiles.push_back(100-0.5*remainder);
+            }
+            std::sort(mPercentiles.begin(), mPercentiles.end());
         }
     }
 
