@@ -458,7 +458,7 @@ void ApPredictMethods::SetUpLookupTables()
             mPercentiles.clear();
             for (unsigned i=0; i<percentile_ranges.size(); i++)
             {
-                if (percentile_ranges<=0 || percentile_ranges >= 100)
+                if (percentile_ranges[i]<=0 || percentile_ranges[i] >= 100)
                 {
                     EXCEPTION("'--credible-intervals' arguments should be given as widths of credible interval in percentages. For instance 90 will result in 5th and 95th percentiles being reported. You specified " << percentile_ranges[i] << "% but this should be more than zero and less than 100.");
                 }
