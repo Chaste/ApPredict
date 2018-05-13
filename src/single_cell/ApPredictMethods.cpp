@@ -455,7 +455,7 @@ void ApPredictMethods::SetUpLookupTables()
         std::vector<double> percentile_ranges = p_args->GetDoublesCorrespondingToOption("--credible-intervals");
         for (unsigned i=0; i<percentile_ranges.size(); i++)
         {
-            std::out <<percentile_ranges[i] << "\n";
+            std::cout <<percentile_ranges[i] << "\n";
             assert(0);
         }
     }
