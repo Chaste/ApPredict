@@ -199,7 +199,8 @@ std::string ApPredictMethods::PrintCommonArguments()
                           "*\n"
                           "* UNCERTAINTY QUANTIFICATION:\n"
                           "* --credible-intervals [x y z...] This flag must be present to do uncertainty "
-                          "calculations. It can optionally be followed by a specific list of percentiles that are required (not including 0 or 100).\n"
+                          "calculations. It can optionally be followed by a specific list of percentiles that are required\n"
+                          "*   (not including 0 or 100, defaults to 95).\n"
                           "* Then to specify 'spread' parameters for assay variability - for use "
                           "with Lookup Tables:\n"
                           "* --pic50-spread-herg      (for each channel that you are providing "
@@ -460,11 +461,11 @@ void ApPredictMethods::SetUpLookupTables()
             {
                 if (percentile_ranges[i]<=0 || percentile_ranges[i] >= 100)
                 {
-                    EXCEPTION("'--credible-intervals' arguments should be given as widths of credible interval in percentages. For instance 90 will result in 5th and 95th percentiles being reported. You specified " << percentile_ranges[i] << "% but this should be more than zero and less than 100.");
+                    EXCEPTION("'--credible-intervals' arguments should be given as widths of credible interval in percentages. For instance an argument of '--credible-intervals 90' will result in 5th and 95th percentiles being reported. You specified '" << percentile_ranges[i] << "%' but this number should be more than zero and less than 100.");
                 }
-                double remainder = 100 - percentile_ranges[i];
-                mPercentiles.push_back(0.5*remainder);
-                mPercentiles.push_back(100-0.5*remainder);
+                double remainder_in_tails = 100 - percentile_ranges[i];
+                mPercentiles.push_back(0.5*remainder_in_tails);
+                mPercentiles.push_back(100-0.5*remainder_in_tails);
             }
             std::sort(mPercentiles.begin(), mPercentiles.end());
         }
@@ -1042,7 +1043,7 @@ void ApPredictMethods::CommonRunMethod()
             {
                 credible_interval = 100 - 2*(100-mPercentiles[i]);
             }
-            *steady_voltage_results_file << "dAp" << credible_interval << lower_or_upper;
+            *steady_voltage_results_file << "dAp" << credible_interval << "%" << lower_or_upper;
             if (i < mPercentiles.size() - 1u)
             {
                 *steady_voltage_results_file << ",";
