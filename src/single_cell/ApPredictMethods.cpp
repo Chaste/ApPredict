@@ -452,7 +452,7 @@ void ApPredictMethods::SetUpLookupTables()
     }
     else
     {
-        if (p_args->GetNumberOfArgumentsForOption("--credible-intervals") > 0u)
+        if (p_args->GetNumberOfArgumentsForOption("--credible-intervals") > 0)
         {
             // Get list of percentiles to use.
             std::vector<double> percentile_ranges = p_args->GetDoublesCorrespondingToOption("--credible-intervals");
