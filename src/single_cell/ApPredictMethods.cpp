@@ -41,24 +41,23 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // Chaste source includes
 #include "ApPredictMethods.hpp"
 #include "CheckpointArchiveTypes.hpp"
-
 #include "CommandLineArguments.hpp"
 #include "Exception.hpp"
 #include "FileFinder.hpp"
 #include "OutputFileHandler.hpp"
-
-#include "AbstractDataStructure.hpp"
-#include "ActionPotentialDownsampler.hpp"
-#include "BayesianInferer.hpp"
-#include "DoseCalculator.hpp"
-
-#include "RegularStimulus.hpp"
-#include "ZeroStimulus.hpp"
-
 #include "ProgressReporter.hpp"
+#include "RegularStimulus.hpp"
 #include "SetupModel.hpp"
 #include "SteadyStateRunner.hpp"
 #include "Timer.hpp"
+#include "ZeroStimulus.hpp"
+
+// ApPredict includes
+#include "AbstractDataStructure.hpp"
+#include "ActionPotentialDownsampler.hpp"
+#include "BayesianInferer.hpp"
+#include "CipaQNetCalculator.hpp"
+#include "DoseCalculator.hpp"
 
 /**
  * A little helper method that can float around here for now.
@@ -974,8 +973,15 @@ void ApPredictMethods::CommonRunMethod()
 
     boost::shared_ptr<const AbstractOdeSystemInformation> p_ode_info = mpModel->GetSystemInformation();
     std::string model_name = mpModel->GetSystemName();
-    boost::static_pointer_cast<RegularStimulus>(mpModel->GetStimulusFunction())
-        ->SetStartTime(5.0);
+    boost::shared_ptr<RegularStimulus> p_reg_stim = boost::static_pointer_cast<RegularStimulus>(mpModel->GetStimulusFunction());
+    p_reg_stim->SetStartTime(5.0);
+
+    // If we are using ORdCiPAv1 and 0.5Hz, calculate qNet.
+    bool calculate_qNet = false;
+    if (model_name == "ohara_rudy_cipa_v1_2017" && p_reg_stim->GetPeriod() == 2000)
+    {
+        calculate_qNet = true;
+    }
 
     // Print out a progress file for monitoring purposes.
     ProgressReporter progress_reporter(mOutputFolder, 0.0,
@@ -1015,9 +1021,9 @@ void ApPredictMethods::CommonRunMethod()
                                          "(%)</td></tr>\n"; // Header line
 
     /*
-*Work out the median IC50, Hill and saturation to use if more than one were
-*provided
-*/
+     *Work out the median IC50, Hill and saturation to use if more than one were
+     *provided
+     */
     std::vector<double> median_ic50; // vector is over channel indices
     std::vector<double> median_hill; //               ""
     std::vector<double> median_saturation; //               ""
@@ -1083,8 +1089,8 @@ void ApPredictMethods::CommonRunMethod()
     }
 
     /*
-*START LOOP OVER EACH CONCENTRATION TO TEST WITH
-*/
+     *START LOOP OVER EACH CONCENTRATION TO TEST WITH
+     */
     mApd90CredibleRegions.resize(mConcs.size());
     double control_apd90 = 0;
     for (unsigned conc_index = 0; conc_index < mConcs.size(); conc_index++)
@@ -1106,6 +1112,13 @@ void ApPredictMethods::CommonRunMethod()
         OdeSolution solution = SteadyStatePacingExperiment(
             mpModel, apd90, apd50, upstroke, peak, peak_time, ca_max, ca_min,
             0.1 /*ms printing timestep*/, mConcs[conc_index]);
+
+        if (calculate_qNet)
+        {
+            CipaQNetCalculator calculator(mpModel);
+            double q_net = calculator.ComputeQNet();
+            std::cout << "qNet at " << mConcs[conc_index] << "uM = " << q_net << " C/F\n";
+        }
 
         // Store some things as member variables for returning later (mainly for
         // testing)
