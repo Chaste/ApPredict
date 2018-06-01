@@ -152,8 +152,17 @@ private:
     /**
      * A vector of pairs used to store the credible regions for APD90s,
      * calculated in the main method if a suitable Lookup Table is present.
+     *
+     * The outer vector loops over concentrations.
+     * At each concentration we have a vector of values for the percentiles in #mPercentiles.
      */
-    std::vector<std::pair<double, double> > mApd90CredibleRegions;
+    std::vector<std::vector<double> > mApd90CredibleRegions;
+    
+    /**
+     * The percentiles that the credible region APD90 values in #mApd90CredibleRegions
+     * correspond to.
+     */
+    std::vector<double> mPercentiles;
 
     /**
      * Whether we are running a Pharmacokinetics simulation with concentrations read from file.
@@ -286,7 +295,7 @@ public:
      * @return The 95% credible regions that are associated with the APD90 predictions given by
      * #GetApd90s().
      */
-    std::vector<std::pair<double, double> > GetApd90CredibleRegions(void);
+    std::vector<std::vector<double> > GetApd90CredibleRegions(void);
 };
 
 #endif //_APPREDICTMETHODS_HPP_
