@@ -78,7 +78,7 @@ private:
     boost::shared_ptr<FileFinder> mpCompressedBinaryArchiveFile;
 
 public:
-    void TestDownloadAsciiArchiveIfMissing() throw(Exception)
+    void TestDownloadAsciiArchiveIfMissing()
     {
         // Just hard-code to this for now.
         std::string lookup_table_name = "shannon_wang_puglisi_weber_bers_2004_model_updated_4d_hERG_IKs_INa_ICaL_1Hz_generator";
@@ -101,7 +101,7 @@ public:
         }
     }
 
-    void TestCreateTheVariousArchiveTypes() throw(Exception)
+    void TestCreateTheVariousArchiveTypes()
     {
         if (!mpAsciiArchiveFile->IsFile())
         {
@@ -209,7 +209,7 @@ public:
 #endif // CHASTE_BOOST_IOSTREAMS
     }
 
-    void TestTimeLoadingFromEachArchive() throw(Exception)
+    void TestTimeLoadingFromEachArchive()
     {
         if (mpAsciiArchiveFile->IsFile())
         {
