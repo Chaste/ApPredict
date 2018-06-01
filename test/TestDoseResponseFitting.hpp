@@ -87,7 +87,7 @@ private:
     }
 
 public:
-    void TestDoseResponseFittingPoints1() throw(Exception)
+    void TestDoseResponseFittingPoints1()
     {
         // Concentration and inhibition data for compound input for test case 1 -
         // fitting with
@@ -114,7 +114,7 @@ public:
         }
     }
 
-    void TestDoseResponseFittingPoints2() throw(Exception)
+    void TestDoseResponseFittingPoints2()
     {
         // Concentration and inhibition data for compound input for test case 2 -
         // fitting with
@@ -157,7 +157,7 @@ public:
         }
     }
 
-    void TestDoseResponseFittingPoints3() throw(Exception)
+    void TestDoseResponseFittingPoints3()
     {
         // Concentration and inhibition data for compound input for test case 3 -
         // fitting with
@@ -183,7 +183,7 @@ public:
         }
     }
 
-    void TestDoseResponseFittingPoints4() throw(Exception)
+    void TestDoseResponseFittingPoints4()
     {
         // Concentration and inhibition data for compound input for test case 4 -
         // fitting with
@@ -209,7 +209,7 @@ public:
         }
     }
 
-    void TestDoseResponseFittingPoints5() throw(Exception)
+    void TestDoseResponseFittingPoints5()
     {
         // Concentration and inhibition data for compound input for test case 5 -
         // fitting with
@@ -235,7 +235,7 @@ public:
         }
     }
 
-    void TestDoseResponseFittingPoints6() throw(Exception)
+    void TestDoseResponseFittingPoints6()
     {
         // Concentration and inhibition data for compound input for test case 5 -
         // fitting with
@@ -264,7 +264,7 @@ public:
         }
     }
 
-    void TestDoseResponseFittingPoints7() throw(Exception)
+    void TestDoseResponseFittingPoints7()
     {
         // Concentration and inhibition data for compound input for test case 5 -
         // fitting with
@@ -291,7 +291,7 @@ public:
         }
     }
 
-    void TestDoseResponseFittingPoints8() throw(Exception)
+    void TestDoseResponseFittingPoints8()
     {
         // Concentration and inhibition data for compound input for test case 5 -
         // fitting with
@@ -318,7 +318,7 @@ public:
         }
     }
 
-    void TestDoseResponseFittingPoints9() throw(Exception)
+    void TestDoseResponseFittingPoints9()
     {
         std::cout << "Test Case 9 Starting (22 points, with Hill Coeff)... could "
                      "take a minute or two !\n";
@@ -352,7 +352,7 @@ public:
         }
     }
 
-    void TestDoseResponseFittingPoints10() throw(Exception)
+    void TestDoseResponseFittingPoints10()
     {
         std::cout << "Test Case 10 Starting (almost 100 points, with Hill "
                      "Coeff)... could take a minute or two !\n";
@@ -413,7 +413,7 @@ public:
         }
     }
 
-    void TestDoseResponseFittingPoints11() throw(Exception)
+    void TestDoseResponseFittingPoints11()
     {
         std::cout << "Test Case 11a Starting (8 points, no Hill Coeff)... could "
                      "take a minute or two !\n";
@@ -439,7 +439,7 @@ public:
         }
     }
 
-    void TestDoseResponseFittingPoints11b() throw(Exception)
+    void TestDoseResponseFittingPoints11b()
     {
         std::cout << "Test Case 11b Starting (7 points, no Hill Coeff, i.e. as 11a "
                      "data but with one less data point) ... only takes a second "
@@ -466,7 +466,7 @@ public:
         }
     }
 
-    void TestDoseResponseFittingPoints12() throw(Exception)
+    void TestDoseResponseFittingPoints12()
     {
         std::cout << "Test Case 12 Starting (Ryan's troublesome compounds)\n";
         std::vector<double> testconcentrations = boost::assign::list_of(0.03162)(1)(
@@ -495,7 +495,7 @@ public:
         }
     }
 
-    void TestDoseResponseFittingPoints13() throw(Exception)
+    void TestDoseResponseFittingPoints13()
     {
         std::cout << "Test Case 13 Starting (Generated data from a perfect "
                      "dose-response curve)\n";
@@ -523,7 +523,7 @@ public:
     }
 
     // Gef's latest troublesome compound from 7/8/12
-    void TestDoseResponseFittingPoints14() throw(Exception)
+    void TestDoseResponseFittingPoints14()
     {
         std::vector<double> testconcentrations = boost::assign::list_of(0.000423377195210757)(0.000423377195210757)(
             0.000423380000000000)(0.00127013000000000)(0.00127013158563227)(
@@ -572,7 +572,7 @@ public:
         }
     }
 
-    void TestDoseResponseFittingPoints15() throw(Exception)
+    void TestDoseResponseFittingPoints15()
     {
         std::vector<double> testconcentrations = boost::assign::list_of(
             0.0000143051147460938000000)(0.0002288818359375000000)(
@@ -634,7 +634,7 @@ public:
         }
     }
 
-    void TestDoseResponseFittingPoints16() throw(Exception)
+    void TestDoseResponseFittingPoints16()
     {
         std::vector<double> testconcentrations = boost::assign::list_of(
             0.0000143051147460938000000)(0.0002288818359375000000)(
@@ -697,7 +697,7 @@ public:
         }
     }
 
-    void TestDoseResponseFittingPoints17a() throw(Exception)
+    void TestDoseResponseFittingPoints17a()
     {
         std::vector<double> testconcentrations = boost::assign::list_of(
             15.00000000000000000000)(0.00001430511474609380)(
@@ -745,7 +745,7 @@ public:
         }
     }
 
-    void TestDoseResponseFittingPoints17b() throw(Exception)
+    void TestDoseResponseFittingPoints17b()
     {
         std::vector<double> testconcentrations = boost::assign::list_of(
             0.01143118427069040000)(0.00127013158563227000)(0.30864197530864200000)(
@@ -774,7 +774,7 @@ public:
     }
 
     // Checking pIC50 rounding
-    void TestDoseResponseFittingPoints17b2() throw(Exception)
+    void TestDoseResponseFittingPoints17b2()
     {
         std::vector<double> testconcentrations = boost::assign::list_of(
             0.01143118427069040000)(0.00127013158563227000)(0.30864197530864200000)(
@@ -803,7 +803,7 @@ public:
         }
     }
 
-    void TestDoseResponseFittingPoints17c() throw(Exception)
+    void TestDoseResponseFittingPoints17c()
     {
         std::vector<double> testconcentrations = boost::assign::list_of(
             11.11111111111110000000)(0.13717421124828500000)(
@@ -832,7 +832,7 @@ public:
         }
     }
 
-    void TestDoseResponseFittingWithLimits() throw(Exception)
+    void TestDoseResponseFittingWithLimits()
     {
         std::vector<double> doses = boost::assign::list_of(1)(10);
         std::vector<double> responses = boost::assign::list_of(10)(20);

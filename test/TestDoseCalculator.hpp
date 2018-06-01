@@ -44,7 +44,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 class TestDoseCalculator : public CxxTest::TestSuite
 {
 public:
-    void TestDoseCalculatorSpecifyConcs(void) throw(Exception)
+    void TestDoseCalculatorSpecifyConcs(void)
     {
         // This tests the simpler interface
         std::vector<double> concs;
@@ -82,7 +82,7 @@ public:
         }
     }
 
-    void TestDoseCalculatorForInsertedSubValues(void) throw(Exception)
+    void TestDoseCalculatorForInsertedSubValues(void)
     {
         { // For non-log scale
             std::vector<double> concs;
@@ -175,7 +175,7 @@ public:
         }
     }
 
-    void TestForSpreadOfValues(void) throw(Exception)
+    void TestForSpreadOfValues(void)
     {
         TS_ASSERT_THROWS_THIS(DoseCalculator calc(0, 1),
                               "Bottom test concentration cannot be larger than top test concentration.");
@@ -194,7 +194,7 @@ public:
         }
     }
 
-    void TestForSpreadStartingAboveZero(void) throw(Exception)
+    void TestForSpreadStartingAboveZero(void)
     {
         // For equally spaced starting above zero
         DoseCalculator calc(1000, 500);
@@ -213,7 +213,7 @@ public:
     }
 
     // For log-spaced starting at zero
-    void TestForLogSpacedStartingAtZero(void) throw(Exception)
+    void TestForLogSpacedStartingAtZero(void)
     {
         DoseCalculator calc(1000, 0);
         // calc.SetLogScale(true); // Now the default.
@@ -231,7 +231,7 @@ public:
     }
 
     // For log-spaced starting at 1nM
-    void TestForLogSpacedStartingAtOneNanoMolar(void) throw(Exception)
+    void TestForLogSpacedStartingAtOneNanoMolar(void)
     {
         DoseCalculator calc(1, 1e-3);
         //calc.SetLogScale(true); // Now the default
@@ -249,7 +249,7 @@ public:
     }
 
     // For log-spaced starting above 1nM
-    void TestForLogSpacedStartingAboveOneNanoMolar(void) throw(Exception)
+    void TestForLogSpacedStartingAboveOneNanoMolar(void)
     {
         DoseCalculator calc(1000, 100);
         // calc.SetLogScale(true); // Now the default
@@ -266,7 +266,7 @@ public:
     }
 
     // For log-spaced starting above 1nM with extra spacing in first position
-    void TestForLogSpacedStartingAtOneMicroMolarExtraSpacing(void) throw(Exception)
+    void TestForLogSpacedStartingAtOneMicroMolarExtraSpacing(void)
     {
         DoseCalculator calc(10000, 1);
         // calc.SetLogScale(true); // Now the default
@@ -283,7 +283,7 @@ public:
     }
 
     // For log-spaced starting above 1nM with extra spacing in first position
-    void TestForLogSpacedStartingAboveOneNanoMolarExtraSpacing(void) throw(Exception)
+    void TestForLogSpacedStartingAboveOneNanoMolarExtraSpacing(void)
     {
         DoseCalculator calc(10000, 1000);
         // calc.SetLogScale(true); // Now the default
@@ -302,7 +302,7 @@ public:
     }
 
     // For log-spaced starting above 1nM with extra spacing in first position
-    void TestForLogSpaced100NanoMolar(void) throw(Exception)
+    void TestForLogSpaced100NanoMolar(void)
     {
         DoseCalculator calc(10, 0.1);
         // calc.SetLogScale(true); // Now the default
@@ -322,7 +322,7 @@ public:
 
     // For a corner-case Geoff found where bottom and top doses are
     // set less than control on log scale (1nM).
-    void TestForLogSpacedVeryLowRange(void) throw(Exception)
+    void TestForLogSpacedVeryLowRange(void)
     {
         // 0.0001 uM == 0.1nM which is < control of 1nM for log scale.
         DoseCalculator calc(0.0002, 0.0001);
@@ -338,7 +338,7 @@ public:
     }
 
     // Same as above, but only the top dose is specified.
-    void TestForAReallySmallTopDose(void) throw(Exception)
+    void TestForAReallySmallTopDose(void)
     {
         CommandLineArgumentsMocker cmd_line("--plasma-conc-high 0.0008");
         DoseCalculator dose_calculator;

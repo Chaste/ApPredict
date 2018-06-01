@@ -52,7 +52,7 @@ public:
      * The tests overwrite CommandLineArguments and does some standard
      * simulations to check things are working OK...
      */
-    void TestSomeFavouriteCompounds(void) throw(Exception)
+    void TestSomeFavouriteCompounds(void)
     {
         // Test a simple hERG block with TT06
         // loop over hardcoded and dynamically loaded.
@@ -89,7 +89,7 @@ public:
         }
     }
 
-    void TestWithConfidenceIntervalOutputs(void) throw(Exception)
+    void TestWithConfidenceIntervalOutputs(void)
     {
         // Test a couple of Exceptions
         {
@@ -220,7 +220,7 @@ public:
         }
     }
 
-    void TestWithAModelInAlternans(void) throw(Exception)
+    void TestWithAModelInAlternans(void)
     {
         // We are trying to go so fast we get alternans, and then handle it nicely.
         CommandLineArgumentsMocker wrapper("--model 3 --plasma-concs 1 10 --pacing-freq 5 --plasma-conc-logscale false");
@@ -241,7 +241,7 @@ public:
         TS_ASSERT_DELTA(apd90s[2], 137.3714, 1e-2);
     }
 
-    void TestWithAModelTwoToOneStimAp(void) throw(Exception)
+    void TestWithAModelTwoToOneStimAp(void)
     {
         // We should go 'too fast' for O'Hara and see if we can get anything like sensible output.
         CommandLineArgumentsMocker wrapper("--model 6 --plasma-concs 1 --pacing-freq 5 --plasma-conc-logscale false");
@@ -260,7 +260,7 @@ public:
         TS_ASSERT_DELTA(apd90s[1], 266.81, 1e-1); // Very sensitive to compiler changes, so high tolerance.
     }
 
-    void TestTroublesomeApCalculation(void) throw(Exception)
+    void TestTroublesomeApCalculation(void)
     {
         // This is a case that Gef was having some trouble with. It does look as if something odd is going
         // on, as it reports AP alternans, then tries to swap round the pacing and it has gone, at 10k paces.
