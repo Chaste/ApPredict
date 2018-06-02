@@ -39,8 +39,17 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <sys/stat.h> // For system commands to download and unpack Lookup Table file.
 
 // Chaste source includes
-#include "ApPredictMethods.hpp"
 #include "CheckpointArchiveTypes.hpp"
+
+// ApPredict includes
+#include "AbstractDataStructure.hpp"
+#include "ActionPotentialDownsampler.hpp"
+#include "ApPredictMethods.hpp"
+#include "BayesianInferer.hpp"
+#include "CipaQNetCalculator.hpp"
+#include "DoseCalculator.hpp"
+
+// Chaste source includes
 #include "CommandLineArguments.hpp"
 #include "Exception.hpp"
 #include "FileFinder.hpp"
@@ -50,14 +59,8 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "SetupModel.hpp"
 #include "SteadyStateRunner.hpp"
 #include "Timer.hpp"
+#include "Warnings.hpp"
 #include "ZeroStimulus.hpp"
-
-// ApPredict includes
-#include "AbstractDataStructure.hpp"
-#include "ActionPotentialDownsampler.hpp"
-#include "BayesianInferer.hpp"
-#include "CipaQNetCalculator.hpp"
-#include "DoseCalculator.hpp"
 
 /**
  * A little helper method that can float around here for now.
@@ -392,7 +395,7 @@ void ApPredictMethods::ApplyDrugBlock(
 ApPredictMethods::ApPredictMethods()
         : AbstractActionPotentialMethod(),
           mLookupTableAvailable(false),
-          mPercentiles(std::vector<double>{2.5,97.5}),
+          mPercentiles(std::vector<double>{ 2.5, 97.5 }),
           mConcentrationsFromFile(false),
           mComplete(false)
 {
@@ -456,15 +459,15 @@ void ApPredictMethods::SetUpLookupTables()
             // Get list of percentiles to use.
             std::vector<double> percentile_ranges = p_args->GetDoublesCorrespondingToOption("--credible-intervals");
             mPercentiles.clear();
-            for (unsigned i=0; i<percentile_ranges.size(); i++)
+            for (unsigned i = 0; i < percentile_ranges.size(); i++)
             {
-                if (percentile_ranges[i]<=0 || percentile_ranges[i] >= 100)
+                if (percentile_ranges[i] <= 0 || percentile_ranges[i] >= 100)
                 {
                     EXCEPTION("'--credible-intervals' arguments should be given as widths of credible interval in percentages. For instance an argument of '--credible-intervals 90' will result in 5th and 95th percentiles being reported. You specified '" << percentile_ranges[i] << "%' but this number should be more than zero and less than 100.");
                 }
                 double remainder_in_tails = 100 - percentile_ranges[i];
-                mPercentiles.push_back(0.5*remainder_in_tails);
-                mPercentiles.push_back(100-0.5*remainder_in_tails);
+                mPercentiles.push_back(0.5 * remainder_in_tails);
+                mPercentiles.push_back(100 - 0.5 * remainder_in_tails);
             }
             std::sort(mPercentiles.begin(), mPercentiles.end());
         }
@@ -787,7 +790,7 @@ void ApPredictMethods::InterpolateFromLookupTableForThisConcentration(
     // <x> ).
     if (concIndex == 0u)
     {
-        for (unsigned i=0; i<mPercentiles.size(); i++)
+        for (unsigned i = 0; i < mPercentiles.size(); i++)
         {
             credible_intervals.push_back(mApd90s[concIndex]);
         }
@@ -860,18 +863,17 @@ void ApPredictMethods::InterpolateFromLookupTableForThisConcentration(
     }
     std::sort(apd_90_predictions.begin(), apd_90_predictions.end());
 
-    
-    for (unsigned i=0; i<mPercentiles.size(); i++)
+    for (unsigned i = 0; i < mPercentiles.size(); i++)
     {
         // Now work out the confidence intervals, err on conservative side.
         unsigned index_in_sorted_apd90_vector;
-        if (mPercentiles[i]<50)
+        if (mPercentiles[i] < 50)
         {
-            index_in_sorted_apd90_vector = floor(mPercentiles[i]/100.0 * (double)(num_samples));
+            index_in_sorted_apd90_vector = floor(mPercentiles[i] / 100.0 * (double)(num_samples));
         }
         else
         {
-            index_in_sorted_apd90_vector = ceil(mPercentiles[i]/100.0 * (double)(num_samples));
+            index_in_sorted_apd90_vector = ceil(mPercentiles[i] / 100.0 * (double)(num_samples));
         }
         credible_intervals.push_back(apd_90_predictions[index_in_sorted_apd90_vector]);
     }
@@ -1029,25 +1031,26 @@ void ApPredictMethods::CommonRunMethod()
                                     "ms)\tPeakVm(mV)\tAPD50(ms)\tAPD90(ms)\t";
     if (mLookupTableAvailable)
     {
-        for (unsigned i=0; i<mPercentiles.size(); i++)
+        for (unsigned i = 0; i < mPercentiles.size(); i++)
         {
             std::string lower_or_upper = "low";
             if (mPercentiles[i] > 50)
             {
                 lower_or_upper = "upp";
-                if (mPercentiles[i-1] < 50)
+                if (mPercentiles[i - 1] < 50)
                 {
-                    *steady_voltage_results_file << "median_delta_APD90" << ",";
+                    *steady_voltage_results_file << "median_delta_APD90"
+                                                 << ",";
                 }
             }
             double credible_interval;
-            if (mPercentiles[i]<50)
+            if (mPercentiles[i] < 50)
             {
-                credible_interval = 100 - 2*mPercentiles[i];
+                credible_interval = 100 - 2 * mPercentiles[i];
             }
             else
             {
-                credible_interval = 100 - 2*(100-mPercentiles[i]);
+                credible_interval = 100 - 2 * (100 - mPercentiles[i]);
             }
             *steady_voltage_results_file << "dAp" << credible_interval << "%" << lower_or_upper;
             if (i < mPercentiles.size() - 1u)
@@ -1193,7 +1196,7 @@ void ApPredictMethods::CommonRunMethod()
             std::vector<double> delta_percentiles(mPercentiles.size());
             if (mLookupTableAvailable)
             {
-                for (unsigned i=0; i<mPercentiles.size(); i++)
+                for (unsigned i = 0; i < mPercentiles.size(); i++)
                 {
                     delta_percentiles[i] = 100 * (mApd90CredibleRegions[conc_index][i] - control_apd90) / control_apd90;
                 }
@@ -1206,7 +1209,7 @@ void ApPredictMethods::CommonRunMethod()
                           << ", APD90 = " << apd90 << ", percent change APD90 = ";
                 if (mLookupTableAvailable)
                 {
-                    
+
                     std::cout << delta_percentiles[0] << "," << delta_apd90 << ","
                               << delta_percentiles[mPercentiles.size() - 1u] << "\n"; // << std::flush;
                 }
@@ -1224,14 +1227,14 @@ void ApPredictMethods::CommonRunMethod()
                                          << apd90 << "\t";
             if (mLookupTableAvailable)
             {
-                for (unsigned i=0; i<mPercentiles.size(); i++)
+                for (unsigned i = 0; i < mPercentiles.size(); i++)
                 {
-                    if (mPercentiles[i] > 50 && mPercentiles[i-1] < 50)
+                    if (mPercentiles[i] > 50 && mPercentiles[i - 1] < 50)
                     {
                         *steady_voltage_results_file << delta_apd90 << ",";
                     }
                     *steady_voltage_results_file << delta_percentiles[i];
-                    if (i < mPercentiles.size()-1u)
+                    if (i < mPercentiles.size() - 1u)
                     {
                         *steady_voltage_results_file << ",";
                     }

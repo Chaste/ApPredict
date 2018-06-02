@@ -46,14 +46,13 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 class TestTorsadePredictLong : public CxxTest::TestSuite
 {
 public:
-
     /**
      * This test will wipe $CHASTE_TEST_OUTPUT/ApPredict_output/
      *
      * The tests overwrite CommandLineArguments and does some standard
      * simulations to check things are working OK...
      */
-    void TestSomeFavouriteCompounds(void) throw (Exception)
+    void TestSomeFavouriteCompounds(void)
     {
         // Test a simple hERG block
         {
@@ -64,29 +63,26 @@ public:
             methods.Run();
             std::vector<double> concs = methods.GetConcentrations();
 
-            TS_ASSERT_EQUALS(concs.size(),3u);
-            TS_ASSERT_DELTA(concs[0], 0.0,   1e-12);
-            TS_ASSERT_DELTA(concs[1], 1.0,   1e-12);
-            TS_ASSERT_DELTA(concs[2], 10.0,  1e-12);
+            TS_ASSERT_EQUALS(concs.size(), 3u);
+            TS_ASSERT_DELTA(concs[0], 0.0, 1e-12);
+            TS_ASSERT_DELTA(concs[1], 1.0, 1e-12);
+            TS_ASSERT_DELTA(concs[2], 10.0, 1e-12);
 
             std::vector<double> apd90s = methods.GetApd90s();
-            TS_ASSERT_EQUALS(apd90s.size(),3u);
+            TS_ASSERT_EQUALS(apd90s.size(), 3u);
             TS_ASSERT_DELTA(apd90s[0], 286.4685, 1e-3);
             TS_ASSERT_DELTA(apd90s[1], 291.2857, 1e-3);
             TS_ASSERT_DELTA(apd90s[2], 313.4771, 1e-3);
 
             std::vector<unsigned> tdp_predictions = methods.GetTorsadePredictions();
-            TS_ASSERT_EQUALS(tdp_predictions.size(),3u);
-            TS_ASSERT_EQUALS(tdp_predictions[0],4u); // Cat 4
-            TS_ASSERT_EQUALS(tdp_predictions[1],3u); // Cat 3
-            TS_ASSERT_EQUALS(tdp_predictions[2],2u); // Cat 1/2
+            TS_ASSERT_EQUALS(tdp_predictions.size(), 3u);
+            TS_ASSERT_EQUALS(tdp_predictions[0], 4u); // Cat 4
+            TS_ASSERT_EQUALS(tdp_predictions[1], 3u); // Cat 3
+            TS_ASSERT_EQUALS(tdp_predictions[2], 2u); // Cat 1/2
         }
     }
-
 };
-
 
 #endif //_TESTTORSADEPREDICTLONG_HPP_
 
 #endif //_CHASTE_CVODE
-

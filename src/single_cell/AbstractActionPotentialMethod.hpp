@@ -43,6 +43,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "CellProperties.hpp"
 #include "CommandLineArguments.hpp"
 #include "Exception.hpp"
+#include "OdeSolution.hpp"
 #include "RegularStimulus.hpp"
 #include "SteadyStateRunner.hpp"
 

@@ -37,16 +37,16 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define TESTACTIONPOTENTIALDOWNSAMPLER_HPP_
 
 #include <cxxtest/TestSuite.h>
+#include "AbstractDataReader.hpp"
 #include "ActionPotentialDownsampler.hpp"
+#include "CommandLineArgumentsMocker.hpp"
 #include "FileComparison.hpp"
 #include "FileFinder.hpp"
-#include "AbstractDataReader.hpp"
-#include "CommandLineArgumentsMocker.hpp"
 
 class TestActionPotentialDownsampler : public CxxTest::TestSuite
 {
 public:
-    void TestAgainstStoredFile() throw (Exception)
+    void TestAgainstStoredFile()
     {
         std::string output_folder = "TestActionPotentialDownsampler";
         std::string output_filename = "sample_action_potential.txt";
@@ -55,38 +55,38 @@ public:
         std::vector<double> voltages;
         // Get a full action potential trace (large file) out of one stored in the repository...
         {
-           std::ifstream indata; // indata is like cin
-           indata.open("projects/ApPredict/test/data/full_voltage_trace.dat"); // opens the file
-           assert(indata.good());
+            std::ifstream indata; // indata is like cin
+            indata.open("projects/ApPredict/test/data/full_voltage_trace.dat"); // opens the file
+            assert(indata.good());
 
-           bool top_line_read = false; // There is a row of header info we need to skip.
-           while (indata.good())
-           {
-               std::string this_line;
-               getline(indata, this_line);
+            bool top_line_read = false; // There is a row of header info we need to skip.
+            while (indata.good())
+            {
+                std::string this_line;
+                getline(indata, this_line);
 
-               if (!top_line_read)
-               {
-                   top_line_read = true;
-                   continue;
-               }
+                if (!top_line_read)
+                {
+                    top_line_read = true;
+                    continue;
+                }
 
-               if (this_line=="" || this_line=="\r")
-               {
-                   if (indata.eof())
-                   {    // If the blank line is the last line carry on OK.
-                       break;
-                   }
-               }
-               // Put the data in a stringstream and then into the vectors.
-               std::stringstream line(this_line);
-               double time;
-               double voltage;
-               line >> time;
-               line >> voltage;
-               times.push_back(time);
-               voltages.push_back(voltage);
-           }
+                if (this_line == "" || this_line == "\r")
+                {
+                    if (indata.eof())
+                    { // If the blank line is the last line carry on OK.
+                        break;
+                    }
+                }
+                // Put the data in a stringstream and then into the vectors.
+                std::stringstream line(this_line);
+                double time;
+                double voltage;
+                line >> time;
+                line >> voltage;
+                times.push_back(time);
+                voltages.push_back(voltage);
+            }
         }
 
         // Options we would like to pass to the downsampler.
@@ -95,15 +95,15 @@ public:
 
         // Test with downsampling switched on (default)
         {
-			ActionPotentialDownsampler sampler(output_folder, output_filename, times, voltages, window, stim_time);
+            ActionPotentialDownsampler sampler(output_folder, output_filename, times, voltages, window, stim_time);
 
-			FileFinder generated_file("TestActionPotentialDownsampler/sample_action_potential.txt", RelativeTo::ChasteTestOutput);
-			FileFinder reference_file("projects/ApPredict/test/data/reduced_voltage_trace.dat", RelativeTo::ChasteSourceRoot);
-			TS_ASSERT(generated_file.IsFile());
-			TS_ASSERT(reference_file.IsFile());
+            FileFinder generated_file("TestActionPotentialDownsampler/sample_action_potential.txt", RelativeTo::ChasteTestOutput);
+            FileFinder reference_file("projects/ApPredict/test/data/reduced_voltage_trace.dat", RelativeTo::ChasteSourceRoot);
+            TS_ASSERT(generated_file.IsFile());
+            TS_ASSERT(reference_file.IsFile());
 
-			FileComparison comparer(generated_file,reference_file);
-			TS_ASSERT(comparer.CompareFiles());
+            FileComparison comparer(generated_file, reference_file);
+            TS_ASSERT(comparer.CompareFiles());
         }
 
         // Test with downsampling switched off
@@ -114,15 +114,15 @@ public:
         stim_time = 0; //ms
         window = 2000; //ms
         {
-			ActionPotentialDownsampler sampler(output_folder, output_filename, times, voltages, window, stim_time);
+            ActionPotentialDownsampler sampler(output_folder, output_filename, times, voltages, window, stim_time);
 
-			FileFinder generated_file("TestActionPotentialDownsampler/sample_action_potential_no_downsampling.txt", RelativeTo::ChasteTestOutput);
-			FileFinder reference_file("projects/ApPredict/test/data/full_voltage_trace.dat", RelativeTo::ChasteSourceRoot);
-			TS_ASSERT(generated_file.IsFile());
-			TS_ASSERT(reference_file.IsFile());
+            FileFinder generated_file("TestActionPotentialDownsampler/sample_action_potential_no_downsampling.txt", RelativeTo::ChasteTestOutput);
+            FileFinder reference_file("projects/ApPredict/test/data/full_voltage_trace.dat", RelativeTo::ChasteSourceRoot);
+            TS_ASSERT(generated_file.IsFile());
+            TS_ASSERT(reference_file.IsFile());
 
-			FileComparison comparer(generated_file,reference_file);
-			TS_ASSERT(comparer.CompareFiles());
+            FileComparison comparer(generated_file, reference_file);
+            TS_ASSERT(comparer.CompareFiles());
         }
     }
 };

@@ -61,7 +61,7 @@ private:
     AbstractUntemplatedLookupTableGenerator* mpGenerator;
 
 public:
-    void TestSingleRun() throw(Exception)
+    void TestSingleRun()
     {
         SetupModel setup(1.0, 2u); // Ten tusscher '06 at 1 Hz
         boost::shared_ptr<AbstractCvodeCell> p_model = setup.GetModel();
@@ -84,7 +84,7 @@ public:
         TS_ASSERT_DELTA(ap_prediction.GetUpstrokeVelocity(), 307.6467, 2e-1); // Upstroke sensitive to different versions of CVODE
     }
 
-    void TestLookupTableMaker1d() throw(Exception)
+    void TestLookupTableMaker1d()
     {
         /*
          * For this first test create a 1D hERG block APD90 lookup table.
@@ -168,7 +168,7 @@ public:
         }
     }
 
-    void TestVoltageThresholdDetectionAlgorithm() throw(Exception)
+    void TestVoltageThresholdDetectionAlgorithm()
     {
         std::vector<double> thresholds_for_each_model = boost::assign::list_of(-46.6219) /*Shannon etc.*/
             (-44.3656)(-34.5941)(-35.9230)(-28.3257)(-38.4384);
@@ -184,7 +184,7 @@ public:
         }
     }
 
-    void TestLookupTableMaker5d() throw(Exception)
+    void TestLookupTableMaker5d()
     {
         unsigned model_index = 2u; // Ten tusscher '06 (table generated for 1 Hz at present)
 
@@ -249,7 +249,7 @@ public:
         }
     }
 
-    void TestLookupTablesArchiver1d() throw(Exception)
+    void TestLookupTablesArchiver1d()
     {
         OutputFileHandler handler("TestLookupTableArchiving", false);
         std::string archive_filename = handler.GetOutputDirectoryFullPath() + "Generator1d.arch";
@@ -310,7 +310,7 @@ public:
         }
     }
 
-    void TestLookupTablesArchiver5d() throw(Exception)
+    void TestLookupTablesArchiver5d()
     {
         OutputFileHandler handler("TestLookupTableArchiving", false);
         std::string archive_filename = handler.GetOutputDirectoryFullPath() + "Generator5d.arch";
