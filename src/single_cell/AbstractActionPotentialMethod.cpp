@@ -56,7 +56,8 @@ AbstractActionPotentialMethod::AbstractActionPotentialMethod()
           mRepeat(false),
           mRepeatNumber(0u),
           mSuppressOutput(false),
-          mHertz(1.0), // default to 1 Hz, replaced by suitable command line argument if present.
+          mHertz(1.0), // default to 1 Hz, replaced by suitable command line
+          // argument if present.
           mSuccessful(false),
           mPeriodTwoBehaviour(false)
 {
@@ -95,6 +96,11 @@ void AbstractActionPotentialMethod::SetMaxNumPaces(unsigned numPaces)
     {
         mMaxNumPaces = numPaces;
     }
+}
+
+unsigned AbstractActionPotentialMethod::GetMaxNumPaces()
+{
+    return mMaxNumPaces;
 }
 
 void AbstractActionPotentialMethod::Reset() { mRunYet = false; }
@@ -162,19 +168,20 @@ void AbstractActionPotentialMethod::SuppressOutput(bool suppress)
 
 OdeSolution AbstractActionPotentialMethod::SteadyStatePacingExperiment(
     boost::shared_ptr<AbstractCvodeCell> pModel, double& rApd90, double& rApd50,
-    double& rUpstroke, double& rPeak, double& rPeakTime, double& rCaMax, double& rCaMin,
-    const double printingTimeStep, const double conc)
+    double& rUpstroke, double& rPeak, double& rPeakTime, double& rCaMax,
+    double& rCaMin, const double printingTimeStep, const double conc)
 {
     mRunYet = true;
-    mRepeat = false; //    These two resets are for counting whether we should repeat the last
+    mRepeat = false; //    These two resets are for counting whether we should
+    //    repeat the last
     mRepeatNumber = 0u; // AP simulation to detect alternans or abnormal repolarization.
 
     /**
-     * STEADY STATE PACING EXPERIMENT
-     *
-     * Stimulate many times to establish the steady state response.
-     * Do most of the calculations in one go to avoid overhead setting up Cvode...
-     */
+   * STEADY STATE PACING EXPERIMENT
+   *
+   * Stimulate many times to establish the steady state response.
+   * Do most of the calculations in one go to avoid overhead setting up Cvode...
+   */
     bool skip_steady_state_calculation = false;
 
     // Get the stimulus parameters and make sure the maximum timestep is the
@@ -252,8 +259,7 @@ OdeSolution AbstractActionPotentialMethod::SteadyStatePacingExperiment(
         }
         catch (Exception& e)
         {
-            if (e.GetShortMessage() == "AP did not occur, never exceeded threshold voltage."
-                || e.GetShortMessage() == "No full action potential was recorded")
+            if (e.GetShortMessage() == "AP did not occur, never exceeded threshold voltage." || e.GetShortMessage() == "No full action potential was recorded")
             {
                 skip_steady_state_calculation = true;
             }
@@ -288,18 +294,19 @@ OdeSolution AbstractActionPotentialMethod::SteadyStatePacingExperiment(
     }
 
     OdeSolution solution = PerformAnalysisOfTwoPaces(
-        pModel, rApd90, rApd50, rUpstroke, rPeak, rPeakTime, rCaMax, rCaMin, s1_period,
-        maximum_time_step, printingTimeStep, conc);
+        pModel, rApd90, rApd50, rUpstroke, rPeak, rPeakTime, rCaMax, rCaMin,
+        s1_period, maximum_time_step, printingTimeStep, conc);
 
     if (mRepeat)
     {
-        // std::cout << "Repeating simulation to order alternans APs consistently...\n";
+        // std::cout << "Repeating simulation to order alternans APs
+        // consistently...\n";
         // If we might benefit from pushing forward one period and re-analysing...
         PushModelForwardOneS1Interval(pModel, s1_period, maximum_time_step);
 
         solution = PerformAnalysisOfTwoPaces(
-            pModel, rApd90, rApd50, rUpstroke, rPeak, rPeakTime, rCaMax, rCaMin, s1_period,
-            maximum_time_step, printingTimeStep, conc);
+            pModel, rApd90, rApd50, rUpstroke, rPeak, rPeakTime, rCaMax, rCaMin,
+            s1_period, maximum_time_step, printingTimeStep, conc);
     }
 
     return solution;
@@ -313,29 +320,33 @@ void AbstractActionPotentialMethod::PushModelForwardOneS1Interval(
 }
 
 OdeSolution AbstractActionPotentialMethod::PerformAnalysisOfTwoPaces(
-    boost::shared_ptr<AbstractCvodeCell> pModel,
-    double& rApd90, double& rApd50, double& rUpstroke, double& rPeak, double& rPeakTime,
-    double& rCaMax, double& rCaMin,
-    const double s1_period, const double maximumTimeStep,
+    boost::shared_ptr<AbstractCvodeCell> pModel, double& rApd90, double& rApd50,
+    double& rUpstroke, double& rPeak, double& rPeakTime, double& rCaMax,
+    double& rCaMin, const double s1_period, const double maximumTimeStep,
     const double printingTimeStep, const double conc)
 {
     // We usually analyse two paces to look for alternans.
-    // Have observed three period behaviour or more, so this is a hardcoded option for now.
+    // Have observed three period behaviour or more, so this is a hardcoded option
+    // for now.
     const unsigned num_paces_to_analyze = 2u;
     mRepeat = false;
     const double alternans_threshold = 1; // ms in APD90 - hardcoded,
-    // could make an option in future. But if it is any smaller alternans 'comes and goes' as you
-    // move through parameter space. Here it appears to pick up only the serious (after a bifurcation)
+    // could make an option in future. But if it is any smaller alternans 'comes
+    // and goes' as you
+    // move through parameter space. Here it appears to pick up only the serious
+    // (after a bifurcation)
     // kind of alternans.
 
     pModel->SetMaxSteps(num_paces_to_analyze * 100000); // Internal ODE solver steps, not paces!
     OdeSolution solution = pModel->Solve(0, num_paces_to_analyze * s1_period, maximumTimeStep,
-                                         printingTimeStep); // Get plenty of detail on these two paces for analysis.
+                                         printingTimeStep); // Get plenty of detail on these two
+    // paces for analysis.
 
     // Get voltage properties
     const unsigned voltage_index = pModel->GetSystemInformation()->GetStateVariableIndex("membrane_voltage");
     std::vector<double> voltages = solution.GetVariableAtIndex(voltage_index);
-    CellProperties voltage_properties(voltages, solution.rGetTimes(), mActionPotentialThreshold);
+    CellProperties voltage_properties(voltages, solution.rGetTimes(),
+                                      mActionPotentialThreshold);
 
     std::vector<double> apd90s;
     std::vector<double> peak_voltages;
@@ -392,7 +403,8 @@ OdeSolution AbstractActionPotentialMethod::PerformAnalysisOfTwoPaces(
         else
         {
             WARN_ONCE_ONLY(pModel->GetSystemName()
-                           << " does not have 'cytosolic_calcium_concentration' annotated, please tag it if it is present.");
+                           << " does not have 'cytosolic_calcium_concentration' "
+                              "annotated, please tag it if it is present.");
         }
         mSuccessful = true;
     }
@@ -463,14 +475,14 @@ OdeSolution AbstractActionPotentialMethod::PerformAnalysisOfTwoPaces(
             { // If we're going to repeat, we don't want this message twice.
                 if (mAlternansIsError)
                 {
-                    // These conditions check (if we are looking for repolarisation caused alternans by setting
+                    // These conditions check (if we are looking for repolarisation caused
+                    // alternans by setting
                     // a default APD90):
                     // 1. That the alternans APDs are longer than default
-                    // 2. That this isn't caused by a slow depolarisation which tends to give varied Peak Vm
+                    // 2. That this isn't caused by a slow depolarisation which tends to
+                    // give varied Peak Vm
                     // (see test case 9 in O'Hara model TestTroublesomeApEvaluations)
-                    if (mDefaultParametersApd90 != DOUBLE_UNSET
-                        && (apd90s[0] > mDefaultParametersApd90 && apd90s[1] > mDefaultParametersApd90)
-                        && (fabs(peak_voltages[0] - peak_voltages[1]) < 10 /*mV*/)) // magic number!
+                    if (mDefaultParametersApd90 != DOUBLE_UNSET && (apd90s[0] > mDefaultParametersApd90 && apd90s[1] > mDefaultParametersApd90) && (fabs(peak_voltages[0] - peak_voltages[1]) < 10 /*mV*/)) // magic number!
                     {
                         // We have alternans tending to long/no repolarisation
                         mErrorCode = 6u;
@@ -497,8 +509,7 @@ OdeSolution AbstractActionPotentialMethod::PerformAnalysisOfTwoPaces(
 
             // If we want to create an error code for 'struggling to depolarise'
             // This will overwrite alternans errors (it's more useful).
-            if (mDefaultParametersTimeOfVMax != DOUBLE_UNSET
-                && rPeakTime > mDefaultParametersTimeOfVMax + 80) //ms MAGIC NUMBER!
+            if (mDefaultParametersTimeOfVMax != DOUBLE_UNSET && rPeakTime > mDefaultParametersTimeOfVMax + 80) // ms MAGIC NUMBER!
             {
                 mErrorCode = 7u;
                 mErrorMessage = "NoActionPotential_7";
@@ -521,8 +532,10 @@ OdeSolution AbstractActionPotentialMethod::PerformAnalysisOfTwoPaces(
 
             if (mNoOneToOneCorrespondenceIsError)
             {
-                // The second condition here is to check if the second AP is non-repolarising...
-                // absence of this caused a bit of a bug where a period 3 non-repolarising looked like non
+                // The second condition here is to check if the second AP is
+                // non-repolarising...
+                // absence of this caused a bit of a bug where a period 3
+                // non-repolarising looked like non
                 // depolarising...
                 if (apd90s[0] > s1_period || voltages.back() >= mActionPotentialThreshold)
                 {
@@ -552,12 +565,14 @@ void AbstractActionPotentialMethod::
     mActionPotentialThresholdSetManually = true;
 }
 
-void AbstractActionPotentialMethod::SetControlActionPotentialDuration90(double apd90)
+void AbstractActionPotentialMethod::SetControlActionPotentialDuration90(
+    double apd90)
 {
     mDefaultParametersApd90 = apd90;
 }
 
-void AbstractActionPotentialMethod::SetControlTimeOfPeakVoltage(double timeVMax)
+void AbstractActionPotentialMethod::SetControlTimeOfPeakVoltage(
+    double timeVMax)
 {
     mDefaultParametersTimeOfVMax = timeVMax;
 }

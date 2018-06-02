@@ -35,47 +35,48 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <boost/assign.hpp>
 
-#include "SetupModel.hpp"
-#include "Exception.hpp"
+#include "CheckpointArchiveTypes.hpp"
 
-#include "RegularStimulus.hpp"
+#include "Exception.hpp"
+#include "SetupModel.hpp"
+
 #include "AbstractIvpOdeSolver.hpp"
-#include "CommandLineArguments.hpp"
 #include "CellMLLoader.hpp"
+#include "CommandLineArguments.hpp"
 #include "FileFinder.hpp"
+#include "RegularStimulus.hpp"
 
 #include "shannon_wang_puglisi_weber_bers_2004Cvode.hpp"
 //#include "Shannon2004Cvode.hpp"
-#include "ten_tusscher_model_2006_epiCvode.hpp"
+#include "grandi_pasqualini_bers_2010_ssCvode.hpp"
 #include "hund_rudy_2004Cvode.hpp"
 #include "mahajan_shiferaw_2008Cvode.hpp"
-#include "grandi_pasqualini_bers_2010_ssCvode.hpp"
 #include "ohara_rudy_2011_endoCvode.hpp"
 #include "ohara_rudy_cipa_v1_2017Cvode.hpp"
 #include "paci_hyttinen_aaltosetala_severi_ventricularVersionCvode.hpp"
+#include "ten_tusscher_model_2006_epiCvode.hpp"
 
 SetupModel::SetupModel(const double& rHertz,
                        unsigned modelIndex,
                        boost::shared_ptr<OutputFileHandler> pHandler)
- : mpHandler(pHandler)
+        : mpHandler(pHandler)
 {
     /// Cvode cells use a CVODE solver regardless of which standard solver is passed in.
     boost::shared_ptr<AbstractStimulusFunction> p_stimulus;
     boost::shared_ptr<AbstractIvpOdeSolver> p_solver;
 
-
     // If modelIndex is specified, then we have to use that, and ignore command line.
     if (modelIndex == UNSIGNED_UNSET && CommandLineArguments::Instance()->OptionExists("--cellml"))
     {
         // Try to use a dynamically loaded model
-        if(CommandLineArguments::Instance()->OptionExists("--model"))
+        if (CommandLineArguments::Instance()->OptionExists("--model"))
         {
             EXCEPTION("You can only call ApPredict with the option '--model' OR '--cellml <file>'.");
         }
         std::string cellml_file_path = CommandLineArguments::Instance()->GetStringCorrespondingToOption("--cellml");
         FileFinder cellml_file(cellml_file_path, RelativeTo::CWD);
         std::vector<std::string> options = boost::assign::list_of("--expose-annotated-variables");
-        if (mpHandler==NULL)
+        if (mpHandler == NULL)
         {
             EXCEPTION("Trying to set up a dynamically loaded model without a working directory in SetupModel constructor.");
         }
@@ -119,8 +120,8 @@ SetupModel::SetupModel(const double& rHertz,
                 mpModel.reset(new Cellpaci_hyttinen_aaltosetala_severi_ventricularVersionFromCellMLCvode(p_solver, p_stimulus));
                 break;
             case 8u:
-            	mpModel.reset(new Cellohara_rudy_cipa_v1_2017FromCellMLCvode(p_solver, p_stimulus));
-            	break;
+                mpModel.reset(new Cellohara_rudy_cipa_v1_2017FromCellMLCvode(p_solver, p_stimulus));
+                break;
             default:
                 EXCEPTION("No model matches this index");
         }
@@ -129,16 +130,16 @@ SetupModel::SetupModel(const double& rHertz,
 
     double s_magnitude = -15; // We will attempt to overwrite these with model specific ones below
     double s_duration = 3.0; // We will attempt to overwrite these with model specific ones below
-    double s1_period = 1000.0/rHertz;  // ms - we may overwrite this with a model specific one if it is self exciting.
+    double s1_period = 1000.0 / rHertz; // ms - we may overwrite this with a model specific one if it is self exciting.
 
     // Use the default CellML stimulus amplitude and duration, but set start time and period to what we want.
     if (mpModel->HasCellMLDefaultStimulus())
     {
         boost::shared_ptr<RegularStimulus> p_reg_stim = mpModel->UseCellMLDefaultStimulus();
         s_magnitude = p_reg_stim->GetMagnitude();
-        s_duration= p_reg_stim->GetDuration();
+        s_duration = p_reg_stim->GetDuration();
     }
-    else if(mpModel->HasAttribute("SuggestedCycleLength"))
+    else if (mpModel->HasAttribute("SuggestedCycleLength"))
     {
         // If the model has no stimulus current it can be given this attribute tag
         // so we know roughly what cycle length to use on it...
@@ -156,9 +157,22 @@ SetupModel::SetupModel(const double& rHertz,
         s_magnitude = CommandLineArguments::Instance()->GetDoubleCorrespondingToOption("--pacing-stim-magnitude");
     }
 
+    // If this is the qNet case, load up some sensible steady state values:
+    // Load archive of 0.5Hz steady state variables.
+    if (modelIndex == 8u && fabs(s1_period - 2000.0) < 1e-4)
+    {
+        FileFinder archive_file("projects/ApPredict/test/data/ord_cipa_0.5Hz_state_vars.arch", RelativeTo::ChasteSourceRoot);
+        std::string archive_filename = archive_file.GetAbsolutePath();
+        std::ifstream ifs(archive_filename.c_str(), std::ios::binary);
+        boost::archive::text_iarchive input_arch(ifs);
+
+        std::vector<double> state_vars;
+        input_arch >> state_vars;
+        mpModel->SetStateVariables(state_vars);
+    }
 
     // We always use this so graphs look nice.
-    double s_start = 1.0;            // ms
+    double s_start = 1.0; // ms
     boost::shared_ptr<RegularStimulus> p_regular_stimulus(new RegularStimulus(s_magnitude, s_duration, s1_period, s_start));
 
     mpModel->SetStimulusFunction(p_regular_stimulus); // Assign the regular stimulus to the cell's stimulus

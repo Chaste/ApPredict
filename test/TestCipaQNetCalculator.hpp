@@ -41,11 +41,14 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 // Chaste includes
 #include "CheckpointArchiveTypes.hpp"
+#include "CommandLineArgumentsMocker.hpp"
 #include "FileFinder.hpp"
+#include "NumericFileComparison.hpp"
 #include "SteadyStateRunner.hpp"
 #include "Warnings.hpp"
 
 // ApPredict includes
+#include "ApPredictMethods.hpp"
 #include "CipaQNetCalculator.hpp"
 #include "SetupModel.hpp"
 
@@ -116,6 +119,23 @@ public:
         double q_net = calculator.ComputeQNet();
 
         TS_ASSERT_DELTA(q_net, 0.06967, 1e-5);
+    }
+
+    void TestCipaQNetSimulations()
+    {
+        CommandLineArgumentsMocker wrapper(
+            "--plasma-concs 10 --model 8 --pacing-freq 0.5 --pic50-herg 6 --pacing-max-time 1");
+
+        ApPredictMethods runner;
+        runner.Run();
+
+        FileFinder q_net_results_file("ApPredict_output/q_net.txt", RelativeTo::ChasteTestOutput);
+        TS_ASSERT_EQUALS(q_net_results_file.IsFile(), true);
+
+        FileFinder reference_file("projects/ApPredict/test/data/q_net.txt", RelativeTo::ChasteSourceRoot);
+
+        NumericFileComparison comparison(q_net_results_file, reference_file);
+        comparison.CompareFiles(1e-2);
     }
 };
 

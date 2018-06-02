@@ -118,7 +118,7 @@ double CipaQNetCalculator::ComputeQNet()
     }
 
     // Integrate to get qNet
-    std::cout << "Total qNet = " << q_net.back() << " C/F" << std::endl;
+    //std::cout << "Total qNet = " << q_net.back() << " C/F" << std::endl;
 
     return q_net.back();
 }
