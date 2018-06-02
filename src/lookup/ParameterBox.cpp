@@ -411,19 +411,7 @@ double ParameterBox<DIM>::GetMaxErrorInQoIEstimateInThisBox(const unsigned& rQua
 
     // First check to see if all the corners have errors, if they do we don't want to
     // bother refining this box, so we say it has no error associated with it.
-    bool all_errors = true;
-    for (DataMapIter iter = mParameterPointDataMap.begin();
-         iter != mParameterPointDataMap.end();
-         ++iter)
-    {
-        // See if an error occurred when evaluating the QoIs at this corner.
-        if ((*iter).second->GetErrorCode() == 0u) // (Error code 0u means no error occurred)
-        {
-            all_errors = false;
-            break;
-        }
-    }
-    if (all_errors)
+    if (this->GetNumErrors() == mCorners.size())
     {
         return 0.0;
     }
