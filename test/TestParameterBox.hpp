@@ -97,7 +97,7 @@ private:
     }
 
 public:
-    void TestParameterBox1d() throw(Exception)
+    void TestParameterBox1d()
     {
         ParameterBox<1> parent_box_1d(NULL);
 
@@ -233,7 +233,7 @@ public:
         TS_ASSERT_DELTA(interp[0], exp(0.44), 1e-2);
     }
 
-    void TestArchivingParameterBox() throw(Exception)
+    void TestArchivingParameterBox()
     {
         OutputFileHandler handler("archive", false);
         std::string archive_filename = handler.GetOutputDirectoryFullPath() + "ParameterBox.arch";
@@ -335,7 +335,7 @@ public:
         }
     }
 
-    void TestParameterBox2d() throw(Exception)
+    void TestParameterBox2d()
     {
         ParameterBox<2> parent_box_2d(NULL);
         std::vector<c_vector<double, 2u>*> corner_parameters = parent_box_2d.GetCornersAsVector();

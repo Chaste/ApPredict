@@ -40,22 +40,21 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <cxxtest/TestSuite.h>
 
 #include <boost/shared_ptr.hpp>
-#include "CommandLineArgumentsMocker.hpp"
 #include "ApPredictMethods.hpp"
+#include "CommandLineArgumentsMocker.hpp"
 #include "FileComparison.hpp"
 #include "FileFinder.hpp"
 
 class TestApPredict : public CxxTest::TestSuite
 {
 public:
-
     /**
      *
      * This test will wipe $CHASTE_TEST_OUTPUT/ApPredict_output/
      *
      * The first test overwrites CommandLineArguments and checks exceptions are thrown correctly.
      */
-    void TestSomeExceptions(void) throw (Exception)
+    void TestSomeExceptions(void)
     {
         // Check some exceptions are thrown correctly...
         // N.B. the constructor does some of the argument reading, so that needs
@@ -66,7 +65,7 @@ public:
             ApPredictMethods methods;
 
             TS_ASSERT_THROWS_THIS(methods.Run(),
-                    "Argument \"--model <index>\" is required");
+                                  "Argument \"--model <index>\" is required");
         }
 
         {
@@ -75,7 +74,7 @@ public:
             ApPredictMethods methods;
 
             TS_ASSERT_THROWS_THIS(methods.Run(),
-                    "Argument \"--plasma-conc-high <concentration in uM>\" or \"--plasma-concs <concentrations in uM>\" is required");
+                                  "Argument \"--plasma-conc-high <concentration in uM>\" or \"--plasma-concs <concentrations in uM>\" is required");
         }
 
         {
@@ -89,16 +88,17 @@ public:
     /**
      * This test should emulate the standalone executable and read your command line arguments.
      */
-    void TestDrugAffectByVaryingConductances(void) throw (Exception)
+    void TestDrugAffectByVaryingConductances(void)
     {
         //////////// DEFINE PARAMETERS ///////////////
         CommandLineArguments* p_args = CommandLineArguments::Instance();
         unsigned argc = *(p_args->p_argc); // has the number of arguments, and
         //char **argv = *(p_args->p_argv); // is a char** of them.
-        unsigned num_args = argc-1;
-        std::cout << "# " << num_args << " arguments supplied.\n" << std::flush;
+        unsigned num_args = argc - 1;
+        std::cout << "# " << num_args << " arguments supplied.\n"
+                  << std::flush;
 
-        if (num_args ==0 || CommandLineArguments::Instance()->OptionExists("--help"))
+        if (num_args == 0 || CommandLineArguments::Instance()->OptionExists("--help"))
         {
             std::cerr << ApPredictMethods::PrintArguments() << std::flush;
             return;
@@ -107,8 +107,7 @@ public:
         methods.Run();
     }
 
-
-    void TestChangingSimulusDuration(void) throw (Exception)
+    void TestChangingSimulusDuration(void)
     {
         {
             CommandLineArgumentsMocker wrapper("--model 4 --pacing-freq 1 --plasma-concs 0 --pacing-max-time 0.2 --no-downsampling");
@@ -122,30 +121,27 @@ public:
             TS_ASSERT(generated_file.IsFile());
             TS_ASSERT(reference_file.IsFile());
 
-            FileComparison comparer(generated_file,reference_file);
+            FileComparison comparer(generated_file, reference_file);
             TS_ASSERT(comparer.CompareFiles());
         }
-       {
-           CommandLineArgumentsMocker wrapper("--model 4 --pacing-freq 1 --plasma-concs 0 --pacing-max-time 0.2 --no-downsampling --pacing-stim-duration 5 --pacing-stim-magnitude -16");
+        {
+            CommandLineArgumentsMocker wrapper("--model 4 --pacing-freq 1 --plasma-concs 0 --pacing-max-time 0.2 --no-downsampling --pacing-stim-duration 5 --pacing-stim-magnitude -16");
 
-           ApPredictMethods methods;
-           methods.SetOutputDirectory("ApPredict_output2/");
-           methods.Run();
+            ApPredictMethods methods;
+            methods.SetOutputDirectory("ApPredict_output2/");
+            methods.Run();
 
-           FileFinder generated_file("ApPredict_output2/conc_0_voltage_trace.dat", RelativeTo::ChasteTestOutput);
-           FileFinder reference_file("projects/ApPredict/test/data/hund_rudy_modified_stimulus.dat", RelativeTo::ChasteSourceRoot);
-           TS_ASSERT(generated_file.IsFile());
-           TS_ASSERT(reference_file.IsFile());
+            FileFinder generated_file("ApPredict_output2/conc_0_voltage_trace.dat", RelativeTo::ChasteTestOutput);
+            FileFinder reference_file("projects/ApPredict/test/data/hund_rudy_modified_stimulus.dat", RelativeTo::ChasteSourceRoot);
+            TS_ASSERT(generated_file.IsFile());
+            TS_ASSERT(reference_file.IsFile());
 
-           FileComparison comparer(generated_file,reference_file);
-           TS_ASSERT(comparer.CompareFiles());
-       }
+            FileComparison comparer(generated_file, reference_file);
+            TS_ASSERT(comparer.CompareFiles());
+        }
     }
-
 };
-
 
 #endif //_TESTAPPREDICT_HPP_
 
 #endif //_CHASTE_CVODE
-

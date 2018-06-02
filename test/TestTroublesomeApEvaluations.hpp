@@ -94,7 +94,7 @@ private:
     }
 
 public:
-    void TestTroublesomeTenTusscherCases() throw(Exception)
+    void TestTroublesomeTenTusscherCases()
     {
         SetupModel setup(1.0, 2u); // TT06, 1.0Hz
         boost::shared_ptr<AbstractCvodeCell> p_model = setup.GetModel();
@@ -169,7 +169,7 @@ public:
         DeleteVector(steady_state);
     }
 
-    void TestTroublesomeOHaraActionPotentials() throw(Exception)
+    void TestTroublesomeOHaraActionPotentials()
     {
         SetupModel setup(1.0, 6u); // O'Hara, 1.0Hz
         boost::shared_ptr<AbstractCvodeCell> p_model = setup.GetModel();

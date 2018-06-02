@@ -46,8 +46,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 class TestTorsadePredict : public CxxTest::TestSuite
 {
 public:
-
-    void TestGetTorsadePredictions(void) throw (Exception)
+    void TestGetTorsadePredictions(void)
     {
         // Common sense checks - this one should be for high APD -> danger
         {
@@ -63,11 +62,11 @@ public:
 
             ap_methods.MakeTorsadePredictions();
 
-            TS_ASSERT_EQUALS(ap_methods.mTorsadePredictions.size(),4u);
-            TS_ASSERT_EQUALS(ap_methods.mTorsadePredictions[0],4u); // Cat 4
-            TS_ASSERT_EQUALS(ap_methods.mTorsadePredictions[1],3u); // Cat 3
-            TS_ASSERT_EQUALS(ap_methods.mTorsadePredictions[2],2u); // Cat 1/2
-            TS_ASSERT_EQUALS(ap_methods.mTorsadePredictions[3],2u); // Cat 1/2
+            TS_ASSERT_EQUALS(ap_methods.mTorsadePredictions.size(), 4u);
+            TS_ASSERT_EQUALS(ap_methods.mTorsadePredictions[0], 4u); // Cat 4
+            TS_ASSERT_EQUALS(ap_methods.mTorsadePredictions[1], 3u); // Cat 3
+            TS_ASSERT_EQUALS(ap_methods.mTorsadePredictions[2], 2u); // Cat 1/2
+            TS_ASSERT_EQUALS(ap_methods.mTorsadePredictions[3], 2u); // Cat 1/2
 
             // Check the get method works OK.
             TS_ASSERT_THROWS_THIS(ap_methods.GetTorsadePredictions(),
@@ -77,10 +76,10 @@ public:
             ap_methods.mComplete = true;
 
             std::vector<unsigned> tdp_predicitons = ap_methods.GetTorsadePredictions();
-            TS_ASSERT_EQUALS(tdp_predicitons.size(),ap_methods.mTorsadePredictions.size());
-            for (unsigned i=0; i<tdp_predicitons.size(); i++)
+            TS_ASSERT_EQUALS(tdp_predicitons.size(), ap_methods.mTorsadePredictions.size());
+            for (unsigned i = 0; i < tdp_predicitons.size(); i++)
             {
-                TS_ASSERT_EQUALS(tdp_predicitons[i],ap_methods.mTorsadePredictions[i]);
+                TS_ASSERT_EQUALS(tdp_predicitons[i], ap_methods.mTorsadePredictions[i]);
             }
         }
 
@@ -94,11 +93,11 @@ public:
 
             ap_methods.MakeTorsadePredictions();
 
-            TS_ASSERT_EQUALS(ap_methods.mTorsadePredictions.size(),4u);
-            TS_ASSERT_EQUALS(ap_methods.mTorsadePredictions[0],4u); // Cat 4
-            TS_ASSERT_EQUALS(ap_methods.mTorsadePredictions[1],4u); // Cat 4
-            TS_ASSERT_EQUALS(ap_methods.mTorsadePredictions[2],4u); // Cat 4
-            TS_ASSERT_EQUALS(ap_methods.mTorsadePredictions[3],4u); // Cat 4
+            TS_ASSERT_EQUALS(ap_methods.mTorsadePredictions.size(), 4u);
+            TS_ASSERT_EQUALS(ap_methods.mTorsadePredictions[0], 4u); // Cat 4
+            TS_ASSERT_EQUALS(ap_methods.mTorsadePredictions[1], 4u); // Cat 4
+            TS_ASSERT_EQUALS(ap_methods.mTorsadePredictions[2], 4u); // Cat 4
+            TS_ASSERT_EQUALS(ap_methods.mTorsadePredictions[3], 4u); // Cat 4
         }
 
         // Common sense checks - this one should be for very low APD -> very safe
@@ -111,11 +110,11 @@ public:
 
             ap_methods.MakeTorsadePredictions();
 
-            TS_ASSERT_EQUALS(ap_methods.mTorsadePredictions.size(),4u);
-            TS_ASSERT_EQUALS(ap_methods.mTorsadePredictions[0],4u); // Cat 4
-            TS_ASSERT_EQUALS(ap_methods.mTorsadePredictions[1],5u); // Cat 5
-            TS_ASSERT_EQUALS(ap_methods.mTorsadePredictions[2],5u); // Cat 5
-            TS_ASSERT_EQUALS(ap_methods.mTorsadePredictions[3],5u); // Cat 5
+            TS_ASSERT_EQUALS(ap_methods.mTorsadePredictions.size(), 4u);
+            TS_ASSERT_EQUALS(ap_methods.mTorsadePredictions[0], 4u); // Cat 4
+            TS_ASSERT_EQUALS(ap_methods.mTorsadePredictions[1], 5u); // Cat 5
+            TS_ASSERT_EQUALS(ap_methods.mTorsadePredictions[2], 5u); // Cat 5
+            TS_ASSERT_EQUALS(ap_methods.mTorsadePredictions[3], 5u); // Cat 5
         }
 
         // Common sense checks - this one goes very high and then low again should be dodgy all the way up.
@@ -129,12 +128,12 @@ public:
 
             ap_methods.MakeTorsadePredictions();
 
-            TS_ASSERT_EQUALS(ap_methods.mTorsadePredictions.size(),5u);
-            TS_ASSERT_EQUALS(ap_methods.mTorsadePredictions[0],4u); // Cat 4
-            TS_ASSERT_EQUALS(ap_methods.mTorsadePredictions[1],2u); // Cat 1/2
-            TS_ASSERT_EQUALS(ap_methods.mTorsadePredictions[2],2u); // Cat 1/2
-            TS_ASSERT_EQUALS(ap_methods.mTorsadePredictions[3],2u); // Cat 1/2
-            TS_ASSERT_EQUALS(ap_methods.mTorsadePredictions[4],2u); // Cat 1/2
+            TS_ASSERT_EQUALS(ap_methods.mTorsadePredictions.size(), 5u);
+            TS_ASSERT_EQUALS(ap_methods.mTorsadePredictions[0], 4u); // Cat 4
+            TS_ASSERT_EQUALS(ap_methods.mTorsadePredictions[1], 2u); // Cat 1/2
+            TS_ASSERT_EQUALS(ap_methods.mTorsadePredictions[2], 2u); // Cat 1/2
+            TS_ASSERT_EQUALS(ap_methods.mTorsadePredictions[3], 2u); // Cat 1/2
+            TS_ASSERT_EQUALS(ap_methods.mTorsadePredictions[4], 2u); // Cat 1/2
         }
     }
 
@@ -144,14 +143,15 @@ public:
      *
      * Parameters can be defined at the top of this Test
      */
-    void TestDrugAffectByVaryingConductances(void) throw (Exception)
+    void TestDrugAffectByVaryingConductances(void)
     {
         //////////// DEFINE PARAMETERS ///////////////
         CommandLineArguments* p_args = CommandLineArguments::Instance();
         unsigned argc = *(p_args->p_argc); // has the number of arguments, and
         //char **argv = *(p_args->p_argv); // is a char** of them.
-        unsigned num_args = argc-1;
-        std::cout << "# " << num_args << " arguments supplied.\n" << std::flush;
+        unsigned num_args = argc - 1;
+        std::cout << "# " << num_args << " arguments supplied.\n"
+                  << std::flush;
 
         if (num_args == 0 || CommandLineArguments::Instance()->OptionExists("--help"))
         {
@@ -163,8 +163,6 @@ public:
     }
 };
 
-
 #endif //_TESTTORSADEPREDICT_HPP_
 
 #endif //_CHASTE_CVODE
-

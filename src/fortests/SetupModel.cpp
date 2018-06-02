@@ -35,6 +35,8 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <boost/assign.hpp>
 
+#include "CheckpointArchiveTypes.hpp"
+
 #include "Exception.hpp"
 #include "SetupModel.hpp"
 
@@ -64,8 +66,7 @@ SetupModel::SetupModel(const double& rHertz, unsigned modelIndex,
     boost::shared_ptr<AbstractStimulusFunction> p_stimulus;
     boost::shared_ptr<AbstractIvpOdeSolver> p_solver;
 
-    // If modelIndex is specified, then we have to use that, and ignore command
-    // line.
+    // If modelIndex is specified, then we have to use that, and ignore command line.
     if (modelIndex == UNSIGNED_UNSET && CommandLineArguments::Instance()->OptionExists("--cellml"))
     {
         // Try to use a dynamically loaded model
@@ -139,8 +140,8 @@ SetupModel::SetupModel(const double& rHertz, unsigned modelIndex,
                 mpModel.reset(new Cellfaber_rudy_2000FromCellMLCvode(p_solver, p_stimulus));
                 break;
             case 8u:
-            	mpModel.reset(new Cellohara_rudy_cipa_v1_2017FromCellMLCvode(p_solver, p_stimulus));
-            	break;
+                mpModel.reset(new Cellohara_rudy_cipa_v1_2017FromCellMLCvode(p_solver, p_stimulus));
+                break;
             default:
                 EXCEPTION("No model matches this index");
         }
@@ -149,9 +150,7 @@ SetupModel::SetupModel(const double& rHertz, unsigned modelIndex,
 
     double s_magnitude = -15; // We will attempt to overwrite these with model specific ones below
     double s_duration = 3.0; // We will attempt to overwrite these with model specific ones below
-    double s1_period = 1000.0 / rHertz; // ms - we may overwrite this with a
-    // model specific one if it is self
-    // exciting.
+    double s1_period = 1000.0 / rHertz; // ms - we may overwrite this with a model specific one if it is self exciting.
 
     // Use the default CellML stimulus amplitude and duration, but set start time
     // and period to what we want.
@@ -183,10 +182,23 @@ SetupModel::SetupModel(const double& rHertz, unsigned modelIndex,
             "--pacing-stim-magnitude");
     }
 
+    // If this is the qNet case, load up some sensible steady state values:
+    // Load archive of 0.5Hz steady state variables.
+    if (modelIndex == 8u && fabs(s1_period - 2000.0) < 1e-4)
+    {
+        FileFinder archive_file("projects/ApPredict/test/data/ord_cipa_0.5Hz_state_vars.arch", RelativeTo::ChasteSourceRoot);
+        std::string archive_filename = archive_file.GetAbsolutePath();
+        std::ifstream ifs(archive_filename.c_str(), std::ios::binary);
+        boost::archive::text_iarchive input_arch(ifs);
+
+        std::vector<double> state_vars;
+        input_arch >> state_vars;
+        mpModel->SetStateVariables(state_vars);
+    }
+
     // We always use this so graphs look nice.
     double s_start = 1.0; // ms
-    boost::shared_ptr<RegularStimulus> p_regular_stimulus(
-        new RegularStimulus(s_magnitude, s_duration, s1_period, s_start));
+    boost::shared_ptr<RegularStimulus> p_regular_stimulus(new RegularStimulus(s_magnitude, s_duration, s1_period, s_start));
 
     mpModel->SetStimulusFunction(p_regular_stimulus); // Assign the regular
     // stimulus to the cell's

@@ -411,19 +411,7 @@ double ParameterBox<DIM>::GetMaxErrorInQoIEstimateInThisBox(const unsigned& rQua
 
     // First check to see if all the corners have errors, if they do we don't want to
     // bother refining this box, so we say it has no error associated with it.
-    bool all_errors = true;
-    for (DataMapIter iter = mParameterPointDataMap.begin();
-         iter != mParameterPointDataMap.end();
-         ++iter)
-    {
-        // See if an error occurred when evaluating the QoIs at this corner.
-        if ((*iter).second->GetErrorCode() == 0u) // (Error code 0u means no error occurred)
-        {
-            all_errors = false;
-            break;
-        }
-    }
-    if (all_errors)
+    if (this->GetNumErrors() == mCorners.size())
     {
         return 0.0;
     }
@@ -748,15 +736,19 @@ std::vector<double> ParameterBox<DIM>::GetMaxErrorsInPredictedQoIs() const
     return mMaxErrorsInEachQoI;
 }
 
-#include "SerializationExportWrapperForCpp.hpp"
-EXPORT_TEMPLATE_CLASS_SAME_DIMS(ParameterBox)
-
 /////////////////////////////////////////////////////////////////////
 // Explicit instantiation
 /////////////////////////////////////////////////////////////////////
 
-template class ParameterBox<1>;
-template class ParameterBox<2>;
-template class ParameterBox<3>;
-template class ParameterBox<4>;
-template class ParameterBox<5>;
+template class ParameterBox<1u>;
+template class ParameterBox<2u>;
+template class ParameterBox<3u>;
+template class ParameterBox<4u>;
+template class ParameterBox<5u>;
+
+#include "SerializationExportWrapperForCpp.hpp"
+EXPORT_TEMPLATE_CLASS1(ParameterBox, 1u)
+EXPORT_TEMPLATE_CLASS1(ParameterBox, 2u)
+EXPORT_TEMPLATE_CLASS1(ParameterBox, 3u)
+EXPORT_TEMPLATE_CLASS1(ParameterBox, 4u)
+EXPORT_TEMPLATE_CLASS1(ParameterBox, 5u)

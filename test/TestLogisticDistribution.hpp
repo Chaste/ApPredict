@@ -37,11 +37,11 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define TESTLOGISTICDISTRIBUTION_HPP_
 
 #include <cxxtest/TestSuite.h>
-#include <vector>
 #include <numeric>
+#include <vector>
 
-#include "LogisticDistribution.hpp"
 #include "LogLogisticDistribution.hpp"
+#include "LogisticDistribution.hpp"
 
 class TestLogisticDistribution : public CxxTest::TestSuite
 {
@@ -49,49 +49,49 @@ private:
     static const unsigned mNumRepeats = 1000000;
 
 public:
-    void TestBasicDistribution() throw (Exception)
+    void TestBasicDistribution()
     {
-    	double mu = 2.0;
-    	double sigma = 1.0;
-    	LogisticDistribution sampler;
+        double mu = 2.0;
+        double sigma = 1.0;
+        LogisticDistribution sampler;
 
-    	std::vector<double> values;
-		for (unsigned i=0; i<mNumRepeats; i++)
-		{
-			values.push_back(sampler.GetSample(mu,sigma));
-		}// End of loop over samples
+        std::vector<double> values;
+        for (unsigned i = 0; i < mNumRepeats; i++)
+        {
+            values.push_back(sampler.GetSample(mu, sigma));
+        } // End of loop over samples
 
-    	// Check that the mean and standard deviation of the values is correct
-    	double theoretical_mean = mu;
-    	double theoretical_std = sigma*M_PI/sqrt(3.0);
+        // Check that the mean and standard deviation of the values is correct
+        double theoretical_mean = mu;
+        double theoretical_std = sigma * M_PI / sqrt(3.0);
 
-    	// Calculate mean and std of 'values'
-    	double sum = std::accumulate(values.begin(), values.end(), 0.0);
-    	double recorded_mean = sum / values.size();
-    	double sq_sum = std::inner_product(values.begin(), values.end(), values.begin(), 0.0);
-    	double recorded_std = std::sqrt(sq_sum / values.size() - recorded_mean * recorded_mean);
+        // Calculate mean and std of 'values'
+        double sum = std::accumulate(values.begin(), values.end(), 0.0);
+        double recorded_mean = sum / values.size();
+        double sq_sum = std::inner_product(values.begin(), values.end(), values.begin(), 0.0);
+        double recorded_std = std::sqrt(sq_sum / values.size() - recorded_mean * recorded_mean);
 
-    	TS_ASSERT_DELTA(theoretical_mean, recorded_mean, 2e-3);
-    	TS_ASSERT_DELTA(theoretical_std, recorded_std, 2e-3);
+        TS_ASSERT_DELTA(theoretical_mean, recorded_mean, 2e-3);
+        TS_ASSERT_DELTA(theoretical_std, recorded_std, 2e-3);
     }
 
     /**
      * Here we test the probability density function (PDF).
      */
-    void TestPdfCalculations() throw (Exception)
+    void TestPdfCalculations()
     {
         double mu = 4.5;
         double sigma = 0.3;
         double sample = 5.0;
         LogisticDistribution distribution;
-        double probability = distribution.EvaluatePdf(mu,sigma,sample);
+        double probability = distribution.EvaluatePdf(mu, sigma, sample);
 
         TS_ASSERT_DELTA(probability, 0.44543237465084, 1e-12);
 
         // There is no really nice relationship to compare easily
         // as the PDF depends on the x-scale which is very different.
         LogLogisticDistribution distribution2;
-        probability = distribution2.EvaluatePdf(1,8,1);
+        probability = distribution2.EvaluatePdf(1, 8, 1);
 
         TS_ASSERT_DELTA(probability, 2.0, 1e-12);
     }
@@ -99,65 +99,65 @@ public:
     /**
      * Samples are calculated using the inverse CDF or 'Quantile' function.
      */
-    void TestMultipleSamples() throw (Exception)
-	{
-		double mu = 2.0;
-		double sigma = 1.0;
-		unsigned num_experiments = 4;
-		LogisticDistribution sampler;
+    void TestMultipleSamples()
+    {
+        double mu = 2.0;
+        double sigma = 1.0;
+        unsigned num_experiments = 4;
+        LogisticDistribution sampler;
 
-		std::vector<double> values;
+        std::vector<double> values;
 
-		for (unsigned i=0; i<mNumRepeats; i++)
-		{
-			values.push_back(sampler.GetSample(mu,sigma,num_experiments));
-		}// End of loop over samples
+        for (unsigned i = 0; i < mNumRepeats; i++)
+        {
+            values.push_back(sampler.GetSample(mu, sigma, num_experiments));
+        } // End of loop over samples
 
-		// Check that the mean and standard deviation of the values is correct
-		double theoretical_mean = mu;
-		double theoretical_std = sigma*M_PI/sqrt(3.0*num_experiments);
+        // Check that the mean and standard deviation of the values is correct
+        double theoretical_mean = mu;
+        double theoretical_std = sigma * M_PI / sqrt(3.0 * num_experiments);
 
-		// Calculate mean and std of 'values'
-		double sum = std::accumulate(values.begin(), values.end(), 0.0);
-		double recorded_mean = sum / values.size();
-		double sq_sum = std::inner_product(values.begin(), values.end(), values.begin(), 0.0);
-		double recorded_std = std::sqrt(sq_sum / values.size() - recorded_mean * recorded_mean);
+        // Calculate mean and std of 'values'
+        double sum = std::accumulate(values.begin(), values.end(), 0.0);
+        double recorded_mean = sum / values.size();
+        double sq_sum = std::inner_product(values.begin(), values.end(), values.begin(), 0.0);
+        double recorded_std = std::sqrt(sq_sum / values.size() - recorded_mean * recorded_mean);
 
-		TS_ASSERT_DELTA(theoretical_mean, recorded_mean, 2e-3);
-		TS_ASSERT_DELTA(theoretical_std, recorded_std, 2e-3);
-	}
+        TS_ASSERT_DELTA(theoretical_mean, recorded_mean, 2e-3);
+        TS_ASSERT_DELTA(theoretical_std, recorded_std, 2e-3);
+    }
 
     /**
      * Samples are calculated using the inverse CDF or 'Quantile' function.
      */
-    void TestLogLogisticSamples() throw (Exception)
-	{
-		double alpha = exp(-0.5);
-		double beta = 1.0/0.12;
-		unsigned num_experiments = 1;
-		LogLogisticDistribution sampler;
+    void TestLogLogisticSamples()
+    {
+        double alpha = exp(-0.5);
+        double beta = 1.0 / 0.12;
+        unsigned num_experiments = 1;
+        LogLogisticDistribution sampler;
 
-		std::vector<double> values;
+        std::vector<double> values;
 
-		for (unsigned i=0; i<mNumRepeats; i++)
-		{
-			values.push_back(sampler.GetSample(alpha,beta,num_experiments));
-		}// End of loop over samples
+        for (unsigned i = 0; i < mNumRepeats; i++)
+        {
+            values.push_back(sampler.GetSample(alpha, beta, num_experiments));
+        } // End of loop over samples
 
-		// Check that the mean and standard deviation of the values is correct
-		double b = M_PI/beta;
-		double theoretical_mean = alpha*b/sin(b);
-		double theoretical_variance = alpha*alpha*((2*b)/(sin(2*b)) - b*b/(sin(b)*sin(b)));
+        // Check that the mean and standard deviation of the values is correct
+        double b = M_PI / beta;
+        double theoretical_mean = alpha * b / sin(b);
+        double theoretical_variance = alpha * alpha * ((2 * b) / (sin(2 * b)) - b * b / (sin(b) * sin(b)));
 
-		// Calculate mean and std of 'values'
-		double sum = std::accumulate(values.begin(), values.end(), 0.0);
-		double recorded_mean = sum / values.size();
-		double sq_sum = std::inner_product(values.begin(), values.end(), values.begin(), 0.0);
-		double recorded_variance = sq_sum / values.size() - recorded_mean * recorded_mean;
+        // Calculate mean and std of 'values'
+        double sum = std::accumulate(values.begin(), values.end(), 0.0);
+        double recorded_mean = sum / values.size();
+        double sq_sum = std::inner_product(values.begin(), values.end(), values.begin(), 0.0);
+        double recorded_variance = sq_sum / values.size() - recorded_mean * recorded_mean;
 
-		TS_ASSERT_DELTA(theoretical_mean, recorded_mean, 1e-3);
-		TS_ASSERT_DELTA(theoretical_variance, recorded_variance, 1e-3);
-	}
+        TS_ASSERT_DELTA(theoretical_mean, recorded_mean, 1e-3);
+        TS_ASSERT_DELTA(theoretical_variance, recorded_variance, 1e-3);
+    }
 };
 
 #endif // TESTLOGISTICDISTRIBUTION_HPP_

@@ -36,12 +36,12 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef TESTBAYESIANINFERER_HPP_
 #define TESTBAYESIANINFERER_HPP_
 
-#include <cxxtest/TestSuite.h>
 #include <boost/assign.hpp>
+#include <cxxtest/TestSuite.h>
 
+#include "AbstractDrugDataStructure.hpp"
 #include "BayesianInferer.hpp"
 #include "LogisticDistribution.hpp"
-#include "AbstractDrugDataStructure.hpp"
 
 class TestBayesianInferer : public CxxTest::TestSuite
 {
@@ -64,29 +64,29 @@ private:
 
         // Convert them from pIC50 to IC50 for dose-response calculations.
         double temp_mean = 0u;
-        for (unsigned i=0; i<samples.size(); i++)
+        for (unsigned i = 0; i < samples.size(); i++)
         {
             temp_mean += samples[i];
             samples[i] = AbstractDataStructure::ConvertPic50ToIc50(samples[i]);
         }
         temp_mean /= samples.size();
 
-        std::cout << "Original iC50 = " << AbstractDataStructure::ConvertPic50ToIc50(rData[0]) <<
-                ", mean of inferred samples = " << AbstractDataStructure::ConvertPic50ToIc50(temp_mean) << std::endl << std::flush;
+        std::cout << "Original iC50 = " << AbstractDataStructure::ConvertPic50ToIc50(rData[0]) << ", mean of inferred samples = " << AbstractDataStructure::ConvertPic50ToIc50(temp_mean) << std::endl
+                  << std::flush;
 
         return samples;
     }
 
 public:
-    void TestPIC50Inference() throw (Exception)
+    void TestPIC50Inference()
     {
         BayesianInferer inferer_object(PIC50);
 
         TS_ASSERT_THROWS_THIS(inferer_object.GetSampleMedianValue(),
-                "Inference has not been performed, please call PerformInference() before trying to get samples.");
+                              "Inference has not been performed, please call PerformInference() before trying to get samples.");
 
         TS_ASSERT_THROWS_THIS(inferer_object.PerformInference(),
-                "Please call SetObservedData() and SetSpreadOfUnderlyingDistribution() before PerformInference().");
+                              "Please call SetObservedData() and SetSpreadOfUnderlyingDistribution() before PerformInference().");
 
         std::vector<double> data;
         data.push_back(4.2);
@@ -99,8 +99,7 @@ public:
 
         inferer_object.PerformInference();
 
-        std::vector<double> samples_should_be = boost::assign::list_of(4.3655)(4.4255)(4.6057)(4.8525)
-                (4.4393)(4.8862)(4.3602)(4.8596)(4.1970)(4.4684);
+        std::vector<double> samples_should_be = boost::assign::list_of(4.3655)(4.4255)(4.6057)(4.8525)(4.4393)(4.8862)(4.3602)(4.8596)(4.1970)(4.4684);
 
         // First we test the method that returns a whole vector of samples
         std::vector<double> samples = inferer_object.GetSampleMedianValue(10u);
@@ -109,7 +108,7 @@ public:
         RandomNumberGenerator::Instance()->Reseed(0);
 
         // Check these against the ones we should get.
-        for (unsigned i=0; i<samples_should_be.size(); i++)
+        for (unsigned i = 0; i < samples_should_be.size(); i++)
         {
             double sample = inferer_object.GetSampleMedianValue();
             TS_ASSERT_DELTA(sample, samples[i], 1e-12);
@@ -118,10 +117,10 @@ public:
 
         // Coverage
         TS_ASSERT_THROWS_THIS(BayesianInferer inferer_object(TESTING),
-                "No known distribution for this parameter.");
+                              "No known distribution for this parameter.");
     }
 
-    void TestHillInference() throw (Exception)
+    void TestHillInference()
     {
         BayesianInferer inferer_object(HILL);
 
@@ -135,7 +134,7 @@ public:
         inferer_object.SetSpreadOfUnderlyingDistribution(beta);
 
         TS_ASSERT_THROWS_THIS(inferer_object.GetPosteriorCdf(),
-                "Posterior has not yet been computed, call PerformInference() first.");
+                              "Posterior has not yet been computed, call PerformInference() first.");
 
         inferer_object.PerformInference();
 
@@ -155,13 +154,13 @@ public:
         TS_ASSERT_EQUALS(posterior.size(), values.size());
 
         // Following snippet is useful for copying and pasting output into matlab for plotting.
-//        for(unsigned i=0; i<values.size(); i++)
-//        {
-//            std::cout << values[i] << "\t" << posterior[i] << "\n";
-//        }
+        //        for(unsigned i=0; i<values.size(); i++)
+        //        {
+        //            std::cout << values[i] << "\t" << posterior[i] << "\n";
+        //        }
     }
 
-    void TestRepeatedCalls() throw (Exception)
+    void TestRepeatedCalls()
     {
         // To deal with a troublesome case in the TestTqtCompounds.hpp
         const double sigma_iks_pic50 = 0.139736283;
@@ -173,13 +172,13 @@ public:
         std::vector<double> data;
         data.push_back(AbstractDataStructure::ConvertIc50ToPic50(duloxetine_iks_ic50));
 
-        for (unsigned i=0; i<10; i++)
+        for (unsigned i = 0; i < 10; i++)
         {
             samples = GetIc50Samples(data,
                                      sigma_iks_pic50,
                                      num_samples);
         }
-        TS_ASSERT_EQUALS(samples.size(),num_samples);
+        TS_ASSERT_EQUALS(samples.size(), num_samples);
     }
 };
 

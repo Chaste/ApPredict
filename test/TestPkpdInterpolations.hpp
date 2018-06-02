@@ -40,6 +40,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "ApPredictMethods.hpp"
 #include "CommandLineArgumentsMocker.hpp"
+#include "NumericFileComparison.hpp"
 
 /**
  * A test that checks we can do interpolations with ApPredict runs based on a
@@ -48,7 +49,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 class TestPkpdInterpolations : public CxxTest::TestSuite
 {
 public:
-    void TestPkpdExceptions() throw(Exception)
+    void TestPkpdExceptions()
     {
         CommandLineArgumentsMocker wrapper("--pkpd-file nonsense.txt --model 1");
 
@@ -57,7 +58,7 @@ public:
                                   "does not exist. Please give a relative or absolute path.");
     }
 
-    void TestPkpdSimulations() throw(Exception)
+    void TestPkpdSimulations()
     {
         CommandLineArgumentsMocker wrapper(
             "--pkpd-file projects/ApPredict/test/data/pkpd_data.txt --model 2 --pic50-herg 6");
@@ -80,6 +81,14 @@ public:
 
         // Run a real simulation
         pkpd_runner.Run();
+
+        FileFinder pkpd_results_file("ApPredict_output/pkpd_results.txt", RelativeTo::ChasteTestOutput);
+        TS_ASSERT_EQUALS(pkpd_results_file.IsFile(), true);
+
+        FileFinder pkpd_reference_file("projects/ApPredict/test/data/pkpd_results.txt", RelativeTo::ChasteSourceRoot);
+
+        NumericFileComparison comparison(pkpd_results_file, pkpd_reference_file);
+        comparison.CompareFiles(1e-2);
     }
 };
 

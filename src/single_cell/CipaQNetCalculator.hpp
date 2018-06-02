@@ -32,57 +32,48 @@ LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
 OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 */
-#ifdef CHASTE_CVODE
 
-#ifndef _TESTTORSADEPREDICTLONG_HPP_
-#define _TESTTORSADEPREDICTLONG_HPP_
-
-#include <cxxtest/TestSuite.h>
+#ifndef CIPAQNETCALCULATOR_HPP_
+#define CIPAQNETCALCULATOR_HPP_
 
 #include <boost/shared_ptr.hpp>
-#include "CommandLineArgumentsMocker.hpp"
-#include "TorsadePredictMethods.hpp"
 
-class TestTorsadePredictLong : public CxxTest::TestSuite
+#include "AbstractCvodeCell.hpp"
+
+/**
+ * A class to calculate qNet using a pre-steady state paced ORdCiPAv1 model (only).
+ * Note that drug block should already have been applied, and the model paced to steady state.
+ *
+ * Calculation of 'qNet' as per:
+ * "Optimization of an In silico Cardiac Cell Model for Proarrhythmia Risk Assessment"
+ * Dutta et al. Frontiers in Physiology. https://doi.org/10.3389/fphys.2017.00616
+ */
+class CipaQNetCalculator
 {
+    boost::shared_ptr<AbstractCvodeCell> mpModel;
+    boost::shared_ptr<RegularStimulus> mpStimulus;
+
 public:
     /**
-     * This test will wipe $CHASTE_TEST_OUTPUT/ApPredict_output/
-     *
-     * The tests overwrite CommandLineArguments and does some standard
-     * simulations to check things are working OK...
+	 * Constructor
+	 *
+	 * @param mpModel  An ORdCipav1 model (this is checked) in steady state for this drug concentration and parameter set.
+	 */
+    CipaQNetCalculator(boost::shared_ptr<AbstractCvodeCell> pModel);
+
+    /**
+     * Destructor (empty)
      */
-    void TestSomeFavouriteCompounds(void)
-    {
-        // Test a simple hERG block
-        {
-            // Torsade predict always uses the Grandi model, so no --model flag here.
-            CommandLineArgumentsMocker wrapper("--plasma-concs 1 10 --pic50-herg 5.1 --plasma-conc-logscale false");
+    virtual ~CipaQNetCalculator(){};
 
-            TorsadePredictMethods methods;
-            methods.Run();
-            std::vector<double> concs = methods.GetConcentrations();
-
-            TS_ASSERT_EQUALS(concs.size(), 3u);
-            TS_ASSERT_DELTA(concs[0], 0.0, 1e-12);
-            TS_ASSERT_DELTA(concs[1], 1.0, 1e-12);
-            TS_ASSERT_DELTA(concs[2], 10.0, 1e-12);
-
-            std::vector<double> apd90s = methods.GetApd90s();
-            TS_ASSERT_EQUALS(apd90s.size(), 3u);
-            TS_ASSERT_DELTA(apd90s[0], 286.4685, 1e-3);
-            TS_ASSERT_DELTA(apd90s[1], 291.2857, 1e-3);
-            TS_ASSERT_DELTA(apd90s[2], 313.4771, 1e-3);
-
-            std::vector<unsigned> tdp_predictions = methods.GetTorsadePredictions();
-            TS_ASSERT_EQUALS(tdp_predictions.size(), 3u);
-            TS_ASSERT_EQUALS(tdp_predictions[0], 4u); // Cat 4
-            TS_ASSERT_EQUALS(tdp_predictions[1], 3u); // Cat 3
-            TS_ASSERT_EQUALS(tdp_predictions[2], 2u); // Cat 1/2
-        }
-    }
+    /**
+     * Run one action potential pace at fine resolution and compute qNet.
+     *
+     * Retuns NaN if there is no full action potential (repolarisation failure).
+     *
+     * @return qNet -- the integral of the net outward currents during a complete AP.
+     */
+    double ComputeQNet();
 };
 
-#endif //_TESTTORSADEPREDICTLONG_HPP_
-
-#endif //_CHASTE_CVODE
+#endif /* CIPAQNETCALCULATOR_HPP_ */

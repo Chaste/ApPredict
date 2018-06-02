@@ -36,19 +36,19 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef PARAMETERBOX_HPP
 #define PARAMETERBOX_HPP
 
-#include <set>
-#include <map>
 #include <boost/shared_ptr.hpp>
-#include "ChasteSerialization.hpp"  // Should be included before any other Chaste headers.
+#include <map>
+#include <set>
+#include "ChasteSerialization.hpp" // Should be included before any other Chaste headers.
 #include "ParameterPointData.hpp"
 #include "UblasVectorInclude.hpp" // Chaste helper header to get c_vectors included with right namespace.
 
 // Seems that whatever version of ublas I am using now contains boost serialization
 // methods for c_vector, which is nice.
-#include <boost/serialization/vector.hpp>
-#include <boost/serialization/shared_ptr.hpp>
 #include <boost/serialization/map.hpp>
 #include <boost/serialization/set.hpp>
+#include <boost/serialization/shared_ptr.hpp>
+#include <boost/serialization/vector.hpp>
 
 static const double TOL = 1e-12;
 
@@ -56,14 +56,14 @@ static const double TOL = 1e-12;
  *  A special comparison method to allow std::map to sort and compare
  *  a std::map<c_vector<double,DIM>* >
  */
-template<unsigned DIM>
+template <unsigned DIM>
 struct c_vector_compare
 {
     // Sorts on x, then y, then ... etc.
-    bool operator () (const c_vector<double,DIM>* a, const c_vector<double,DIM>* b) const
+    bool operator()(const c_vector<double, DIM>* a, const c_vector<double, DIM>* b) const
     {
         bool a_is_smaller = false;
-        for (unsigned i=0; i<DIM; i++)
+        for (unsigned i = 0; i < DIM; i++)
         {
             if ((*a)[i] < (*b)[i] - TOL)
             {
@@ -90,10 +90,10 @@ struct c_vector_compare
  * It also provides methods to find out which sub-boxes have the most and
  * least refinement, as well as suggesting the next one to refine.
  */
-template<unsigned DIM>
+template <unsigned DIM>
 class ParameterBox
 {
-  private:
+private:
     /** Needed for serialization. */
     friend class boost::serialization::access;
     friend class TestParameterBox;
@@ -103,29 +103,29 @@ class ParameterBox
      * @param archive the archive
      * @param version the current version of this class
      */
-    template<class Archive>
-    void serialize(Archive & archive, const unsigned int version)
+    template <class Archive>
+    void serialize(Archive& archive, const unsigned int version)
     {
-        archive & mAmParent;
-        archive & mpParentBox;
-        archive & mpGreatGrandParentBox;
-        archive & mMin;
-        archive & mMax;
-        archive & mCorners;
-        archive & mNewCorners;
-        archive & mDaughterBoxes;
-        archive & mParameterPointDataMap;
-        archive & mParameterPointDataMapPredictions;
-        archive & mErrorsInQoIs;
-        archive & mMaxErrorsInEachQoI;
-        archive & mAllCornersEvaluated;
-        archive & mGeneration;
+        archive& mAmParent;
+        archive& mpParentBox;
+        archive& mpGreatGrandParentBox;
+        archive& mMin;
+        archive& mMax;
+        archive& mCorners;
+        archive& mNewCorners;
+        archive& mDaughterBoxes;
+        archive& mParameterPointDataMap;
+        archive& mParameterPointDataMapPredictions;
+        archive& mErrorsInQoIs;
+        archive& mMaxErrorsInEachQoI;
+        archive& mAllCornersEvaluated;
+        archive& mGeneration;
     }
 
     typedef typename std::set<c_vector<double, DIM>*, c_vector_compare<DIM> > CornerSet;
     typedef typename std::set<c_vector<double, DIM>*, c_vector_compare<DIM> >::iterator CornerSetIter;
-    typedef typename std::vector<c_vector<double, DIM>* > CornerVec;
-    typedef typename std::vector<c_vector<double, DIM>* >::iterator CornerVecIter;
+    typedef typename std::vector<c_vector<double, DIM>*> CornerVec;
+    typedef typename std::vector<c_vector<double, DIM>*>::iterator CornerVecIter;
     typedef typename std::map<c_vector<double, DIM>*, boost::shared_ptr<ParameterPointData>, c_vector_compare<DIM> > DataMap;
     typedef typename std::map<c_vector<double, DIM>*, boost::shared_ptr<ParameterPointData>, c_vector_compare<DIM> >::iterator DataMapIter;
 
@@ -147,13 +147,13 @@ class ParameterBox
     c_vector<double, DIM> mMax;
 
     /** The locations of this box's vertices in N-D space */
-    std::vector<c_vector<double, DIM>* > mCorners;
+    std::vector<c_vector<double, DIM>*> mCorners;
 
     /** New corners that were created especially for this box */
     CornerSet mNewCorners;
 
     /** Pointers to the children (subdivisions) of this box */
-    std::vector<ParameterBox<DIM>* > mDaughterBoxes;
+    std::vector<ParameterBox<DIM>*> mDaughterBoxes;
 
     /**
      * The QoIs and errors associated with this box's corners,
@@ -288,14 +288,14 @@ class ParameterBox
      *
      * @return points in DIM-dimensional parameter space
      */
-    std::vector<c_vector<double, DIM>* > GetCornersAsVector();
+    std::vector<c_vector<double, DIM>*> GetCornersAsVector();
 
     /**
      * Get all the parameter points contained at corners of this box
      *
      * @return points in DIM-dimensional parameter space
      */
-    std::vector<c_vector<double, DIM>* > GetOwnCorners();
+    std::vector<c_vector<double, DIM>*> GetOwnCorners();
 
     /**
      * Get all the parameter points created especially for this box
@@ -324,14 +324,14 @@ class ParameterBox
      *
      * Does not include any grand children etc.
      */
-    std::vector<ParameterBox<DIM>* > GetDaughterBoxes();
+    std::vector<ParameterBox<DIM>*> GetDaughterBoxes();
 
     /**
      * @return All the boxes that are contained within this box.
      *
      * Includes all grand children etc.
      */
-    std::vector<ParameterBox<DIM>* > GetWholeFamilyOfBoxes();
+    std::vector<ParameterBox<DIM>*> GetWholeFamilyOfBoxes();
 
     /**
      * Find the parameter box that contains a certain point in DIM-dimensional parameter space.
@@ -353,7 +353,7 @@ class ParameterBox
      */
     bool DoesBoxNeedFurtherRefinement(const double& rTolerance, const unsigned& rQuantityIndex);
 
-  public:
+public:
     /**
      * Constructor
      *
@@ -388,7 +388,6 @@ class ParameterBox
      * @return The new points in parameter space at which quantities of interest need to be evaluated.
      */
     CornerSet SubDivide();
-
 
     /**
      * Tell this box, and any children, the values of the quantities of interest (QoIs) at a given point.
@@ -434,10 +433,11 @@ class ParameterBox
     std::vector<double> GetMaxErrorsInPredictedQoIs() const;
 };
 
-
 #include "SerializationExportWrapper.hpp"
-EXPORT_TEMPLATE_CLASS_SAME_DIMS(ParameterBox)
-
-
+EXPORT_TEMPLATE_CLASS1(ParameterBox, 1u)
+EXPORT_TEMPLATE_CLASS1(ParameterBox, 2u)
+EXPORT_TEMPLATE_CLASS1(ParameterBox, 3u)
+EXPORT_TEMPLATE_CLASS1(ParameterBox, 4u)
+EXPORT_TEMPLATE_CLASS1(ParameterBox, 5u)
 
 #endif // PARAMETERBOX_HPP

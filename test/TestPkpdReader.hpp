@@ -46,7 +46,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 class TestPkpdReader : public CxxTest::TestSuite
 {
 public:
-    void TestPkPdDataReader() throw(Exception)
+    void TestPkPdDataReader()
     {
         FileFinder pkpd_data_file("projects/ApPredict/test/data/pkpd_data.txt",
                                   RelativeTo::ChasteSourceRoot);
@@ -80,7 +80,7 @@ public:
         TS_ASSERT_DELTA(pkpd_data.GetMaximumConcentration(), 4.1515, 1e-4); // uM
     }
 
-    void TestPkPdDataReaderDos() throw(Exception)
+    void TestPkPdDataReaderDos()
     {
         FileFinder pkpd_data_file("projects/ApPredict/test/data/DosTestFile.txt",
                                   RelativeTo::ChasteSourceRoot);
@@ -94,7 +94,7 @@ public:
         TS_ASSERT_EQUALS(pkpd_data.GetNumberOfPatients(), 4u);
     }
 
-    void TestPkPdDataReaderUnix() throw(Exception)
+    void TestPkPdDataReaderUnix()
     {
         FileFinder pkpd_data_file("projects/ApPredict/test/data/UnixTestFile.txt",
                                   RelativeTo::ChasteSourceRoot);

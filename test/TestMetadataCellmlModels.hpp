@@ -108,7 +108,7 @@ public:
 	*
 	* (i.e. that pyCML and the metadata tags generated valid Chaste cell models.)
 	*/
-    void TestMetadataHasBeenCorrectlyTranslatedToChaste(void) throw(Exception)
+    void TestMetadataHasBeenCorrectlyTranslatedToChaste(void)
     {
 #ifdef CHASTE_CVODE
         // Regular stimulus and an ode solver object
