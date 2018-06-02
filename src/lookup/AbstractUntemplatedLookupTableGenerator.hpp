@@ -67,7 +67,8 @@ private:
     template <class Archive>
     void serialize(Archive& archive, const unsigned int version)
     {
-        // No private members to archive, but helpful to have in hierarchy.
+        // No private members to archive,
+        // but helpful to have in hierarchy as we want to archive via a pointer to this class.
     }
 
 public:

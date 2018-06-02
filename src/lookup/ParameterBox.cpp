@@ -748,15 +748,19 @@ std::vector<double> ParameterBox<DIM>::GetMaxErrorsInPredictedQoIs() const
     return mMaxErrorsInEachQoI;
 }
 
-#include "SerializationExportWrapperForCpp.hpp"
-EXPORT_TEMPLATE_CLASS_SAME_DIMS(ParameterBox)
-
 /////////////////////////////////////////////////////////////////////
 // Explicit instantiation
 /////////////////////////////////////////////////////////////////////
 
-template class ParameterBox<1>;
-template class ParameterBox<2>;
-template class ParameterBox<3>;
-template class ParameterBox<4>;
-template class ParameterBox<5>;
+template class ParameterBox<1u>;
+template class ParameterBox<2u>;
+template class ParameterBox<3u>;
+template class ParameterBox<4u>;
+template class ParameterBox<5u>;
+
+#include "SerializationExportWrapperForCpp.hpp"
+EXPORT_TEMPLATE_CLASS1(ParameterBox, 1u)
+EXPORT_TEMPLATE_CLASS1(ParameterBox, 2u)
+EXPORT_TEMPLATE_CLASS1(ParameterBox, 3u)
+EXPORT_TEMPLATE_CLASS1(ParameterBox, 4u)
+EXPORT_TEMPLATE_CLASS1(ParameterBox, 5u)
