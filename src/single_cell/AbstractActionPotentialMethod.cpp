@@ -33,6 +33,13 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 */
 
+// Standard headers
+#include <cmath>
+
+// Chaste includes
+#include "SteadyStateRunner.hpp"
+
+// ApPredict includes
 #include "AbstractActionPotentialMethod.hpp"
 
 AbstractActionPotentialMethod::AbstractActionPotentialMethod()
