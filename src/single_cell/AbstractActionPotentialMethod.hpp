@@ -59,10 +59,10 @@ private:
     bool mRunYet;
 
     /**
-   * The limit on the maximum number of paces to take
-   *
-   * Value is UNSIGNED_UNSET if this has not been set.
-   */
+     * The limit on the maximum number of paces to take
+     *
+     * Value is UNSIGNED_UNSET if this has not been set.
+     */
     unsigned mMaxNumPaces;
 
     /** Any error messages that resulted */
@@ -251,6 +251,11 @@ public:
      * steady state.
      */
     void SetMaxNumPaces(unsigned numPaces);
+
+    /**
+     * @return the maximum number of paces to run to steady state.
+     */
+    unsigned GetMaxNumPaces();
 
     /**
      * @return  whether an error occurred in the action potential marker

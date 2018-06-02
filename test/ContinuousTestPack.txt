@@ -1,6 +1,7 @@
 TestActionPotentialDownsampler.hpp
 TestApPredict.hpp
 TestBayesianInferer.hpp
+TestCipaQNetCalculator.hpp
 TestConvertLookupTableArchiveToBinary.hpp
 TestDataReaders.hpp
 TestDavies2012Paper.hpp

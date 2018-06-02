@@ -46,6 +46,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "ActionPotentialDownsampler.hpp"
 #include "ApPredictMethods.hpp"
 #include "BayesianInferer.hpp"
+#include "CipaQNetCalculator.hpp"
 #include "DoseCalculator.hpp"
 
 // Chaste source includes
@@ -199,8 +200,10 @@ std::string ApPredictMethods::PrintCommonArguments()
                           "*   on each row.\n"
                           "*\n"
                           "* UNCERTAINTY QUANTIFICATION:\n"
-                          "* --credible-intervals [x y z...] This flag must be present to do uncertainty "
-                          "calculations. It can optionally be followed by a specific list of percentiles that are required\n"
+                          "* --credible-intervals [x y z...] This flag must be present to do "
+                          "uncertainty "
+                          "calculations. It can optionally be followed by a specific list of "
+                          "percentiles that are required\n"
                           "*   (not including 0 or 100, defaults to 95).\n"
                           "* Then to specify 'spread' parameters for assay variability - for use "
                           "with Lookup Tables:\n"
@@ -340,11 +343,11 @@ void ApPredictMethods::ReadInIC50HillAndSaturation(
             {
                 std::cout << rSaturations[i] << " ";
             }
-            std::cout << " %.\n";
+            std::cout << " %." << std::endl;
         }
         else
         {
-            std::cout << "Saturation level = 0% (default).\n";
+            std::cout << "Saturation level = 0% (default)." << std::endl;
         }
     }
     else
@@ -367,7 +370,8 @@ void ApPredictMethods::ApplyDrugBlock(
     // Some screen output for info.
     if (!mSuppressOutput)
         std::cout << "g_" << mShortNames[channel_index]
-                  << " factor = " << conductance_factor << "\n"; // << std::flush;
+                  << " factor = " << conductance_factor
+                  << std::endl; // << std::flush;
 
     // Check the model has this parameter before we try and set it.
     if (pModel->HasParameter(mMetadataNames[channel_index]))
@@ -462,7 +466,13 @@ void ApPredictMethods::SetUpLookupTables()
             {
                 if (percentile_ranges[i] <= 0 || percentile_ranges[i] >= 100)
                 {
-                    EXCEPTION("'--credible-intervals' arguments should be given as widths of credible interval in percentages. For instance an argument of '--credible-intervals 90' will result in 5th and 95th percentiles being reported. You specified '" << percentile_ranges[i] << "%' but this number should be more than zero and less than 100.");
+                    EXCEPTION(
+                        "'--credible-intervals' arguments should be given as widths of "
+                        "credible interval in percentages. For instance an argument of "
+                        "'--credible-intervals 90' will result in 5th and 95th "
+                        "percentiles being reported. You specified '"
+                        << percentile_ranges[i] << "%' but this number should be more "
+                                                   "than zero and less than 100.");
                 }
                 double remainder_in_tails = 100 - percentile_ranges[i];
                 mPercentiles.push_back(0.5 * remainder_in_tails);
@@ -480,17 +490,17 @@ void ApPredictMethods::SetUpLookupTables()
     // We've only generated (up to) 3D and 4D lookup tables for now,
     // we want to use the lowest dimension table possible in general.
     // so don't bother if we are asking for ion channel blocks of other things
-    if (p_args->OptionExists("--ic50-ik1") || p_args->OptionExists("--pic50-ik1")
-        || p_args->OptionExists("--ic50-ito") || p_args->OptionExists("--pic50-ito")
-        || p_args->OptionExists("--ic50-nal") || p_args->OptionExists("--pic50-nal"))
+    if (p_args->OptionExists("--ic50-ik1") || p_args->OptionExists("--pic50-ik1") || p_args->OptionExists("--ic50-ito") || p_args->OptionExists("--pic50-ito") || p_args->OptionExists("--ic50-nal") || p_args->OptionExists("--pic50-nal"))
     {
         EXCEPTION(
-            "Lookup table (for --credible-intervals) is currently only including up to "
-            "IKr, IKs, INa and ICaL block, you have specified additional ones so quitting.");
+            "Lookup table (for --credible-intervals) is currently only including "
+            "up to "
+            "IKr, IKs, INa and ICaL block, you have specified additional ones so "
+            "quitting.");
     }
 
-    if (p_args->OptionExists("--ic50-iks") || p_args->OptionExists("--pic50-iks")
-        || fabs(this->mHertz - 0.5) < 1e-4) // At present we don't have 3D lookup tables for 0.5Hz, so use 4D.
+    if (p_args->OptionExists("--ic50-iks") || p_args->OptionExists("--pic50-iks") || fabs(this->mHertz - 0.5) < 1e-4) // At present we don't have 3D lookup
+    // tables for 0.5Hz, so use 4D.
     {
         lookup_table_archive_name << "_4d_hERG_IKs_INa_ICaL_";
     }
@@ -502,7 +512,8 @@ void ApPredictMethods::SetUpLookupTables()
 
     // First see if there is a table available already in absolute or current
     // working directory.
-    FileFinder ascii_archive_file(lookup_table_archive_name.str() + ".arch", RelativeTo::AbsoluteOrCwd);
+    FileFinder ascii_archive_file(lookup_table_archive_name.str() + ".arch",
+                                  RelativeTo::AbsoluteOrCwd);
     FileFinder binary_archive_file(
         lookup_table_archive_name.str() + "_BINARY.arch",
         RelativeTo::AbsoluteOrCwd);
@@ -510,7 +521,8 @@ void ApPredictMethods::SetUpLookupTables()
     // First we try loading the binary version of the archive, if it exists.
     if (binary_archive_file.IsFile())
     {
-        std::cout << "Loading lookup table from binary archive into memory, this can take a few seconds..."
+        std::cout << "Loading lookup table from binary archive into memory, this "
+                     "can take a few seconds..."
                   << std::flush;
         Timer::Reset();
 
@@ -527,7 +539,8 @@ void ApPredictMethods::SetUpLookupTables()
         mLookupTableAvailable = true;
 
         std::cout << " loaded in " << Timer::GetElapsedTime()
-                  << " secs.\nLookup table is available for generation of credible intervals.\n";
+                  << " secs.\nLookup table is available for generation of credible "
+                     "intervals.\n";
 
         // Since loading the binary archive works, we can try and get rid of the
         // ascii one to clean up.
@@ -559,17 +572,22 @@ void ApPredictMethods::SetUpLookupTables()
         std::string lookup_table_URL = "http://www.cs.ox.ac.uk/people/gary.mirams/files/" + lookup_table_archive_name.str() + ".arch.tgz";
         try
         {
-            std::cout << "\n\nAttempting to download an action potential lookup table from:\n"
+            std::cout << "\n\nAttempting to download an action potential lookup "
+                         "table from:\n"
                       << lookup_table_URL << "\n\n";
-            EXPECT0(system, "wget --dns-timeout=10 --connect-timeout=10 " + lookup_table_URL);
+            EXPECT0(system,
+                    "wget --dns-timeout=10 --connect-timeout=10 " + lookup_table_URL);
             std::cout << "Download succeeded, unpacking...\n";
-            EXPECT0(system, "tar xzf " + lookup_table_archive_name.str() + ".arch.tgz");
+            EXPECT0(system,
+                    "tar xzf " + lookup_table_archive_name.str() + ".arch.tgz");
             std::cout << "Unpacking succeeded, removing .tgz file...\n";
             EXPECT0(system, "rm -f " + lookup_table_archive_name.str() + ".arch.tgz");
         }
         catch (Exception& e)
         {
-            std::cout << "Could not download and unpack the Lookup Table archive, continuing without it..." << std::endl;
+            std::cout << "Could not download and unpack the Lookup Table archive, "
+                         "continuing without it..."
+                      << std::endl;
             return;
         }
     }
@@ -584,7 +602,8 @@ void ApPredictMethods::SetUpLookupTables()
         Timer::Reset();
 
         // Create a pointer to the input archive
-        std::ifstream ifs((ascii_archive_file.GetAbsolutePath()).c_str(), std::ios::binary);
+        std::ifstream ifs((ascii_archive_file.GetAbsolutePath()).c_str(),
+                          std::ios::binary);
 
         // restore from the archive
         AbstractUntemplatedLookupTableGenerator* p_generator;
@@ -597,19 +616,23 @@ void ApPredictMethods::SetUpLookupTables()
         {
             if (std::string(e.what()) == "unsupported version")
             {
-                EXCEPTION("The lookup table archive was created on a newer version of boost, "
-                          "please upgrade your boost to the latest supported by this version of Chaste.");
+                EXCEPTION(
+                    "The lookup table archive was created on a newer version of boost, "
+                    "please upgrade your boost to the latest supported by this version "
+                    "of Chaste.");
             }
             else
             {
-                EXCEPTION("Error in loading Lookup Table from boost archive: '" << e.what() << "'.");
+                EXCEPTION("Error in loading Lookup Table from boost archive: '"
+                          << e.what() << "'.");
             }
         }
         mpLookupTable.reset(p_generator);
         mLookupTableAvailable = true;
 
         std::cout << " loaded in " << Timer::GetElapsedTime()
-                  << " secs.\nLookup table is available for generation of credible intervals.\n";
+                  << " secs.\nLookup table is available for generation of credible "
+                     "intervals.\n";
 
         try
         {
@@ -643,9 +666,9 @@ void ApPredictMethods::CalculateDoseResponseParameterSamples(
     }
 
     /*
-	 *Prepare an inferred set of IC50s and Hill coefficients
-	 *for use with the Lookup Table and credible interval calculations.
-	 */
+       *Prepare an inferred set of IC50s and Hill coefficients
+       *for use with the Lookup Table and credible interval calculations.
+       */
     mSampledIc50s.resize(mMetadataNames.size());
     mSampledHills.resize(mMetadataNames.size());
 
@@ -653,7 +676,8 @@ void ApPredictMethods::CalculateDoseResponseParameterSamples(
 
     // Work out vectors of inferred IC50 and Hills
     // Apply drug block on each channel
-    for (unsigned channel_idx = 0; channel_idx < mMetadataNames.size(); channel_idx++)
+    for (unsigned channel_idx = 0; channel_idx < mMetadataNames.size();
+         channel_idx++)
     {
         // First just decide whether there is 'no effect here'.
         assert(rIC50s[channel_idx].size() >= 1u);
@@ -727,15 +751,21 @@ void ApPredictMethods::CalculateDoseResponseParameterSamples(
                 WARN_ONCE_ONLY("No argument --hill-spread-"
                                << mShortNames[channel_idx]
                                << " has been provided. "
-                                  "Approximating credible intervals without Hill spread info, but you will get better answers with it.");
+                                  "Approximating credible intervals without Hill "
+                                  "spread info, but you will get better answers with "
+                                  "it.");
 
-                // If we can't guess the hill spread, then just use mean Hill that we have.
+                // If we can't guess the hill spread, then just use mean Hill that we
+                // have.
                 std::vector<double> hills_this_channel = rHills[channel_idx];
-                double mean_hill = std::accumulate(hills_this_channel.begin(), hills_this_channel.end(), 0.0) / hills_this_channel.size();
+                double mean_hill = std::accumulate(hills_this_channel.begin(),
+                                                   hills_this_channel.end(), 0.0)
+                    / hills_this_channel.size();
 
                 for (unsigned i = 0; i < num_samples; i++)
                 {
-                    // We aren't going to attempt to do inference on Hills, just IC50s, push back mean Hill.
+                    // We aren't going to attempt to do inference on Hills, just IC50s,
+                    // push back mean Hill.
                     mSampledHills[channel_idx].push_back(mean_hill);
                 }
             }
@@ -746,10 +776,12 @@ void ApPredictMethods::CalculateDoseResponseParameterSamples(
                 hill_inferer.SetObservedData(rHills[channel_idx]);
                 // This works with the Beta parameter, not the 1/Beta. So do 1/1/Beta to
                 // get Beta back!
-                hill_inferer.SetSpreadOfUnderlyingDistribution(1.0 / mHillSpreads[channel_idx]);
+                hill_inferer.SetSpreadOfUnderlyingDistribution(
+                    1.0 / mHillSpreads[channel_idx]);
                 hill_inferer.PerformInference();
 
-                mSampledHills[channel_idx] = hill_inferer.GetSampleMedianValue(num_samples); // Get 1000 inferred Hills
+                mSampledHills[channel_idx] = hill_inferer.GetSampleMedianValue(
+                    num_samples); // Get 1000 inferred Hills
             }
         }
         else
@@ -850,9 +882,10 @@ void ApPredictMethods::InterpolateFromLookupTableForThisConcentration(
     assert(predictions.size() == mSampledIc50s[0].size());
 
     /*
-	 * Compile all the lookup table predictions into a vector that we can sort to
-	 * get percentiles.
-	 */
+       * Compile all the lookup table predictions into a vector that we can sort
+   * to
+       * get percentiles.
+       */
     // std::vector<double> apd_50_predictions;
     std::vector<double> apd_90_predictions;
     for (unsigned rand_idx = 0; rand_idx < num_samples; rand_idx++)
@@ -874,11 +907,12 @@ void ApPredictMethods::InterpolateFromLookupTableForThisConcentration(
         {
             index_in_sorted_apd90_vector = ceil(mPercentiles[i] / 100.0 * (double)(num_samples));
         }
-        credible_intervals.push_back(apd_90_predictions[index_in_sorted_apd90_vector]);
+        credible_intervals.push_back(
+            apd_90_predictions[index_in_sorted_apd90_vector]);
     }
 
     mApd90CredibleRegions[concIndex] = credible_intervals;
-    std::cout << "done.\n";
+    std::cout << "done." << std::endl;
 }
 
 void ApPredictMethods::Run()
@@ -1007,8 +1041,19 @@ void ApPredictMethods::CommonRunMethod()
 
     boost::shared_ptr<const AbstractOdeSystemInformation> p_ode_info = mpModel->GetSystemInformation();
     std::string model_name = mpModel->GetSystemName();
-    boost::static_pointer_cast<RegularStimulus>(mpModel->GetStimulusFunction())
-        ->SetStartTime(5.0);
+    boost::shared_ptr<RegularStimulus> p_reg_stim = boost::static_pointer_cast<RegularStimulus>(
+        mpModel->GetStimulusFunction());
+    p_reg_stim->SetStartTime(5.0);
+
+    // If we are using ORdCiPAv1 and 0.5Hz, calculate qNet.
+    bool calculate_qNet = false;
+    out_stream q_net_results_file;
+    if (model_name == "ohara_rudy_cipa_v1_2017" && p_reg_stim->GetPeriod() == 2000)
+    {
+        calculate_qNet = true;
+        q_net_results_file = mpFileHandler->OpenOutputFile("q_net.txt");
+        *q_net_results_file << "Concentration(uM)\tqNet(C/F)" << std::endl;
+    }
 
     // Print out a progress file for monitoring purposes.
     ProgressReporter progress_reporter(mOutputFolder, 0.0,
@@ -1044,13 +1089,14 @@ void ApPredictMethods::CommonRunMethod()
             {
                 credible_interval = 100 - 2 * (100 - mPercentiles[i]);
             }
-            *steady_voltage_results_file << "dAp" << credible_interval << "%" << lower_or_upper;
+            *steady_voltage_results_file << "dAp" << credible_interval << "%"
+                                         << lower_or_upper;
             if (i < mPercentiles.size() - 1u)
             {
                 *steady_voltage_results_file << ",";
             }
         }
-        *steady_voltage_results_file << "\n";
+        *steady_voltage_results_file << std::endl;
     }
     else
     {
@@ -1074,9 +1120,9 @@ void ApPredictMethods::CommonRunMethod()
                                          "(%)</td></tr>\n"; // Header line
 
     /*
-     * Work out the median IC50, Hill and saturation to use if more than one were
-     * provided
-     */
+   * Work out the median IC50, Hill and saturation to use if more than one were
+   * provided
+   */
     std::vector<double> median_ic50; // vector is over channel indices
     std::vector<double> median_hill; //               ""
     std::vector<double> median_saturation; //               ""
@@ -1126,27 +1172,31 @@ void ApPredictMethods::CommonRunMethod()
                 std::vector<double> pIC50s;
                 for (unsigned i = 0; i < IC50s[channel_idx].size(); i++)
                 {
-                    pIC50s.push_back(AbstractDataStructure::ConvertIc50ToPic50(IC50s[channel_idx][i]));
+                    pIC50s.push_back(
+                        AbstractDataStructure::ConvertIc50ToPic50(IC50s[channel_idx][i]));
                 }
-                median_ic50.push_back(AbstractDataStructure::ConvertPic50ToIc50(MedianOfStdVectorDouble(pIC50s)));
+                median_ic50.push_back(AbstractDataStructure::ConvertPic50ToIc50(
+                    MedianOfStdVectorDouble(pIC50s)));
                 median_hill.push_back(MedianOfStdVectorDouble(hills[channel_idx]));
             }
 
             // We've no clever way of dealing with this yet, just take median of
             // saturation levels and use that all the time.
-            median_saturation.push_back(MedianOfStdVectorDouble(saturations[channel_idx]));
+            median_saturation.push_back(
+                MedianOfStdVectorDouble(saturations[channel_idx]));
         }
     }
 
     /*
-     * START LOOP OVER EACH CONCENTRATION TO TEST WITH
-     */
+   * START LOOP OVER EACH CONCENTRATION TO TEST WITH
+   */
     mApd90CredibleRegions.resize(mConcs.size());
     double control_apd90 = 0;
-    for (unsigned conc_index = 0; conc_index < mConcs.size(); conc_index++)
+    for (unsigned conc_index = 0u; conc_index < mConcs.size(); conc_index++)
     {
         progress_reporter.Update((double)(conc_index));
-        std::cout << "Drug Conc = " << mConcs[conc_index] << " uM\n"; //<< std::flush;
+        std::cout << "Drug Conc = " << mConcs[conc_index] << " uM"
+                  << std::endl; //<< std::flush;
 
         // Apply drug block on each channel
         for (unsigned channel_idx = 0; channel_idx < mMetadataNames.size();
@@ -1161,6 +1211,26 @@ void ApPredictMethods::CommonRunMethod()
         OdeSolution solution = SteadyStatePacingExperiment(
             mpModel, apd90, apd50, upstroke, peak, peak_time, ca_max, ca_min,
             0.1 /*ms printing timestep*/, mConcs[conc_index]);
+
+        if (calculate_qNet)
+        {
+            CipaQNetCalculator calculator(mpModel);
+            double q_net = calculator.ComputeQNet();
+            std::cout << "qNet at " << mConcs[conc_index] << "uM = " << q_net
+                      << " C/F" << std::endl;
+            *q_net_results_file << mConcs[conc_index] << "\t" << q_net << std::endl;
+
+            if (conc_index == mConcs.size() - 1u && this->GetMaxNumPaces() < 750u)
+            {
+                std::stringstream message;
+                message << "Warning: qNet is calculated after at least 750 paces in "
+                           "FDA publications. You are doing "
+                        << this->GetMaxNumPaces()
+                        << " paces at " << mConcs[conc_index] << "uM, increase maximum pacing time if using these "
+                                                                 "simulation results for CiPA purposes.";
+                WriteMessageToFile(message.str());
+            }
+        }
 
         // Store some things as member variables for returning later (mainly for
         // testing)
@@ -1194,13 +1264,13 @@ void ApPredictMethods::CommonRunMethod()
                           << ", APD90 = " << apd90 << ", percent change APD90 = ";
                 if (mLookupTableAvailable)
                 {
-
                     std::cout << delta_percentiles[0] << "," << delta_apd90 << ","
-                              << delta_percentiles[mPercentiles.size() - 1u] << "\n"; // << std::flush;
+                              << delta_percentiles[mPercentiles.size() - 1u]
+                              << std::endl; // << std::flush;
                 }
                 else
                 {
-                    std::cout << delta_apd90 << "\n"; // << std::flush;
+                    std::cout << delta_apd90 << std::endl; // << std::flush;
                 }
             }
             *steady_voltage_results_file_html
@@ -1224,11 +1294,12 @@ void ApPredictMethods::CommonRunMethod()
                         *steady_voltage_results_file << ",";
                     }
                 }
-                *steady_voltage_results_file << "\n"; // << std::flush;
+                *steady_voltage_results_file << std::endl; // << std::flush;
             }
             else
             {
-                *steady_voltage_results_file << delta_apd90 << "\n"; // << std::flush;
+                *steady_voltage_results_file << delta_apd90
+                                             << std::endl; // << std::flush;
             }
         }
         else
@@ -1251,31 +1322,27 @@ void ApPredictMethods::CommonRunMethod()
             if (mLookupTableAvailable)
             {
                 *steady_voltage_results_file << error_code << "," << error_code << ","
-                                             << error_code << "\n";
+                                             << error_code << std::endl;
             }
             else
             {
-                *steady_voltage_results_file << error_code << "\n";
+                *steady_voltage_results_file << error_code << std::endl;
             }
         }
 
         // Create unique filename and write the voltage trace to file...
         std::stringstream filename;
         filename << "conc_" << mConcs[conc_index] << "_voltage_trace.dat";
-        boost::shared_ptr<RegularStimulus> p_default_stimulus = boost::static_pointer_cast<RegularStimulus>(
-            mpModel->GetStimulusFunction());
+        boost::shared_ptr<RegularStimulus> p_default_stimulus = boost::static_pointer_cast<RegularStimulus>(mpModel->GetStimulusFunction());
         double s1_period = p_default_stimulus->GetPeriod();
         double s_start = p_default_stimulus->GetStartTime();
-        std::vector<double> voltages = solution.GetVariableAtIndex(
-            mpModel->GetSystemInformation()->GetStateVariableIndex(
-                "membrane_voltage"));
+        std::vector<double> voltages = solution.GetVariableAtIndex(mpModel->GetSystemInformation()->GetStateVariableIndex("membrane_voltage"));
         double window = s1_period;
         if (this->mPeriodTwoBehaviour)
         {
             window *= 2.0;
         }
-        ActionPotentialDownsampler(mOutputFolder, filename.str(),
-                                   solution.rGetTimes(), voltages, window, s_start);
+        ActionPotentialDownsampler(mOutputFolder, filename.str(), solution.rGetTimes(), voltages, window, s_start);
     } // Conc
 
     // Tidy up
@@ -1283,6 +1350,10 @@ void ApPredictMethods::CommonRunMethod()
     *steady_voltage_results_file_html << "</table>\n</body>\n</html>\n";
     steady_voltage_results_file_html->close();
     steady_voltage_results_file->close();
+    if (calculate_qNet)
+    {
+        q_net_results_file->close();
+    }
 
     if (mConcentrationsFromFile)
     {
@@ -1349,7 +1420,7 @@ void ApPredictMethods::WriteMessageToFile(const std::string& rMessage)
         *messages_file << "Action potential prediction simulation recorded the "
                           "following notes:\n";
     }
-    *messages_file << " * " << rMessage << "\n";
+    *messages_file << " * " << rMessage << std::endl;
     messages_file->close();
 }
 
@@ -1371,7 +1442,8 @@ std::vector<double> ApPredictMethods::GetApd90s(void)
     return mApd90s;
 }
 
-std::vector<std::vector<double> > ApPredictMethods::GetApd90CredibleRegions(void)
+std::vector<std::vector<double> > ApPredictMethods::GetApd90CredibleRegions(
+    void)
 {
     if (!mComplete)
     {
