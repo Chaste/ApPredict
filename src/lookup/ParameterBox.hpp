@@ -443,6 +443,15 @@ public:
      * @return maximum error in each QoI.
      */
     std::vector<double> GetMaxErrorsInPredictedQoIs() const;
+
+    /**
+     * @param rTolerance  The tolerance that needs to be met
+     * @param rQuantityIndex  The QoI that we want a report on.
+     *
+     * @return the percentage of parameter space (by volume) where the tolerance on this QoI is met.
+     */
+    double ReportPercentageOfSpaceWhereToleranceIsMetForQoI(const double& rTolerance,
+                                                            const unsigned& rQuantityIndex);
 };
 
 #include "SerializationExportWrapper.hpp"

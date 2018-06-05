@@ -127,8 +127,7 @@ bool LookupTableGenerator<DIM>::GenerateLookupTable()
 
     *p_file << std::setprecision(8);
 
-    // Write out the header line - understood by LookupTableReader (NOW OBSELETE
-    // WAY OF USING LOOKUP TABLE!) but easy to read by eye so we keep it.
+    // Write out the header line - no longer auto-read, but easy to read by eye so we keep it.
     *p_file << mParameterNames.size() << "\t" << mQuantitiesToRecord.size();
     for (unsigned i = 0; i < mParameterNames.size(); i++)
     {
@@ -136,7 +135,7 @@ bool LookupTableGenerator<DIM>::GenerateLookupTable()
     }
     for (unsigned i = 0; i < mQuantitiesToRecord.size(); i++)
     {
-        // Write out enum as ints and then convert back in LookupTableReader.
+        // Write out enum as ints
         *p_file << "\t" << (int)(mQuantitiesToRecord[i]);
     }
     *p_file << std::endl;
@@ -287,7 +286,8 @@ void LookupTableGenerator<DIM>::RunEvaluationsForThesePoints(
     /*
      *This loop launches each of the threads.
      */
-    for (iter = setOfPoints.begin(), i = 0; iter != setOfPoints.end();
+    for (iter = setOfPoints.begin(), i = 0;
+         iter != setOfPoints.end();
          ++iter, ++i)
     {
         std::vector<double> scalings;
@@ -321,7 +321,8 @@ void LookupTableGenerator<DIM>::RunEvaluationsForThesePoints(
     /*
      * This loop gets the answers back from all the threads.
      */
-    for (iter = setOfPoints.begin(), i = 0; iter != setOfPoints.end();
+    for (iter = setOfPoints.begin(), i = 0;
+         iter != setOfPoints.end();
          ++iter, ++i)
     {
         // Get the answers back
@@ -373,8 +374,15 @@ void LookupTableGenerator<DIM>::RunEvaluationsForThesePoints(
                 for (unsigned j = 0; j < num_estimates; j++)
                 {
                     line_of_output << "\t" << data->rGetQoIErrorEstimates()[j];
+                    if (i == num_threads - 1u)
+                    {
+                        // An extra bit of reporting that might be nice can only be called when all boxes have all corner data
+                        // i.e. when the last thread has finished, so will appear sporadically in the output!
+                        line_of_output << "\t" << mpParentBox->ReportPercentageOfSpaceWhereToleranceIsMetForQoI(mQoITolerances[j], j);
+                    }
                 }
             }
+
             *rFile << line_of_output.str() << std::endl;
         }
     }

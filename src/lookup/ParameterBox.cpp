@@ -778,6 +778,53 @@ std::vector<double> ParameterBox<DIM>::GetMaxErrorsInPredictedQoIs() const
     return mMaxErrorsInEachQoI;
 }
 
+template <unsigned DIM>
+double ParameterBox<DIM>::ReportPercentageOfSpaceWhereToleranceIsMetForQoI(const double& rTolerance,
+                                                                           const unsigned& rQuantityIndex)
+{
+    // Only the grand parent should call this.
+    if (mpParentBox)
+    {
+        EXCEPTION("Only the original parameter box should call this method.");
+    }
+
+    std::vector<ParameterBox<DIM>*> all_boxes = this->GetWholeFamilyOfBoxes();
+
+    double area_met = 0.0;
+    double area_not = 0.0;
+    for (unsigned i = 0; i < all_boxes.size(); i++)
+    {
+        if (all_boxes[i]->IsParent())
+        {
+            // We only want to look at 'bottom level' boxes.
+            continue;
+        }
+
+        c_vector<double, DIM> widths = all_boxes[i]->mMax - all_boxes[i]->mMin;
+        double area_box = widths[0];
+        for (unsigned j = 1; j < DIM; j++)
+        {
+            area_box *= widths[j];
+        }
+
+        if (all_boxes[i]->DoesBoxNeedFurtherRefinement(rTolerance, rQuantityIndex))
+        {
+            area_not += area_box;
+        }
+        else
+        {
+            area_met += area_box;
+        }
+    }
+
+    // This line will fail if you are using this structure for something that isn't
+    // describing a [0,1]^D hypercube. In which case comment it out safely. But it is a
+    // sanity check for now!
+    assert(fabs(area_met + area_not - 1.0) < 1e-4);
+
+    return 100.0 * area_met / (area_not + area_met);
+}
+
 /////////////////////////////////////////////////////////////////////
 // Explicit instantiation
 /////////////////////////////////////////////////////////////////////
