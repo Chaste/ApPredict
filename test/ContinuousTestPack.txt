@@ -10,6 +10,7 @@ TestDoseResponseFitting.hpp
 TestLinearDiscriminantAnalysis.hpp
 TestLookupTableGenerator.hpp
 TestLogisticDistribution.hpp
+TestMakeALookupTable.hpp
 TestMetadataCellmlModels.hpp
 TestParameterBox.hpp
 TestPkpdReader.hpp

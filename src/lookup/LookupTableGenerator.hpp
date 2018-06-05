@@ -244,8 +244,10 @@ public:
 	 * and puts lookup table entries for f(mParameterPoints) =
 	 * mQuantitiesOfInterest
 	 * in the relevant member variables.
+	 *
+	 * @return Whether the lookup table meets specified tolerances.
 	 */
-    void GenerateLookupTable();
+    bool GenerateLookupTable();
 
     /**
 	 * @return The points in NUM_PARAMS-dimensional parameter space at which the
@@ -269,7 +271,8 @@ public:
 	 * @param rMax  The maximum bound the parameter should take (limit of lookup
 	 * table).
 	 */
-    void SetParameterToScale(const std::string& rMetadataName, const double& rMin,
+    void SetParameterToScale(const std::string& rMetadataName,
+                             const double& rMin,
                              const double& rMax);
 
     /**

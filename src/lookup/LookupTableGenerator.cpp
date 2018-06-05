@@ -101,7 +101,7 @@ LookupTableGenerator<DIM>::~LookupTableGenerator()
 }
 
 template <unsigned DIM>
-void LookupTableGenerator<DIM>::GenerateLookupTable()
+bool LookupTableGenerator<DIM>::GenerateLookupTable()
 {
     if (mParameterNames.size() != DIM)
     {
@@ -201,18 +201,21 @@ void LookupTableGenerator<DIM>::GenerateLookupTable()
                 line_of_output << "\t" << num_estimates;
                 for (unsigned j = 0; j < num_estimates; j++)
                 {
-                    line_of_output << "\t" << mParameterPointData[i]->rGetQoIErrorEstimates()[j];
+                    line_of_output << "\t"
+                                   << mParameterPointData[i]->rGetQoIErrorEstimates()[j];
                 }
             }
             *p_file << line_of_output.str() << std::endl;
         }
     }
 
+    bool meets_all_tolerances = false;
     for (unsigned quantitiy_idx = 0u; quantitiy_idx < mQuantitiesToRecord.size();
          quantitiy_idx++)
     {
         // While we are still less than the maximum number of evaluations then
         // refine boxes.
+        bool meets_tolerance = false;
         while (mNumEvaluations < mMaxNumEvaluations)
         {
             // Find which parameter box has the largest variation between its corners
@@ -227,6 +230,7 @@ void LookupTableGenerator<DIM>::GenerateLookupTable()
                 std::cout
                     << "Error estimates are within requested tolerances... finishing\n"
                     << std::flush;
+                meets_tolerance = true;
                 break;
             }
 
@@ -237,9 +241,28 @@ void LookupTableGenerator<DIM>::GenerateLookupTable()
             // Evaluate at these points.
             RunEvaluationsForThesePoints(new_parameter_points, p_file);
         }
+
+        if (meets_tolerance && quantitiy_idx == 0u)
+        {
+            meets_all_tolerances = true;
+        }
+
+        if (!meets_tolerance)
+        {
+            meets_all_tolerances = false;
+        }
     }
 
     p_file->close();
+
+    if (meets_all_tolerances)
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    }
 }
 
 template <unsigned DIM>
@@ -261,7 +284,7 @@ void LookupTableGenerator<DIM>::RunEvaluationsForThesePoints(
     CornerSetIter iter;
     int i;
 
-    /**
+    /*
      *This loop launches each of the threads.
      */
     for (iter = setOfPoints.begin(), i = 0; iter != setOfPoints.end();
@@ -296,8 +319,8 @@ void LookupTableGenerator<DIM>::RunEvaluationsForThesePoints(
     }
 
     /*
- *This loop gets the answers back from all the threads.
- */
+     * This loop gets the answers back from all the threads.
+     */
     for (iter = setOfPoints.begin(), i = 0; iter != setOfPoints.end();
          ++iter, ++i)
     {

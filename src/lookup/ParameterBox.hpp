@@ -197,6 +197,11 @@ private:
     bool mAllCornersEvaluated;
 
     /**
+     * The tolerance at which to stop refining box widths.
+     */
+    double mBoxWidthTolerance;
+
+    /**
      * Get a measure of the error associated with predicting the quantity of interest in this box.
      * Calculated by providing an interpolated estimate from parent, and then comparing with
      * our new assigned quantities of interest.
@@ -214,12 +219,14 @@ private:
      * one with the largest error estimate above the tolerance.
      *
      * @param pBestBox  Reference to a pointer to the box with the largest variation at present.
-     * @param rErrorEstimateInBestBox  The value of the largest error estimate associated with the best box.
+     * @param rErrorEstimateInBestBox  The value of the largest error estimate associated with the best box to refine.
+     * @param rNumberQoIErrorCodesInBestBox  The number of QoI error codes thrown in the best box to refine.
      * @param rTolerance  The error estimate we are happy with.
      * @param rQuantityIndex  The index of the quantity of interest we are examining at present.
      */
     void GetErrorEstimateInAllBoxes(ParameterBox<DIM>*& pBestBox,
                                     double& rErrorEstimateInBestBox,
+                                    unsigned& rNumberQoIErrorCodesInBestBox,
                                     const double& rTolerance,
                                     const unsigned& rQuantityIndex);
 
@@ -232,8 +239,8 @@ private:
     ParameterBox<DIM>* GetMostRefinedChild();
 
     /**
-     * Get the least refined child box that doesn't meet the tolerances. If all meet the tolerances it
-     * will return NULL.
+     * Get the least refined child box that doesn't meet the tolerances.
+     * If all meet the tolerances it will return nullptr.
      *
      * @param rTolerance  The error estimate we are happy with.
      * @param rQuantityIndex  The index of the quantity of interest we are examining at present.
@@ -345,10 +352,15 @@ private:
     ParameterBox<DIM>* GetBoxContainingPoint(const c_vector<double, DIM>& rPoint);
 
     /**
-     * Whether this box needs further refinement or not.
+     * Report whether this box needs further refinement or not.
+     *
+     * Contains a hard-coded limit on the maximum width in any dimension of the box, once this falls
+     * below a certain hard-coded limit (set in constructor for #mBoxWidthTolerance) we won't refine
+     * the boxes any more and will return false.
      *
      * @param rTolerance  The error estimate in the QoI that we are happy with
      * @param rQuantityIndex  The QoI index that we are considering.
+     *
      * @return Whether this box needs further refinement or not.
      */
     bool DoesBoxNeedFurtherRefinement(const double& rTolerance, const unsigned& rQuantityIndex);
