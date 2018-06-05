@@ -187,13 +187,16 @@ SetupModel::SetupModel(const double& rHertz, unsigned modelIndex,
     if (modelIndex == 8u && fabs(s1_period - 2000.0) < 1e-4)
     {
         FileFinder archive_file("projects/ApPredict/test/data/ord_cipa_0.5Hz_state_vars.arch", RelativeTo::ChasteSourceRoot);
-        std::string archive_filename = archive_file.GetAbsolutePath();
-        std::ifstream ifs(archive_filename.c_str(), std::ios::binary);
-        boost::archive::text_iarchive input_arch(ifs);
+        if (archive_file.IsFile())
+        {
+            std::string archive_filename = archive_file.GetAbsolutePath();
+            std::ifstream ifs(archive_filename.c_str(), std::ios::binary);
+            boost::archive::text_iarchive input_arch(ifs);
 
-        std::vector<double> state_vars;
-        input_arch >> state_vars;
-        mpModel->SetStateVariables(state_vars);
+            std::vector<double> state_vars;
+            input_arch >> state_vars;
+            mpModel->SetStateVariables(state_vars);
+        }
     }
 
     // We always use this so graphs look nice.

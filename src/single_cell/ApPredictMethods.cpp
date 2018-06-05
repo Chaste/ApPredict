@@ -1188,8 +1188,9 @@ void ApPredictMethods::CommonRunMethod()
     }
 
     /*
-   * START LOOP OVER EACH CONCENTRATION TO TEST WITH
-   */
+     * START LOOP OVER EACH CONCENTRATION TO TEST WITH
+     */
+    bool reliable_credible_intervals = true;
     mApd90CredibleRegions.resize(mConcs.size());
     double control_apd90 = 0;
     for (unsigned conc_index = 0u; conc_index < mConcs.size(); conc_index++)
@@ -1228,6 +1229,13 @@ void ApPredictMethods::CommonRunMethod()
                         << this->GetMaxNumPaces()
                         << " paces at " << mConcs[conc_index] << "uM, increase maximum pacing time if using these "
                                                                  "simulation results for CiPA purposes.";
+                WriteMessageToFile(message.str());
+            }
+
+            if (q_net == std::numeric_limits<double>::quiet_NaN())
+            {
+                std::stringstream message;
+                message << "At a concentration of " << mConcs[conc_index] << "uM qNet was not calculated as the AP did not repolarise (this indicates very high risk).";
                 WriteMessageToFile(message.str());
             }
         }
@@ -1288,6 +1296,13 @@ void ApPredictMethods::CommonRunMethod()
                     {
                         *steady_voltage_results_file << delta_apd90 << ",";
                     }
+                    // Now add a check to see whether the middle 30% of our credible interval contains
+                    // the simulated 'median' answer. If not, log it and report a warning later.
+                    if ((mPercentiles[i] < 35 && delta_percentiles[i] > delta_apd90)
+                        || (mPercentiles[i] > 75 && delta_percentiles[i] < delta_apd90))
+                    {
+                        reliable_credible_intervals = false;
+                    }
                     *steady_voltage_results_file << delta_percentiles[i];
                     if (i < mPercentiles.size() - 1u)
                     {
@@ -1345,6 +1360,11 @@ void ApPredictMethods::CommonRunMethod()
         ActionPotentialDownsampler(mOutputFolder, filename.str(), solution.rGetTimes(), voltages, window, s_start);
     } // Conc
 
+    if (!reliable_credible_intervals)
+    {
+        WriteMessageToFile("Warning: the credible intervals here (from lookup tables) do not align with simulation - treat them with caution, and ideally report simulation details to allow us to refine lookup tables.");
+    }
+
     // Tidy up
     progress_reporter.PrintFinalising();
     *steady_voltage_results_file_html << "</table>\n</body>\n</html>\n";
@@ -1373,9 +1393,7 @@ void ApPredictMethods::CommonRunMethod()
         }
         catch (Exception& e)
         {
-            EXCEPTION(
-                "Could not open a new output file called pkpd_results.txt. Error was "
-                << e.GetMessage());
+            EXCEPTION("ApPredict could not open a new output file called pkpd_results.txt. Error was: '" << e.GetMessage() << "'");
         }
         *p_output_file << "Time";
         for (unsigned i = 0; i < mpPkpdReader->GetNumberOfPatients(); i++)
