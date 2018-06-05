@@ -47,6 +47,8 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * Calculation of 'qNet' as per:
  * "Optimization of an In silico Cardiac Cell Model for Proarrhythmia Risk Assessment"
  * Dutta et al. Frontiers in Physiology. https://doi.org/10.3389/fphys.2017.00616
+ *
+ * Produces a std::numeric_limits<double>::quiet_NaN() if the AP doesn't repolarise.
  */
 class CipaQNetCalculator
 {
