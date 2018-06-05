@@ -510,8 +510,7 @@ void ApPredictMethods::SetUpLookupTables()
     }
     lookup_table_archive_name << this->mHertz << "Hz_generator";
 
-    // First see if there is a table available already in absolute or current
-    // working directory.
+    // First see if there is a table available already in current working directory.
     FileFinder ascii_archive_file(lookup_table_archive_name.str() + ".arch",
                                   RelativeTo::AbsoluteOrCwd);
     FileFinder binary_archive_file(
