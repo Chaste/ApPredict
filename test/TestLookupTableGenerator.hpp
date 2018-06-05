@@ -172,8 +172,10 @@ public:
         TS_ASSERT_EQUALS(parameter_values.size(), 32u);
         TS_ASSERT_EQUALS(quantities_of_interest.size(), 32u);
 
-        FileFinder human_readable_output("TestLookupTables/" + file_name, RelativeTo::ChasteTestOutput);
-        FileFinder human_readable_reference("projects/ApPredict/test/data/" + file_name, RelativeTo::ChasteSourceRoot);
+        FileFinder human_readable_output("TestLookupTables/" + file_name + ".dat",
+                                         RelativeTo::ChasteTestOutput);
+        FileFinder human_readable_reference("projects/ApPredict/test/data/" + file_name + ".dat",
+                                            RelativeTo::ChasteSourceRoot);
         NumericFileComparison comparer(human_readable_output, human_readable_reference);
         comparer.CompareFiles(1e-4);
     }
