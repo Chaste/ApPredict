@@ -106,31 +106,36 @@ private:
 
 public:
     /**
-   * Constructor
-   *
-   * @param rQoIs  The quantities of interest that were evaluated at this point.
-   * @param error  Whether an error occurred during their evaluation.
-   */
-    ParameterPointData(const std::vector<double>& rQoIs, unsigned error)
-            : mQoIs(rQoIs), mErrorEstimates(), mErrorCode(error) {}
+     * Constructor
+     *
+     * @param rQoIs  The quantities of interest that were evaluated at this point.
+     * @param error  Whether an error occurred during their evaluation.
+     */
+    ParameterPointData(const std::vector<double>& rQoIs,
+                       unsigned error)
+            : mQoIs(rQoIs),
+              mErrorEstimates(),
+              mErrorCode(error)
+    {
+    }
 
     /**
-   * @return The Quantities of Interest that were evaluated here.
-   */
+     * @return The Quantities of Interest that were evaluated here.
+     */
     std::vector<double> GetQoIs() const { return mQoIs; }
 
     /**
-   * A similar method to GetQoIs that returns a const'ed reference
-   * to lower overhead of copying data around.
-   *
-   * @return The Quantities of Interest that were evaluated here.
-   */
+     * A similar method to GetQoIs that returns a const'ed reference
+     * to lower overhead of copying data around.
+     *
+     * @return The Quantities of Interest that were evaluated here.
+     */
     const std::vector<double>& rGetQoIs() const { return mQoIs; }
 
     /**
-   * @return The error estimates in the Quantities of Interest that were
-   * evaluated here.
-   */
+     * @return The error estimates in the Quantities of Interest that were
+     * evaluated here.
+     */
     const std::vector<double>& rGetQoIErrorEstimates() const
     {
         if (mErrorEstimates.size() == 0u)
@@ -142,9 +147,9 @@ public:
     }
 
     /**
-   * Set the error estimates associated with the QoIs at this point
-   * @param errorEstimates  The error estimates.
-   */
+     * Set the error estimates associated with the QoIs at this point
+     * @param errorEstimates  The error estimates.
+     */
     void SetErrorEstimates(const std::vector<double>& rErrorEstimates)
     {
         assert(rErrorEstimates.size() == mQoIs.size());
@@ -152,15 +157,15 @@ public:
     }
 
     /**
-   * @return Whether there are any error estimates for this data point.
-   */
+     * @return Whether there are any error estimates for this data point.
+     */
     bool HasErrorEstimates() { return (mErrorEstimates.size() > 0u); }
 
     /**
-   * @return  Error code for the QoI evaluation (0 = no error). For other code
-   * meanings see
-   * ApPredict/src/single_cell/AbstractActionPotentialMethod::GetErrorCode
-   */
+     * @return  Error code for the QoI evaluation (0 = no error). For other code
+     * meanings see
+     * ApPredict/src/single_cell/AbstractActionPotentialMethod::GetErrorCode
+     */
     unsigned GetErrorCode() const { return mErrorCode; }
 };
 

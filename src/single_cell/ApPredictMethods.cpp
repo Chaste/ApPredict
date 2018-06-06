@@ -33,13 +33,8 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 */
 
-#include <boost/archive/archive_exception.hpp>
 #include <fstream>
 #include <numeric> // for std::accumulate
-#include <sys/stat.h> // For system commands to download and unpack Lookup Table file.
-
-// Chaste source includes
-#include "CheckpointArchiveTypes.hpp"
 
 // ApPredict includes
 #include "AbstractDataStructure.hpp"
@@ -48,6 +43,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "BayesianInferer.hpp"
 #include "CipaQNetCalculator.hpp"
 #include "DoseCalculator.hpp"
+#include "LookupTableLoader.hpp"
 
 // Chaste source includes
 #include "CommandLineArguments.hpp"
@@ -482,178 +478,9 @@ void ApPredictMethods::SetUpLookupTables()
         }
     }
 
-    // Here we will attempt to use any lookup table associated with this model and
-    // pacing rate.
-    std::stringstream lookup_table_archive_name;
-    lookup_table_archive_name << mpModel->GetSystemName();
-
-    // We've only generated (up to) 3D and 4D lookup tables for now,
-    // we want to use the lowest dimension table possible in general.
-    // so don't bother if we are asking for ion channel blocks of other things
-    if (p_args->OptionExists("--ic50-ik1") || p_args->OptionExists("--pic50-ik1") || p_args->OptionExists("--ic50-ito") || p_args->OptionExists("--pic50-ito") || p_args->OptionExists("--ic50-nal") || p_args->OptionExists("--pic50-nal"))
-    {
-        EXCEPTION(
-            "Lookup table (for --credible-intervals) is currently only including "
-            "up to "
-            "IKr, IKs, INa and ICaL block, you have specified additional ones so "
-            "quitting.");
-    }
-
-    if (p_args->OptionExists("--ic50-iks") || p_args->OptionExists("--pic50-iks") || fabs(this->mHertz - 0.5) < 1e-4) // At present we don't have 3D lookup
-    // tables for 0.5Hz, so use 4D.
-    {
-        lookup_table_archive_name << "_4d_hERG_IKs_INa_ICaL_";
-    }
-    else
-    {
-        lookup_table_archive_name << "_3d_hERG_INa_ICaL_";
-    }
-    lookup_table_archive_name << this->mHertz << "Hz_generator";
-
-    // First see if there is a table available already in absolute or current
-    // working directory.
-    FileFinder ascii_archive_file(lookup_table_archive_name.str() + ".arch",
-                                  RelativeTo::AbsoluteOrCwd);
-    FileFinder binary_archive_file(
-        lookup_table_archive_name.str() + "_BINARY.arch",
-        RelativeTo::AbsoluteOrCwd);
-
-    // First we try loading the binary version of the archive, if it exists.
-    if (binary_archive_file.IsFile())
-    {
-        std::cout << "Loading lookup table from binary archive into memory, this "
-                     "can take a few seconds..."
-                  << std::flush;
-        Timer::Reset();
-
-        // Create a pointer to the input archive
-        std::ifstream ifs((binary_archive_file.GetAbsolutePath()).c_str(),
-                          std::ios::binary);
-        boost::archive::binary_iarchive input_arch(ifs);
-
-        // restore from the archive
-        AbstractUntemplatedLookupTableGenerator* p_generator;
-
-        input_arch >> p_generator;
-        mpLookupTable.reset(p_generator);
-        mLookupTableAvailable = true;
-
-        std::cout << " loaded in " << Timer::GetElapsedTime()
-                  << " secs.\nLookup table is available for generation of credible "
-                     "intervals.\n";
-
-        // Since loading the binary archive works, we can try and get rid of the
-        // ascii one to clean up.
-        if (ascii_archive_file.IsFile())
-        {
-            try
-            {
-                // The ascii file is not in a testoutput folder so we need to over-ride
-                // our usual safety checks.
-                ascii_archive_file.DangerousRemove();
-                std::cout << "Ascii lookup table archive file removed to tidy up, will "
-                             "use the binary one in future."
-                          << std::endl;
-            }
-            catch (Exception& e)
-            {
-                WARNING("Could not remove ascii lookup table archive, error was: "
-                        << e.GetMessage() << "\nSimulations continued anyway.");
-            }
-        }
-
-        // We have finished and loaded the generator.
-        return;
-    }
-
-    if (!ascii_archive_file.IsFile())
-    {
-        // If no archive exists, try to download and unpack one.
-        std::string lookup_table_URL = "http://www.cs.ox.ac.uk/people/gary.mirams/files/" + lookup_table_archive_name.str() + ".arch.tgz";
-        try
-        {
-            std::cout << "\n\nAttempting to download an action potential lookup "
-                         "table from:\n"
-                      << lookup_table_URL << "\n\n";
-            EXPECT0(system,
-                    "wget --dns-timeout=10 --connect-timeout=10 " + lookup_table_URL);
-            std::cout << "Download succeeded, unpacking...\n";
-            EXPECT0(system,
-                    "tar xzf " + lookup_table_archive_name.str() + ".arch.tgz");
-            std::cout << "Unpacking succeeded, removing .tgz file...\n";
-            EXPECT0(system, "rm -f " + lookup_table_archive_name.str() + ".arch.tgz");
-        }
-        catch (Exception& e)
-        {
-            std::cout << "Could not download and unpack the Lookup Table archive, "
-                         "continuing without it..."
-                      << std::endl;
-            return;
-        }
-    }
-
-    // If there is no binary archive, then try loading the ascii version and
-    // creating a binary one for next time.
-    if (ascii_archive_file.IsFile())
-    {
-        std::cout << "Loading lookup table from file into memory, this can take a "
-                     "few seconds..."
-                  << std::flush;
-        Timer::Reset();
-
-        // Create a pointer to the input archive
-        std::ifstream ifs((ascii_archive_file.GetAbsolutePath()).c_str(),
-                          std::ios::binary);
-
-        // restore from the archive
-        AbstractUntemplatedLookupTableGenerator* p_generator;
-        try
-        {
-            boost::archive::text_iarchive input_arch(ifs);
-            input_arch >> p_generator;
-        }
-        catch (boost::archive::archive_exception& e)
-        {
-            if (std::string(e.what()) == "unsupported version")
-            {
-                EXCEPTION(
-                    "The lookup table archive was created on a newer version of boost, "
-                    "please upgrade your boost to the latest supported by this version "
-                    "of Chaste.");
-            }
-            else
-            {
-                EXCEPTION("Error in loading Lookup Table from boost archive: '"
-                          << e.what() << "'.");
-            }
-        }
-        mpLookupTable.reset(p_generator);
-        mLookupTableAvailable = true;
-
-        std::cout << " loaded in " << Timer::GetElapsedTime()
-                  << " secs.\nLookup table is available for generation of credible "
-                     "intervals.\n";
-
-        try
-        {
-            std::cout << "Saving a binary version of the archive for faster loading "
-                         "next time..."
-                      << std::flush;
-            // Save a binary version to speed things up next time round.
-            AbstractUntemplatedLookupTableGenerator* const p_arch_generator = mpLookupTable.get();
-            std::ofstream binary_ofs(binary_archive_file.GetAbsolutePath().c_str(),
-                                     std::ios::binary);
-            boost::archive::binary_oarchive output_arch(binary_ofs);
-            output_arch << p_arch_generator;
-            std::cout << "done!\n";
-        }
-        catch (Exception& e)
-        {
-            WARNING(
-                "Did not manage to create binary lookup table archive. Error was: "
-                << e.GetMessage() << "\nContinuing to use ascii archive.");
-        }
-    }
+    LookupTableLoader lookup_loader(mpModel->GetSystemName(), this->mHertz);
+    mpLookupTable = lookup_loader.GetLookupTable();
+    mLookupTableAvailable = true;
 }
 
 void ApPredictMethods::CalculateDoseResponseParameterSamples(

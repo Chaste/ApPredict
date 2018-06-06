@@ -101,7 +101,7 @@ LookupTableGenerator<DIM>::~LookupTableGenerator()
 }
 
 template <unsigned DIM>
-void LookupTableGenerator<DIM>::GenerateLookupTable()
+bool LookupTableGenerator<DIM>::GenerateLookupTable()
 {
     if (mParameterNames.size() != DIM)
     {
@@ -127,8 +127,7 @@ void LookupTableGenerator<DIM>::GenerateLookupTable()
 
     *p_file << std::setprecision(8);
 
-    // Write out the header line - understood by LookupTableReader (NOW OBSELETE
-    // WAY OF USING LOOKUP TABLE!) but easy to read by eye so we keep it.
+    // Write out the header line - no longer auto-read, but easy to read by eye so we keep it.
     *p_file << mParameterNames.size() << "\t" << mQuantitiesToRecord.size();
     for (unsigned i = 0; i < mParameterNames.size(); i++)
     {
@@ -136,7 +135,7 @@ void LookupTableGenerator<DIM>::GenerateLookupTable()
     }
     for (unsigned i = 0; i < mQuantitiesToRecord.size(); i++)
     {
-        // Write out enum as ints and then convert back in LookupTableReader.
+        // Write out enum as ints
         *p_file << "\t" << (int)(mQuantitiesToRecord[i]);
     }
     *p_file << std::endl;
@@ -201,18 +200,21 @@ void LookupTableGenerator<DIM>::GenerateLookupTable()
                 line_of_output << "\t" << num_estimates;
                 for (unsigned j = 0; j < num_estimates; j++)
                 {
-                    line_of_output << "\t" << mParameterPointData[i]->rGetQoIErrorEstimates()[j];
+                    line_of_output << "\t"
+                                   << mParameterPointData[i]->rGetQoIErrorEstimates()[j];
                 }
             }
             *p_file << line_of_output.str() << std::endl;
         }
     }
 
+    bool meets_all_tolerances = false;
     for (unsigned quantitiy_idx = 0u; quantitiy_idx < mQuantitiesToRecord.size();
          quantitiy_idx++)
     {
         // While we are still less than the maximum number of evaluations then
         // refine boxes.
+        bool meets_tolerance = false;
         while (mNumEvaluations < mMaxNumEvaluations)
         {
             // Find which parameter box has the largest variation between its corners
@@ -227,6 +229,7 @@ void LookupTableGenerator<DIM>::GenerateLookupTable()
                 std::cout
                     << "Error estimates are within requested tolerances... finishing\n"
                     << std::flush;
+                meets_tolerance = true;
                 break;
             }
 
@@ -237,9 +240,28 @@ void LookupTableGenerator<DIM>::GenerateLookupTable()
             // Evaluate at these points.
             RunEvaluationsForThesePoints(new_parameter_points, p_file);
         }
+
+        if (meets_tolerance && quantitiy_idx == 0u)
+        {
+            meets_all_tolerances = true;
+        }
+
+        if (!meets_tolerance)
+        {
+            meets_all_tolerances = false;
+        }
     }
 
     p_file->close();
+
+    if (meets_all_tolerances)
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    }
 }
 
 template <unsigned DIM>
@@ -261,10 +283,11 @@ void LookupTableGenerator<DIM>::RunEvaluationsForThesePoints(
     CornerSetIter iter;
     int i;
 
-    /**
+    /*
      *This loop launches each of the threads.
      */
-    for (iter = setOfPoints.begin(), i = 0; iter != setOfPoints.end();
+    for (iter = setOfPoints.begin(), i = 0;
+         iter != setOfPoints.end();
          ++iter, ++i)
     {
         std::vector<double> scalings;
@@ -296,9 +319,10 @@ void LookupTableGenerator<DIM>::RunEvaluationsForThesePoints(
     }
 
     /*
- *This loop gets the answers back from all the threads.
- */
-    for (iter = setOfPoints.begin(), i = 0; iter != setOfPoints.end();
+     * This loop gets the answers back from all the threads.
+     */
+    for (iter = setOfPoints.begin(), i = 0;
+         iter != setOfPoints.end();
          ++iter, ++i)
     {
         // Get the answers back
@@ -350,8 +374,15 @@ void LookupTableGenerator<DIM>::RunEvaluationsForThesePoints(
                 for (unsigned j = 0; j < num_estimates; j++)
                 {
                     line_of_output << "\t" << data->rGetQoIErrorEstimates()[j];
+                    if (i == num_threads - 1u)
+                    {
+                        // An extra bit of reporting that might be nice can only be called when all boxes have all corner data
+                        // i.e. when the last thread has finished, so will appear sporadically in the output!
+                        line_of_output << "\t" << mpParentBox->ReportPercentageOfSpaceWhereToleranceIsMetForQoI(mQoITolerances[j], j);
+                    }
                 }
             }
+
             *rFile << line_of_output.str() << std::endl;
         }
     }

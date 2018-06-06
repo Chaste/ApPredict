@@ -43,7 +43,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "AbstractUntemplatedLookupTableGenerator.hpp"
 #include "LookupTableGenerator.hpp"
-#include "LookupTableReader.hpp"
+#include "NumericFileComparison.hpp"
 #include "SetupModel.hpp"
 #include "SingleActionPotentialPrediction.hpp"
 
@@ -116,26 +116,6 @@ public:
             std::cout << parameter_values[i][0] << "\t" << quantities_of_interest[i][0] << "\n";
         }
 
-        // Test the lookup table reader
-        {
-            LookupTableReader<1u> reader(file_name, "TestLookupTables");
-            std::vector<c_vector<double, 1u> > reader_params = reader.GetParameterPoints();
-            std::vector<std::vector<double> > reader_qois = reader.GetFunctionValues();
-
-            // Compare with the ones we read directly from the Lookup table generator.
-            TS_ASSERT_EQUALS(parameter_values.size(), reader_params.size());
-            TS_ASSERT_EQUALS(quantities_of_interest.size(), reader_qois.size());
-
-            TS_ASSERT_EQUALS(parameter_values[0].size(), reader_params[0].size());
-            TS_ASSERT_EQUALS(quantities_of_interest[0].size(), reader_qois[0].size());
-
-            for (unsigned i = 0; i < parameter_values.size(); i++)
-            {
-                TS_ASSERT_DELTA(parameter_values[i][0], reader_params[i][0], 1e-5); // We should get roughly this precision since we
-                TS_ASSERT_DELTA(quantities_of_interest[i][0], reader_qois[i][0], 1e-5); // used extra precision in file writing.
-            }
-        }
-
         // Run the generator again
         generator.SetMaxNumEvaluations(10u);
         generator.GenerateLookupTable();
@@ -146,26 +126,6 @@ public:
 
         TS_ASSERT_EQUALS(parameter_values.size(), 10u);
         TS_ASSERT_EQUALS(quantities_of_interest.size(), 10u);
-
-        // Check it has expanded the existing file rather than overwriting it.
-        {
-            LookupTableReader<1u> reader(file_name, "TestLookupTables");
-            std::vector<c_vector<double, 1u> > reader_params = reader.GetParameterPoints();
-            std::vector<std::vector<double> > reader_qois = reader.GetFunctionValues();
-
-            // Compare with the ones we read directly from the Lookup table generator.
-            TS_ASSERT_EQUALS(parameter_values.size(), reader_params.size());
-            TS_ASSERT_EQUALS(quantities_of_interest.size(), reader_qois.size());
-
-            TS_ASSERT_EQUALS(parameter_values[0].size(), reader_params[0].size());
-            TS_ASSERT_EQUALS(quantities_of_interest[0].size(), reader_qois[0].size());
-
-            for (unsigned i = 0; i < parameter_values.size(); i++)
-            {
-                TS_ASSERT_DELTA(parameter_values[i][0], reader_params[i][0], 1e-5); // We should get roughly this precision since we
-                TS_ASSERT_DELTA(quantities_of_interest[i][0], reader_qois[i][0], 1e-5); // used extra precision in file writing.
-            }
-        }
     }
 
     void TestVoltageThresholdDetectionAlgorithm()
@@ -212,41 +172,12 @@ public:
         TS_ASSERT_EQUALS(parameter_values.size(), 32u);
         TS_ASSERT_EQUALS(quantities_of_interest.size(), 32u);
 
-        // Check results read from file match the ones in the lookup table generator.
-        {
-            LookupTableReader<5u> reader(file_name, "TestLookupTables");
-            std::vector<c_vector<double, 5u> > reader_params = reader.GetParameterPoints();
-            std::vector<std::vector<double> > reader_qois = reader.GetFunctionValues();
-
-            TS_ASSERT_EQUALS(reader.GetListOfQuantitiesOfInterest().size(), 4u);
-
-            // Compare with the ones we read directly from the Lookup table generator.
-            TS_ASSERT_EQUALS(parameter_values.size(), reader_params.size());
-            TS_ASSERT_EQUALS(quantities_of_interest.size(), reader_qois.size());
-
-            TS_ASSERT_EQUALS(parameter_values[0].size(), reader_params[0].size());
-            TS_ASSERT_EQUALS(quantities_of_interest[0].size(), reader_qois[0].size());
-
-            std::vector<double> apd50s_from_reader = reader.GetQuantity(Apd50);
-
-            TS_ASSERT_EQUALS(apd50s_from_reader.size(), reader_params.size());
-
-            for (unsigned i = 0; i < parameter_values.size(); i++)
-            {
-                for (unsigned j = 0; j < parameter_values[i].size(); j++)
-                {
-                    TS_ASSERT_DELTA(parameter_values[i][j], reader_params[i][j], 1e-5); // We should get roughly this precision since we
-                }
-                for (unsigned j = 0; j < quantities_of_interest[i].size(); j++)
-                {
-                    if (j == 1)
-                    {
-                        TS_ASSERT_DELTA(quantities_of_interest[i][j], apd50s_from_reader[i], 1e-5);
-                    }
-                    TS_ASSERT_DELTA(quantities_of_interest[i][j], reader_qois[i][j], 1e-5); // used extra precision in file writing.
-                }
-            }
-        }
+        FileFinder human_readable_output("TestLookupTables/" + file_name + ".dat",
+                                         RelativeTo::ChasteTestOutput);
+        FileFinder human_readable_reference("projects/ApPredict/test/data/" + file_name + ".dat",
+                                            RelativeTo::ChasteSourceRoot);
+        NumericFileComparison comparer(human_readable_output, human_readable_reference);
+        comparer.CompareFiles(1e-4);
     }
 
     void TestLookupTablesArchiver1d()

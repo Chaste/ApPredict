@@ -46,7 +46,8 @@ ParameterBox<DIM>::ParameterBox(ParameterBox<DIM>* pParent,
           mpParentBox(pParent),
           mMin(rMin),
           mMax(rMax),
-          mAllCornersEvaluated(false)
+          mAllCornersEvaluated(false),
+          mBoxWidthTolerance(1e-5)
 {
     if (!mpParentBox)
     {
@@ -386,10 +387,30 @@ bool ParameterBox<DIM>::DoesBoxNeedFurtherRefinement(const double& rTolerance,
 {
     // If I am not the GreatGrandParent
     if (mpParentBox)
+    {
         assert(mAllCornersEvaluated);
+    }
     if (mpParentBox)
+    {
         assert(mMaxErrorsInEachQoI.size() > 0u);
+    }
     assert(!mAmParent);
+
+    // Hardcode a stopping criteria based on the width of the box.
+    c_vector<double, DIM> box_width = mMax - mMin;
+    double max_width = -DBL_MAX;
+    for (unsigned i = 0; i < DIM; i++)
+    {
+        if (box_width[i] > max_width)
+        {
+            max_width = box_width[i];
+        }
+    }
+    if (max_width < mBoxWidthTolerance)
+    {
+        return false;
+    }
+
     return (GetMaxErrorInQoIEstimateInThisBox(rQuantityIndex) > rTolerance);
 }
 
@@ -446,6 +467,7 @@ double ParameterBox<DIM>::GetMaxErrorInQoIEstimateInThisBox(const unsigned& rQua
 template <unsigned DIM>
 void ParameterBox<DIM>::GetErrorEstimateInAllBoxes(ParameterBox<DIM>*& pBestBox,
                                                    double& rErrorEstimateInBestBox,
+                                                   unsigned& rNumberQoIErrorCodesInBestBox,
                                                    const double& rTolerance,
                                                    const unsigned& rQuantityIndex)
 {
@@ -471,13 +493,32 @@ void ParameterBox<DIM>::GetErrorEstimateInAllBoxes(ParameterBox<DIM>*& pBestBox,
             //   * a current best box guess,
             //   * we have more than one error in the evaluation of the results in this box.
             bool new_max = (max_error_estimate > rErrorEstimateInBestBox);
-            if ((new_max && !pBestBox) || // This condition applies to the great-grandparent original box.
-                (new_max && errors_associated <= pow(2, DIM) - 1)) // || // We don't want to start refining where there are loads of errors
-            //(errors_associated < pBestBox->GetNumErrors()) ) // So boxes with no error always win
+
+            if (!new_max)
             {
-                pBestBox = this;
-                rErrorEstimateInBestBox = max_error_estimate;
+                // This is definitely not the best box to refine - try another.
+                return;
             }
+
+            if (errors_associated > rNumberQoIErrorCodesInBestBox)
+            {
+                // We will prioritise refining boxes on the surface not edges of well-behaved space.
+                return;
+            }
+
+            pBestBox = this;
+            rErrorEstimateInBestBox = max_error_estimate;
+            rNumberQoIErrorCodesInBestBox = errors_associated;
+
+            //			  // Old code - we only stopped refining on edges when N-1/N corners had error codes.
+            //            if (!pBestBox || // This condition applies to the great-grandparent original box.
+            //                (errors_associated <= pow(2, DIM) - 1)) // || // We don't want to start refining where there are loads of errors
+            //            //(errors_associated < pBestBox->GetNumErrors()) ) // So boxes with no error always win
+            //            {
+            //                pBestBox = this;
+            //                rErrorEstimateInBestBox = max_error_estimate;
+            //                rNumberQoIErrorCodesInBestBox = errors_associated;
+            //            }
         }
     }
     else
@@ -485,7 +526,7 @@ void ParameterBox<DIM>::GetErrorEstimateInAllBoxes(ParameterBox<DIM>*& pBestBox,
         // If I am a parent then ask my daughter boxes the same thing.
         for (unsigned i = 0; i < mDaughterBoxes.size(); i++)
         {
-            mDaughterBoxes[i]->GetErrorEstimateInAllBoxes(pBestBox, rErrorEstimateInBestBox, rTolerance, rQuantityIndex);
+            mDaughterBoxes[i]->GetErrorEstimateInAllBoxes(pBestBox, rErrorEstimateInBestBox, rNumberQoIErrorCodesInBestBox, rTolerance, rQuantityIndex);
         }
     }
     return;
@@ -502,12 +543,13 @@ ParameterBox<DIM>* ParameterBox<DIM>::FindBoxWithLargestQoIErrorEstimate(const u
         EXCEPTION("Only the original parameter box should call this method.");
     }
 
-    ParameterBox<DIM>* p_box = NULL;
-    double variation = -DBL_MAX;
-    GetErrorEstimateInAllBoxes(p_box, variation, rTolerance, rQuantityIndex);
+    ParameterBox<DIM>* p_box = nullptr;
+    double error_in_QoI_estimate = -DBL_MAX; // The estimate for the emulator error within this box.
+    unsigned num_QoI_error_codes = UNSIGNED_UNSET; // The number of corners at which QoI error codes were thrown.
+    GetErrorEstimateInAllBoxes(p_box, error_in_QoI_estimate, num_QoI_error_codes, rTolerance, rQuantityIndex);
 
     // If there is somewhere that doesn't meet the tolerances
-    if (variation > rTolerance)
+    if (error_in_QoI_estimate > rTolerance)
     {
         assert(p_box);
 
@@ -665,7 +707,7 @@ unsigned ParameterBox<DIM>::GetNumErrors()
 template <unsigned DIM>
 ParameterBox<DIM>* ParameterBox<DIM>::GetMostRefinedChild()
 {
-    ParameterBox<DIM>* p_box = NULL;
+    ParameterBox<DIM>* p_box = nullptr;
 
     if (!mAmParent)
     {
@@ -692,7 +734,7 @@ ParameterBox<DIM>* ParameterBox<DIM>::GetMostRefinedChild()
 template <unsigned DIM>
 ParameterBox<DIM>* ParameterBox<DIM>::GetLeastRefinedChild(const double& rTolerance, const unsigned& rQuantityIndex)
 {
-    ParameterBox<DIM>* p_box = NULL;
+    ParameterBox<DIM>* p_box = nullptr;
 
     if (!mAmParent)
     {
@@ -734,6 +776,53 @@ std::vector<double> ParameterBox<DIM>::GetMaxErrorsInPredictedQoIs() const
     assert(mMaxErrorsInEachQoI.size() > 0u);
     assert(mParameterPointDataMapPredictions.size() == 0u);
     return mMaxErrorsInEachQoI;
+}
+
+template <unsigned DIM>
+double ParameterBox<DIM>::ReportPercentageOfSpaceWhereToleranceIsMetForQoI(const double& rTolerance,
+                                                                           const unsigned& rQuantityIndex)
+{
+    // Only the grand parent should call this.
+    if (mpParentBox)
+    {
+        EXCEPTION("Only the original parameter box should call this method.");
+    }
+
+    std::vector<ParameterBox<DIM>*> all_boxes = this->GetWholeFamilyOfBoxes();
+
+    double area_met = 0.0;
+    double area_not = 0.0;
+    for (unsigned i = 0; i < all_boxes.size(); i++)
+    {
+        if (all_boxes[i]->IsParent())
+        {
+            // We only want to look at 'bottom level' boxes.
+            continue;
+        }
+
+        c_vector<double, DIM> widths = all_boxes[i]->mMax - all_boxes[i]->mMin;
+        double area_box = widths[0];
+        for (unsigned j = 1; j < DIM; j++)
+        {
+            area_box *= widths[j];
+        }
+
+        if (all_boxes[i]->DoesBoxNeedFurtherRefinement(rTolerance, rQuantityIndex))
+        {
+            area_not += area_box;
+        }
+        else
+        {
+            area_met += area_box;
+        }
+    }
+
+    // This line will fail if you are using this structure for something that isn't
+    // describing a [0,1]^D hypercube. In which case comment it out safely. But it is a
+    // sanity check for now!
+    assert(fabs(area_met + area_not - 1.0) < 1e-4);
+
+    return 100.0 * area_met / (area_not + area_met);
 }
 
 /////////////////////////////////////////////////////////////////////
