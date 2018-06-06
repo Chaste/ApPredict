@@ -81,18 +81,45 @@ LookupTableLoader::LookupTableLoader(const std::string& rModelName, const double
     // Only continue with the logic if the local ideal table wasn't loaded.
     if (!mpLookupTable)
     {
-        std::string best_lookup_table;
+        std::string best_lookup_table = "";
 
-        // Get list of remote files
+        // Get lists of available files
         std::vector<std::string> website_list = GetManifestOfTablesOnGarysWebsite();
+        std::vector<std::string> local_list = GetManifestOfLocalTablesInCwd();
 
-        for (unsigned i = 0; i < website_list.size(); i++)
+        // Get all plausible combos that might actually work.
+        std::vector<std::string> possible_list = GenerateAllCompatibleTables();
+        for (unsigned i = 0; i < possible_list.size(); i++)
         {
-            std::cout << "On web: " << website_list[i] << std::endl;
-        }
-        assert(0);
+            //std::cout << "Possible: " << possible_list[i] << std::endl;
 
-        LoadTableFromLocalBoostArchive(best_lookup_table);
+            // See if it appears in any local files?
+            if (std::find(local_list.begin(), local_list.end(), possible_list[i]) != local_list.end())
+            {
+                std::cout << "Local lookup table found for " << possible_list[i] << std::endl;
+                best_lookup_table = possible_list[i];
+                break;
+            }
+
+            // Or web files?
+            if (mWeHaveWebAccess && std::find(website_list.begin(), website_list.end(), possible_list[i]) != website_list.end())
+            {
+                std::cout << "Web lookup table found for " << possible_list[i] << std::endl;
+                best_lookup_table = possible_list[i];
+                // Download and unpack it
+                DownloadAndUnpack(best_lookup_table);
+                break;
+            }
+        }
+
+        if (best_lookup_table != "")
+        {
+            LoadTableFromLocalBoostArchive(best_lookup_table);
+        }
+        else
+        {
+            EXCEPTION("No lookup table is available, please run without --credible-intervals.");
+        }
     }
 }
 
@@ -107,7 +134,7 @@ std::string LookupTableLoader::GetIdealTable()
     std::vector<std::string> command_line_names{ "herg", "na", "iks", "cal", "ito", "nal", "ik1" };
 
     // Got through command line args in order that we want them in the file name
-    std::string ideal_lookup_table = mModelName + "_" + std::to_string(ideal_dimension) + "d";
+    std::string ideal_lookup_table;
     for (unsigned i = 0; i < command_line_names.size(); i++)
     {
         if (p_args->OptionExists("--ic50-" + command_line_names[i])
@@ -122,7 +149,7 @@ std::string LookupTableLoader::GetIdealTable()
     // Add suffix
     std::stringstream hertz;
     hertz << mHertz;
-    ideal_lookup_table += "_" + hertz.str() + "Hz_generator";
+    ideal_lookup_table = mModelName + "_" + std::to_string(ideal_dimension) + "d" + ideal_lookup_table + "_" + hertz.str() + "Hz_generator";
 
     return ideal_lookup_table;
 }
@@ -305,7 +332,6 @@ std::vector<std::string> LookupTableLoader::GetManifestOfTablesOnGarysWebsite()
             }
         }
     }
-
     return available_tables;
 }
 
@@ -313,20 +339,119 @@ std::vector<std::string> LookupTableLoader::GetManifestOfLocalTablesInCwd()
 {
     FileFinder cwd("", RelativeTo::AbsoluteOrCwd);
 
-    std::vector<FileFinder> matching_files = cwd.FindMatches(mModelName + "*_generator*.arch");
+    std::vector<FileFinder> matching_files = cwd.FindMatches("*.arch");
+
+    const std::string binary_ending = "_BINARY";
+
+    // Check for suitable Hertz
+    std::stringstream hertz;
+    hertz << mHertz;
+    std::string hertz_string = hertz.str();
 
     std::vector<std::string> available_tables;
     for (unsigned i = 0; i < matching_files.size(); i++)
     {
-        available_tables.push_back(matching_files[i].GetLeafNameNoExtension());
-        std::cout << "Found local file " << matching_files[i].GetLeafNameNoExtension() << std::endl;
+        std::string base_file_name = matching_files[i].GetLeafNameNoExtension();
+
+        // If matching file ends in _BINARY
+        if (0 == base_file_name.compare(base_file_name.length() - binary_ending.length(), binary_ending.length(), binary_ending))
+        {
+            // Strip off the "_BINARY" extension
+            base_file_name = base_file_name.substr(0, base_file_name.length() - binary_ending.length());
+        }
+
+        // If the manifest file starts with the model name
+        if (base_file_name.compare(0, mModelName.length(), mModelName) == 0)
+        {
+            // Look for 'XHz_generator'
+            size_t hertz_pos = base_file_name.find(hertz_string + "Hz_generator");
+            if (hertz_pos != std::string::npos)
+            {
+                // Only add if it isn't already present
+                if (std::find(available_tables.begin(), available_tables.end(), base_file_name) == available_tables.end())
+                {
+                    available_tables.push_back(base_file_name);
+                }
+            }
+        }
     }
     return available_tables;
 }
 
 std::vector<std::string> LookupTableLoader::GenerateAllCompatibleTables()
 {
+
+    // Work out how many we start with, ideal number
+    unsigned ideal_num = 0;
+    std::vector<bool> ideal(7, false);
+    for (unsigned i = 0; i < mIdealChannelsInvolved.size(); i++)
+    {
+        if (mIdealChannelsInvolved[i].second == true)
+        {
+            ideal_num++;
+            ideal[i] = true;
+        }
+    }
+
+    unsigned max_num_to_add = mIdealChannelsInvolved.size() - ideal_num;
+
+    /*
+     * Now follows some fairly horrible logic to do combinations that would work.
+     *
+     * Probably a far simpler way to do this, but it works!
+     */
+    std::vector<std::vector<bool> > compatible_channels;
+    compatible_channels.push_back(ideal);
+    std::vector<std::vector<bool> > compatible_channels_added_this_dim;
+    std::vector<std::vector<bool> > start_points_this_dimension;
+
+    start_points_this_dimension.push_back(ideal);
+    // Loop over the dimensions (add 1,2,3,4...)
+    for (unsigned dim = 0; dim < max_num_to_add; dim++)
+    {
+        compatible_channels_added_this_dim.clear();
+        for (unsigned s = 0; s < start_points_this_dimension.size(); s++)
+        {
+            std::vector<bool> start_point = start_points_this_dimension[s];
+            // Look over the channels
+            for (unsigned i = 0; i < mIdealChannelsInvolved.size(); i++)
+            {
+                if (mIdealChannelsInvolved[i].second == false)
+                {
+                    std::vector<bool> possible = start_point;
+                    possible[i] = true;
+                    if (std::find(compatible_channels.begin(), compatible_channels.end(), possible) == compatible_channels.end())
+                    {
+                        compatible_channels.push_back(possible);
+                        compatible_channels_added_this_dim.push_back(possible);
+                    }
+                }
+            }
+        }
+        start_points_this_dimension.clear();
+        start_points_this_dimension = compatible_channels_added_this_dim;
+    }
+
+    // Convert bools to filenames
     std::vector<std::string> compatible_tables;
+    for (unsigned i = 0; i < compatible_channels.size(); i++)
+    {
+        std::vector<bool> channels_this_combo = compatible_channels[i];
+        std::string channels_text;
+        unsigned dimension = 0;
+        for (unsigned j = 0; j < mIdealChannelsInvolved.size(); j++)
+        {
+            if (channels_this_combo[j])
+            {
+                channels_text += "_" + mIdealChannelsInvolved[j].first;
+                dimension++;
+            }
+        }
+
+        std::stringstream name;
+        name << mModelName << "_" << dimension << "d" << channels_text << "_" << mHertz << "Hz_generator";
+        compatible_tables.push_back(name.str());
+    }
     return compatible_tables;
 }
 

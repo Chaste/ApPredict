@@ -85,7 +85,7 @@ private:
      * A list of tables that could provide the information we need, in order of
      * preference (lowest dimension first).
      *
-     * @return list of table base filenames that would work.
+     * @return list of all the table base filenames that would work for this case.
      */
     std::vector<std::string> GenerateAllCompatibleTables();
 
