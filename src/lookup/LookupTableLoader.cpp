@@ -118,7 +118,7 @@ LookupTableLoader::LookupTableLoader(const std::string& rModelName, const double
         }
         else
         {
-            EXCEPTION("No lookup table is available, please run without --credible-intervals.");
+            WARNING("No lookup table is available, please run without --credible-intervals.");
         }
     }
 }
