@@ -479,8 +479,16 @@ void ApPredictMethods::SetUpLookupTables()
     }
 
     LookupTableLoader lookup_loader(mpModel->GetSystemName(), this->mHertz);
-    mpLookupTable = lookup_loader.GetLookupTable();
-    mLookupTableAvailable = true;
+    if (lookup_loader.IsLookupTableAvailable())
+    {
+        mpLookupTable = lookup_loader.GetLookupTable();
+        mLookupTableAvailable = true;
+    }
+    else
+    {
+        WARNING("You asked for '--credible-intervals' but no lookup table is available. Continuing without...");
+        mLookupTableAvailable = false;
+    }
 }
 
 void ApPredictMethods::CalculateDoseResponseParameterSamples(
