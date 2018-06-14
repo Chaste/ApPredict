@@ -481,9 +481,14 @@ void LookupTableLoader::DownloadAndUnpack(const std::string& rArchiveFileBaseNam
     }
 }
 
+bool LookupTableLoader::IsLookupTableAvailable()
+{
+    return (mpLookupTable!=nullptr);
+}
+
 boost::shared_ptr<AbstractUntemplatedLookupTableGenerator> LookupTableLoader::GetLookupTable()
 {
-    if (!mpLookupTable)
+    if (mpLookupTable==nullptr)
     {
         EXCEPTION("A lookup table could not be loaded.");
     }
