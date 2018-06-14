@@ -1197,7 +1197,7 @@ void ApPredictMethods::CommonRunMethod()
 
     if (!reliable_credible_intervals)
     {
-        WriteMessageToFile("Warning: the credible intervals here (from lookup tables) do not align with simulation - treat them with caution, and ideally report simulation details to allow us to refine lookup tables.");
+        WriteMessageToFile("Warning: the credible intervals here (from lookup tables) do not align with simulation - treat them with caution. This may be because they are computed for steady state and you are running for a limited pacing time. If you are running for a long time (hundreds of paces) and still getting this warning then let us know and we can try to refine the Lookup Table.");
     }
 
     // Tidy up
