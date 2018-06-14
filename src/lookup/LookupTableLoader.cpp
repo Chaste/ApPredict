@@ -131,7 +131,7 @@ std::string LookupTableLoader::GetIdealTable()
 
     // can't read from ApPredictMethods' mShortNames since they are in a different order, for historical reasons!!
     // so redefined here (not ideal).
-    std::vector<std::string> command_line_names{ "herg", "na", "iks", "cal", "ito", "nal", "ik1" };
+    std::vector<std::string> command_line_names{ "herg", "iks", "na", "cal", "ito", "nal", "ik1" };
 
     // Got through command line args in order that we want them in the file name
     std::string ideal_lookup_table;
