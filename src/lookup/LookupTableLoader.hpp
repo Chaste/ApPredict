@@ -127,6 +127,11 @@ public:
 	 * @param rHertz  the pacing frequency we are interested in.
 	 */
     LookupTableLoader(const std::string& rModelName, const double& rHertz);
+    
+    /**
+     * @return whether we have found and loaded a lookup table.
+     */
+    bool IsLookupTableAvailable();
 
     /**
 	 * @return  a pointer to the lowest dimension LookupTable that is available.
