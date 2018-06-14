@@ -64,8 +64,8 @@ LookupTableLoader::LookupTableLoader(const std::string& rModelName, const double
     // second -- whether it is needed for a lookup table.
     mIdealChannelsInvolved = std::vector<std::pair<std::string, bool> >{
         std::pair<std::string, bool>{ "hERG", false },
-        std::pair<std::string, bool>{ "INa", false },
         std::pair<std::string, bool>{ "IKs", false },
+        std::pair<std::string, bool>{ "INa", false },
         std::pair<std::string, bool>{ "ICaL", false },
         std::pair<std::string, bool>{ "Ito", false },
         std::pair<std::string, bool>{ "INaL", false },
