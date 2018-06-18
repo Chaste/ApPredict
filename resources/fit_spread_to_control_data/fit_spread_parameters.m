@@ -18,7 +18,7 @@ if nargin == 1
 elseif nargin == 2
     dataset.values = {pic50s, varargin{1}};
 else
-    error("Only two args allowed") 
+    error('Only two args allowed') 
 end
             
 num_drugs = 1;
