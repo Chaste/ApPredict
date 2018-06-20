@@ -1133,8 +1133,9 @@ void ApPredictMethods::CommonRunMethod()
                     }
                     // Now add a check to see whether the middle 30% of our credible interval contains
                     // the simulated 'median' answer. If not, log it and report a warning later.
-                    if ((mPercentiles[i] < 35 && delta_percentiles[i] > delta_apd90)
-                        || (mPercentiles[i] > 75 && delta_percentiles[i] < delta_apd90))
+                    const double tolerance_on_percent_change = 1e-2;
+                    if ((mPercentiles[i] < 35 && delta_percentiles[i] > delta_apd90 + tolerance_on_percent_change)
+                        || (mPercentiles[i] > 75 && delta_percentiles[i] < delta_apd90 - tolerance_on_percent_change))
                     {
                         reliable_credible_intervals = false;
                     }
