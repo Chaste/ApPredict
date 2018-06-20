@@ -278,6 +278,7 @@ void LookupTableLoader::LoadTableFromLocalBoostArchive(const std::string& rLooku
 std::vector<std::string> LookupTableLoader::GetManifestOfTablesOnGarysWebsite()
 {
     const std::string manifest_filename = "appredict_lookup_table_manifest.txt";
+    std::vector<std::string> available_tables;
 
     // If no archive exists, try to download and unpack one.
     std::string mainfest_URL = "http://www.cs.ox.ac.uk/people/gary.mirams/files/" + manifest_filename;
@@ -304,6 +305,7 @@ std::vector<std::string> LookupTableLoader::GetManifestOfTablesOnGarysWebsite()
                      "we either don't have web access or www.cs.ox.ac.uk is down..."
                   << std::endl;
         mWeHaveWebAccess = false;
+        return available_tables;
     }
 
     EXCEPT_IF_NOT(manifest.IsFile());
@@ -316,7 +318,7 @@ std::vector<std::string> LookupTableLoader::GetManifestOfTablesOnGarysWebsite()
     hertz << mHertz;
     std::string hertz_string = hertz.str();
 
-    std::vector<std::string> available_tables;
+
     while (manifest_stream >> filename)
     {
         // If the manifest file starts with the model name
