@@ -47,8 +47,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "LookupTableLoader.hpp"
 
 LookupTableLoader::LookupTableLoader(const std::string& rModelName, const double& rHertz)
-        : mWeHaveWebAccess(true),
-          mModelName(rModelName),
+        : mModelName(rModelName),
           mHertz(rHertz)
 {
 
@@ -102,7 +101,7 @@ LookupTableLoader::LookupTableLoader(const std::string& rModelName, const double
             }
 
             // Or web files?
-            if (mWeHaveWebAccess && std::find(website_list.begin(), website_list.end(), possible_list[i]) != website_list.end())
+            if (std::find(website_list.begin(), website_list.end(), possible_list[i]) != website_list.end())
             {
                 std::cout << "Web lookup table found for " << possible_list[i] << std::endl;
                 best_lookup_table = possible_list[i];
@@ -304,7 +303,6 @@ std::vector<std::string> LookupTableLoader::GetManifestOfTablesOnGarysWebsite()
         std::cout << "Could not download and unpack the Lookup Table manifest, "
                      "we either don't have web access or www.cs.ox.ac.uk is down..."
                   << std::endl;
-        mWeHaveWebAccess = false;
         return available_tables;
     }
 
@@ -459,8 +457,6 @@ std::vector<std::string> LookupTableLoader::GenerateAllCompatibleTables()
 
 void LookupTableLoader::DownloadAndUnpack(const std::string& rArchiveFileBaseName)
 {
-    assert(mWeHaveWebAccess);
-
     std::string lookup_table_URL = "http://www.cs.ox.ac.uk/people/gary.mirams/files/" + rArchiveFileBaseName + ".arch.tgz";
     try
     {

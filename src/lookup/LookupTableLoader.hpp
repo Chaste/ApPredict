@@ -65,9 +65,6 @@ private:
      */
     std::vector<std::pair<std::string, bool> > mIdealChannelsInvolved;
 
-    /** Whether we think we can download files from the net (just test once and remember) */
-    bool mWeHaveWebAccess;
-
     /** the CellML model's name (as specified by ODE GetSystemName() method). */
     std::string mModelName;
 
