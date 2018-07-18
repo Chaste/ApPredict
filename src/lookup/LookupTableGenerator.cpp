@@ -374,7 +374,7 @@ void LookupTableGenerator<DIM>::RunEvaluationsForThesePoints(
                 for (unsigned j = 0; j < num_estimates; j++)
                 {
                     line_of_output << "\t" << data->rGetQoIErrorEstimates()[j];
-                    if (i == num_threads - 1u)
+                    if (i == (int)(num_threads - 1u))
                     {
                         // An extra bit of reporting that might be nice can only be called when all boxes have all corner data
                         // i.e. when the last thread has finished, so will appear sporadically in the output!
