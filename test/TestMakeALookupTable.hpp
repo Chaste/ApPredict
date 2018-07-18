@@ -53,7 +53,7 @@ private:
     std::string mArchiveFilename;
 
 public:
-    void TestGenerateAndArchiveALookupTable() throw(Exception)
+    void TestGenerateAndArchiveALookupTable()
     {
         // This elaborate construction contains possible tuples of:
         // * 0. command line argument and filename
