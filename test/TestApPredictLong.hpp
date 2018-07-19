@@ -101,7 +101,7 @@ public:
             CommandLineArgumentsMocker wrapper("--model 1 --plasma-concs 1 10 --pic50-ik1 4.5 --credible-intervals --plasma-conc-logscale false --output-dir ApPredict_output_long");
             ApPredictMethods methods;
             TS_ASSERT_THROWS_THIS(methods.Run(),
-                                  "Lookup table (for --credible-intervals) is currently only including up to IKr, IKs, INa and ICaL block, you have specified additional ones so quitting.");
+                                  "No argument --pic50-spread-ik1 has been provided. Cannot calculate credible intervals without this.");
         }
 
         {
