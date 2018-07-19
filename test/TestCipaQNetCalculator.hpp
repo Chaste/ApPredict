@@ -55,6 +55,11 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // Final Chaste include for making parallel work...
 #include "FakePetscSetup.hpp"
 
+/*
+ * This class tests our calculation of qNet as per the CiPA papers from the FDA team.
+ *
+ * Note we redirect output from ApPredict to avoid output folder conflict if running this test in parallel.
+ */
 class TestCipaQNetCalculator : public CxxTest::TestSuite
 {
 public:
@@ -124,12 +129,12 @@ public:
     void TestCipaQNetSimulations()
     {
         CommandLineArgumentsMocker wrapper(
-            "--plasma-concs 10 --model 8 --pacing-freq 0.5 --pic50-herg 6 --pacing-max-time 1");
+            "--plasma-concs 10 --model 8 --pacing-freq 0.5 --pic50-herg 6 --pacing-max-time 1 --output-dir ApPredict_output_qNet_test");
 
         ApPredictMethods runner;
         runner.Run();
 
-        FileFinder q_net_results_file("ApPredict_output/q_net.txt", RelativeTo::ChasteTestOutput);
+        FileFinder q_net_results_file("ApPredict_output_qNet_test/q_net.txt", RelativeTo::ChasteTestOutput);
         TS_ASSERT_EQUALS(q_net_results_file.IsFile(), true);
 
         FileFinder reference_file("projects/ApPredict/test/data/q_net.txt", RelativeTo::ChasteSourceRoot);

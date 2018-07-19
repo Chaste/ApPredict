@@ -43,11 +43,16 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "ApPredictMethods.hpp"
 #include "CommandLineArgumentsMocker.hpp"
 
+/*
+ * Thorough and longer running tests of ApPredict.
+ *
+ * Note we redirect output from ApPredict to avoid output folder conflict if running this test in parallel.
+ */
 class TestApPredictLong : public CxxTest::TestSuite
 {
 public:
     /**
-     * This test will wipe $CHASTE_TEST_OUTPUT/ApPredict_output/
+     * This test will wipe $CHASTE_TEST_OUTPUT/ApPredict_output_long/
      *
      * The tests overwrite CommandLineArguments and does some standard
      * simulations to check things are working OK...
@@ -67,7 +72,7 @@ public:
             {
                 model_option = "--cellml projects/ApPredict/src/cellml/cellml/ten_tusscher_model_2006_epi.cellml";
             }
-            CommandLineArgumentsMocker wrapper(model_option + " --plasma-concs 1 10 --pic50-herg 4.5 --plasma-conc-logscale false");
+            CommandLineArgumentsMocker wrapper(model_option + " --plasma-concs 1 10 --pic50-herg 4.5 --plasma-conc-logscale false --output-dir ApPredict_output_long");
 
             ApPredictMethods methods;
             methods.Run();
@@ -93,14 +98,14 @@ public:
     {
         // Test a couple of Exceptions
         {
-            CommandLineArgumentsMocker wrapper("--model 1 --plasma-concs 1 10 --pic50-ik1 4.5 --credible-intervals --plasma-conc-logscale false");
+            CommandLineArgumentsMocker wrapper("--model 1 --plasma-concs 1 10 --pic50-ik1 4.5 --credible-intervals --plasma-conc-logscale false --output-dir ApPredict_output_long");
             ApPredictMethods methods;
             TS_ASSERT_THROWS_THIS(methods.Run(),
                                   "Lookup table (for --credible-intervals) is currently only including up to IKr, IKs, INa and ICaL block, you have specified additional ones so quitting.");
         }
 
         {
-            CommandLineArgumentsMocker wrapper("--model 1 --plasma-concs 1 10 --pic50-herg 4.5 --credible-intervals --plasma-conc-logscale false");
+            CommandLineArgumentsMocker wrapper("--model 1 --plasma-concs 1 10 --pic50-herg 4.5 --credible-intervals --plasma-conc-logscale false --output-dir ApPredict_output_long");
             ApPredictMethods methods;
             TS_ASSERT_THROWS_THIS(methods.Run(),
                                   "No argument --pic50-spread-herg has been provided. Cannot calculate credible intervals without this.");
@@ -108,7 +113,7 @@ public:
 
         // Test a simple hERG block with Shannon
         {
-            CommandLineArgumentsMocker wrapper("--model 1 --plasma-concs 1 10 --pic50-herg 4.5 --pic50-spread-herg 0.15 --credible-intervals --plasma-conc-logscale false");
+            CommandLineArgumentsMocker wrapper("--model 1 --plasma-concs 1 10 --pic50-herg 4.5 --pic50-spread-herg 0.15 --credible-intervals --plasma-conc-logscale false --output-dir ApPredict_output_long");
 
             ApPredictMethods methods;
             methods.Run();
@@ -137,7 +142,7 @@ public:
 
         // We should get much reduced credible regions with repeated pIC50 values
         {
-            CommandLineArgumentsMocker wrapper("--model 1 --plasma-concs 1 10 --pic50-herg 4.5 4.4 4.6 4.5 --pic50-spread-herg 0.15 --credible-intervals --plasma-conc-logscale false");
+            CommandLineArgumentsMocker wrapper("--model 1 --plasma-concs 1 10 --pic50-herg 4.5 4.4 4.6 4.5 --pic50-spread-herg 0.15 --credible-intervals --plasma-conc-logscale false --output-dir ApPredict_output_long");
 
             ApPredictMethods methods;
             methods.Run();
@@ -172,7 +177,7 @@ public:
             CommandLineArgumentsMocker wrapper("--model 1 --pacing-freq 0.5 "
                                                "--pic50-herg 4.86 4.45 0 4.1429 --hill-herg 3.22 1.57 1 1 "
                                                "--pic50-spread-herg 0.15 --hill-spread-herg 0.21 "
-                                               "--credible-intervals --plasma-concs 30.0");
+                                               "--credible-intervals --plasma-concs 30.0 --output-dir ApPredict_output_long");
 
             ApPredictMethods methods;
             methods.Run();
@@ -190,7 +195,7 @@ public:
         {
             CommandLineArgumentsMocker wrapper("--model 1 --pacing-freq 0.5 "
                                                "--pic50-herg 4.86 4.45 0 4.1429 --hill-herg 3.22 1.57 1 1 "
-                                               "--plasma-concs 30.0 ");
+                                               "--plasma-concs 30.0  --output-dir ApPredict_output_long");
 
             ApPredictMethods methods;
             methods.Run();
@@ -207,7 +212,7 @@ public:
         {
             CommandLineArgumentsMocker wrapper("--model 1 --pacing-freq 0.5 "
                                                "--pic50-herg 4.86 4.45 0 4.1429 --hill-herg 3.22 1.57 1 1 "
-                                               "--plasma-concs 30.0 --saturation-herg 110 120 130.2 105.7");
+                                               "--plasma-concs 30.0 --saturation-herg 110 120 130.2 105.7 --output-dir ApPredict_output_long");
 
             ApPredictMethods methods;
             methods.Run();
@@ -223,7 +228,7 @@ public:
     void TestWithAModelInAlternans(void)
     {
         // We are trying to go so fast we get alternans, and then handle it nicely.
-        CommandLineArgumentsMocker wrapper("--model 3 --plasma-concs 1 10 --pacing-freq 5 --plasma-conc-logscale false");
+        CommandLineArgumentsMocker wrapper("--model 3 --plasma-concs 1 10 --pacing-freq 5 --plasma-conc-logscale false --output-dir ApPredict_output_long");
 
         ApPredictMethods methods;
         methods.Run();
@@ -244,7 +249,7 @@ public:
     void TestWithAModelTwoToOneStimAp(void)
     {
         // We should go 'too fast' for O'Hara and see if we can get anything like sensible output.
-        CommandLineArgumentsMocker wrapper("--model 6 --plasma-concs 1 --pacing-freq 5 --plasma-conc-logscale false");
+        CommandLineArgumentsMocker wrapper("--model 6 --plasma-concs 1 --pacing-freq 5 --plasma-conc-logscale false --output-dir ApPredict_output_long");
 
         ApPredictMethods methods;
         methods.Run();
@@ -267,7 +272,7 @@ public:
         CommandLineArgumentsMocker wrapper("--model 1 --pacing-freq 0.5 --pic50-cal 3.0 --hill-cal 1 "
                                            "--pic50-herg 0 --hill-herg 1 "
                                            "--pic50-na 4.561 --hill-na 1 "
-                                           "--plasma-concs 0 100.0");
+                                           "--plasma-concs 0 100.0 --output-dir ApPredict_output_long");
 
         ApPredictMethods methods;
         methods.Run();
