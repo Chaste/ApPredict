@@ -124,24 +124,16 @@ std::string ApPredictMethods::PrintCommonArguments()
 {
     std::string message = "*\n"
                           "* SPECIFYING PACING:\n"
-                          "* --pacing-freq            Pacing frequency (Hz) (optional - defaults "
-                          "to 1Hz)\n"
-                          "* --pacing-max-time        Maximum time for which to pace the cell "
-                          "model in MINUTES\n"
-                          "*                          (optional - defaults to time for 10,000 "
-                          "paces at this frequency)\n" // Set in AbstractSteadyStateRunner
+                          "* --pacing-freq            Pacing frequency (Hz) (optional - defaults to 1Hz)\n"
+                          "* --pacing-max-time        Maximum time for which to pace the cell model in MINUTES\n"
+                          "*                          (optional - defaults to time for 10,000 paces at this frequency)\n" // Set in AbstractSteadyStateRunner
                           // constructor!
-                          "* --pacing-stim-duration   Duration of the square wave stimulus pulse "
-                          "applied (ms)\n"
-                          "*                          (optional - defaults to stimulus duration "
-                          "from CellML)\n"
-                          "* --pacing-stim-magnitude  Height of the square wave stimulus pulse "
-                          "applied (uA/cm^2)\n"
-                          "*                          (optional - defaults to stimulus magnitude "
-                          "from CellML)\n"
+                          "* --pacing-stim-duration   Duration of the square wave stimulus pulse applied (ms)\n"
+                          "*                          (optional - defaults to stimulus duration from CellML)\n"
+                          "* --pacing-stim-magnitude  Height of the square wave stimulus pulse applied (uA/cm^2)\n"
+                          "*                          (optional - defaults to stimulus magnitude from CellML)\n"
                           "*\n"
-                          "* SPECIFYING DRUG PROPERTIES dose-response properties for each "
-                          "channel:\n"
+                          "* SPECIFYING DRUG PROPERTIES dose-response properties for each channel:\n"
                           "* Channels are named:\n"
                           "* * herg (IKr current - hERG),\n"
                           "* * na (fast sodium current - NaV1.5),\n"
@@ -151,71 +143,54 @@ std::string ApPredictMethods::PrintCommonArguments()
                           "* * ik1 (IK1 current - KCNN4 a.k.a. KCa3.1),\n"
                           "* * ito ([fast] Ito current - Kv4.3 + KChIP2.2).\n"
                           "*\n"
-                          "* For each channel you specify dose-response parameters [multiple "
-                          "entries for repeat experiments]\n"
+                          "* For each channel you specify dose-response parameters [multiple entries for repeat experiments]\n"
                           "*   EITHER with IC50 values (in uM), for example for 'hERG':\n"
                           "* --ic50-herg     hERG IC50    (optional - defaults to \"no effect\")\n"
                           "*   OR with pIC50 values (in log M):\n"
                           "* --pic50-herg    hERG pIC50   (optional - defaults to \"no effect\")\n"
-                          "*     (you can use a mixture of these for different channels if you "
-                          "wish, \n"
+                          "*     (you can use a mixture of these for different channels if you wish, \n"
                           "*     e.g. --ic50-herg 16600 --pic50-na 5.3 )\n"
                           "*   AND specify Hill coefficients (dimensionless):\n"
                           "* --hill-herg     hERG Hill    (optional - defaults to \"1.0\")\n"
-                          "*   AND specify the saturation effect of the drug on peak conductance "
-                          "(%):\n"
-                          "* --saturation-herg   saturation level effect of drug (optional - "
-                          "defaults to 0%)\n"
+                          "*   AND specify the saturation effect of the drug on peak conductance (%):\n"
+                          "* --saturation-herg   saturation level effect of drug (optional - defaults to 0%)\n"
                           "*\n"
                           "* SPECIFYING CONCENTRATIONS AT COMMAND LINE:\n"
-                          "* --plasma-concs  A list of (space separated) plasma concentrations at "
-                          "which to test (uM)\n"
+                          "* --plasma-concs  A list of (space separated) plasma concentrations at which to test (uM)\n"
                           "* OR alternatively:\n"
                           "* --plasma-conc-high  Highest plasma concentration to test (uM)\n"
                           "* --plasma-conc-low   Lowest  plasma concentration to test (uM) \n"
                           "*                     (optional - defaults to 0)\n"
                           "*\n"
-                          "* both ways of specifying test concentrations have the following "
-                          "optional arguments\n"
-                          "* --plasma-conc-count  Number of intermediate plasma concentrations to "
-                          "test \n"
-                          "*                 (optional - defaults to 0 (for --plasma-concs) or 11 "
-                          "(for --plasma-conc-high))\n"
-                          "* --plasma-conc-logscale <True/False> Whether to use log spacing for "
-                          "the plasma concentrations \n"
+                          "* both ways of specifying test concentrations have the following optional arguments\n"
+                          "* --plasma-conc-count  Number of intermediate plasma concentrations to test \n"
+                          "*                 (optional - defaults to 0 (for --plasma-concs) or 11 (for --plasma-conc-high))\n"
+                          "* --plasma-conc-logscale <True/False> Whether to use log spacing for the plasma concentrations \n"
                           "*\n"
                           "* SPECIFYING CONCENTRATIONS IN A FILE (for PKPD runs):\n"
-                          "* if you want to run at concentrations in a file instead of specifying "
-                          "at command line, you can do:\n"
+                          "* if you want to run at concentrations in a file instead of specifying at command line, you can do:\n"
                           "* --pkpd-file <relative or absolute filepath>\n"
-                          "*   To evaluate APD90s throughout a PKPD profile please provide a file "
-                          "with the data format:\n"
-                          "*   Time(any "
-                          "units)<tab>Conc_trace_1(uM)<tab>Conc_trace_2(uM)<tab>...Conc_trace_N(uM)"
-                          "\n"
+                          "*   To evaluate APD90s throughout a PKPD profile please provide a file with the data format:\n"
+                          "*   Time(any units)<tab>Conc_trace_1(uM)<tab>Conc_trace_2(uM)<tab>...Conc_trace_N(uM)\n"
                           "*   on each row.\n"
                           "*\n"
                           "* UNCERTAINTY QUANTIFICATION:\n"
-                          "* --credible-intervals [x y z...] This flag must be present to do "
-                          "uncertainty "
-                          "calculations. It can optionally be followed by a specific list of "
-                          "percentiles that are required\n"
-                          "*   (not including 0 or 100, defaults to 95).\n"
-                          "* Then to specify 'spread' parameters for assay variability - for use "
-                          "with Lookup Tables:\n"
-                          "* --pic50-spread-herg      (for each channel that you are providing "
-                          "ic50/pic50 values for,\n"
+                          "* --credible-intervals [x y z...] This flag must be present to do uncertainty calculations.\n"
+                          "*                      It can optionally be followed by a specific list of percentiles that are required\n"
+                          "*                      (not including 0 or 100, defaults to just the 95% intervals).\n"
+                          "* Then to specify 'spread' parameters for assay variability - for use with Lookup Tables:\n"
+                          "* --pic50-spread-herg      (for each channel that you are providing ic50/pic50 values for,\n"
                           "* --hill-spread-herg        herg is just given as an example)\n"
-                          "*   (for details of what these spread parameters are see 'sigma' and "
-                          "'1/beta' in Table 1 of:\n"
+                          "*   (for details of what these spread parameters are see 'sigma' and '1/beta' in Table 1 of:\n"
                           "*    Elkins et al. 2013  Journal of Pharmacological and Toxicological \n"
                           "*    Methods, 68(1), 112-122. doi: 10.1016/j.vascn.2013.04.007 )\n"
                           "*\n"
                           "* OTHER OPTIONS:\n"
-                          "* --no-downsampling  By default, we print downsampled output to create "
-                          "small action potential\n"
-                          "*                    traces, but you can switch this off by calling "
-                          "this option.\n"
+                          "* --no-downsampling  By default, we print downsampled output to create small action potential\n"
+                          "*                    traces, but you can switch this off by calling this option.\n"
+                          "* --output-dir       By default output goes into '$CHASTE_TEST_OUTPUT/ApPredict_output'\n"
+                          "*                    but you can redirect it (useful for parallel scripting)\n"
+                          "*                    with this argument.\n"
                           "*\n";
     return message;
 }
@@ -439,7 +414,14 @@ ApPredictMethods::ApPredictMethods()
     Citations::Register(ApPredictCitation, &ApPredictCite);
 
     mProgramName = "Action Potential PreDiCT";
-    mOutputFolder = "ApPredict_output/";
+    if (CommandLineArguments::Instance()->OptionExists("--output-dir"))
+    {
+        mOutputFolder = CommandLineArguments::Instance()->GetStringCorrespondingToOption("--output-dir");
+    }
+    else
+    {
+        mOutputFolder = "ApPredict_output/";
+    }
 }
 
 void ApPredictMethods::SetUpLookupTables()
@@ -486,7 +468,9 @@ void ApPredictMethods::SetUpLookupTables()
     }
     else
     {
-        WARNING("You asked for '--credible-intervals' but no lookup table is available. Continuing without...");
+        WARNING(
+            "You asked for '--credible-intervals' but no lookup table is "
+            "available. Continuing without...");
         mLookupTableAvailable = false;
     }
 }
@@ -501,9 +485,9 @@ void ApPredictMethods::CalculateDoseResponseParameterSamples(
     }
 
     /*
-       *Prepare an inferred set of IC50s and Hill coefficients
-       *for use with the Lookup Table and credible interval calculations.
-       */
+     *Prepare an inferred set of IC50s and Hill coefficients
+     *for use with the Lookup Table and credible interval calculations.
+     */
     mSampledIc50s.resize(mMetadataNames.size());
     mSampledHills.resize(mMetadataNames.size());
 
@@ -717,10 +701,10 @@ void ApPredictMethods::InterpolateFromLookupTableForThisConcentration(
     assert(predictions.size() == mSampledIc50s[0].size());
 
     /*
-       * Compile all the lookup table predictions into a vector that we can sort
-   * to
-       * get percentiles.
-       */
+     * Compile all the lookup table predictions into a vector that we can sort
+     * to
+     * get percentiles.
+     */
     // std::vector<double> apd_50_predictions;
     std::vector<double> apd_90_predictions;
     for (unsigned rand_idx = 0; rand_idx < num_samples; rand_idx++)
@@ -955,9 +939,9 @@ void ApPredictMethods::CommonRunMethod()
                                          "(%)</td></tr>\n"; // Header line
 
     /*
-   * Work out the median IC50, Hill and saturation to use if more than one were
-   * provided
-   */
+ * Work out the median IC50, Hill and saturation to use if more than one were
+ * provided
+ */
     std::vector<double> median_ic50; // vector is over channel indices
     std::vector<double> median_hill; //               ""
     std::vector<double> median_saturation; //               ""
@@ -1023,8 +1007,8 @@ void ApPredictMethods::CommonRunMethod()
     }
 
     /*
-     * START LOOP OVER EACH CONCENTRATION TO TEST WITH
-     */
+   * START LOOP OVER EACH CONCENTRATION TO TEST WITH
+   */
     bool reliable_credible_intervals = true;
     mApd90CredibleRegions.resize(mConcs.size());
     double control_apd90 = 0;
@@ -1061,16 +1045,18 @@ void ApPredictMethods::CommonRunMethod()
                 std::stringstream message;
                 message << "Warning: qNet is calculated after at least 750 paces in "
                            "FDA publications. You are doing "
-                        << this->GetMaxNumPaces()
-                        << " paces at " << mConcs[conc_index] << "uM, increase maximum pacing time if using these "
-                                                                 "simulation results for CiPA purposes.";
+                        << this->GetMaxNumPaces() << " paces at " << mConcs[conc_index]
+                        << "uM, increase maximum pacing time if using these "
+                           "simulation results for CiPA purposes.";
                 WriteMessageToFile(message.str());
             }
 
             if (q_net == std::numeric_limits<double>::quiet_NaN())
             {
                 std::stringstream message;
-                message << "At a concentration of " << mConcs[conc_index] << "uM qNet was not calculated as the AP did not repolarise (this indicates very high risk).";
+                message << "At a concentration of " << mConcs[conc_index]
+                        << "uM qNet was not calculated as the AP did not repolarise "
+                           "(this indicates very high risk).";
                 WriteMessageToFile(message.str());
             }
         }
@@ -1131,11 +1117,12 @@ void ApPredictMethods::CommonRunMethod()
                     {
                         *steady_voltage_results_file << delta_apd90 << ",";
                     }
-                    // Now add a check to see whether the middle 30% of our credible interval contains
-                    // the simulated 'median' answer. If not, log it and report a warning later.
+                    // Now add a check to see whether the middle 30% of our credible
+                    // interval contains
+                    // the simulated 'median' answer. If not, log it and report a warning
+                    // later.
                     const double tolerance_on_percent_change = 1e-2;
-                    if ((mPercentiles[i] < 35 && delta_percentiles[i] > delta_apd90 + tolerance_on_percent_change)
-                        || (mPercentiles[i] > 75 && delta_percentiles[i] < delta_apd90 - tolerance_on_percent_change))
+                    if ((mPercentiles[i] < 35 && delta_percentiles[i] > delta_apd90 + tolerance_on_percent_change) || (mPercentiles[i] > 75 && delta_percentiles[i] < delta_apd90 - tolerance_on_percent_change))
                     {
                         reliable_credible_intervals = false;
                     }
@@ -1184,21 +1171,31 @@ void ApPredictMethods::CommonRunMethod()
         // Create unique filename and write the voltage trace to file...
         std::stringstream filename;
         filename << "conc_" << mConcs[conc_index] << "_voltage_trace.dat";
-        boost::shared_ptr<RegularStimulus> p_default_stimulus = boost::static_pointer_cast<RegularStimulus>(mpModel->GetStimulusFunction());
+        boost::shared_ptr<RegularStimulus> p_default_stimulus = boost::static_pointer_cast<RegularStimulus>(
+            mpModel->GetStimulusFunction());
         double s1_period = p_default_stimulus->GetPeriod();
         double s_start = p_default_stimulus->GetStartTime();
-        std::vector<double> voltages = solution.GetVariableAtIndex(mpModel->GetSystemInformation()->GetStateVariableIndex("membrane_voltage"));
+        std::vector<double> voltages = solution.GetVariableAtIndex(
+            mpModel->GetSystemInformation()->GetStateVariableIndex(
+                "membrane_voltage"));
         double window = s1_period;
         if (this->mPeriodTwoBehaviour)
         {
             window *= 2.0;
         }
-        ActionPotentialDownsampler(mOutputFolder, filename.str(), solution.rGetTimes(), voltages, window, s_start);
+        ActionPotentialDownsampler(mOutputFolder, filename.str(),
+                                   solution.rGetTimes(), voltages, window, s_start);
     } // Conc
 
     if (!reliable_credible_intervals)
     {
-        WriteMessageToFile("Warning: the credible intervals here (from lookup tables) do not align with simulation - treat them with caution. This may be because they are computed for steady state and you are running for a limited pacing time. If you are running for a long time (hundreds of paces) and still getting this warning then let us know and we can try to refine the Lookup Table.");
+        WriteMessageToFile(
+            "Warning: the credible intervals here (from lookup tables) do not "
+            "align with simulation - treat them with caution. This may be because "
+            "they are computed for steady state and you are running for a limited "
+            "pacing time. If you are running for a long time (hundreds of paces) "
+            "and still getting this warning then let us know and we can try to "
+            "refine the Lookup Table.");
     }
 
     // Tidy up
@@ -1229,7 +1226,10 @@ void ApPredictMethods::CommonRunMethod()
         }
         catch (Exception& e)
         {
-            EXCEPTION("ApPredict could not open a new output file called pkpd_results.txt. Error was: '" << e.GetMessage() << "'");
+            EXCEPTION(
+                "ApPredict could not open a new output file called pkpd_results.txt. "
+                "Error was: '"
+                << e.GetMessage() << "'");
         }
         *p_output_file << "Time";
         for (unsigned i = 0; i < mpPkpdReader->GetNumberOfPatients(); i++)
