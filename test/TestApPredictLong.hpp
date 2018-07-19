@@ -137,7 +137,7 @@ public:
             TS_ASSERT_DELTA(apd90_credible_regions[1][0], 212.5283, 1e-3);
             TS_ASSERT_DELTA(apd90_credible_regions[1][1], 219.0559, 1e-3);
             TS_ASSERT_DELTA(apd90_credible_regions[2][0], 217.5297, 1e-3);
-            TS_ASSERT_DELTA(apd90_credible_regions[2][1], 259.3450, 1e-3);
+            TS_ASSERT_DELTA(apd90_credible_regions[2][1], 259.4240, 1e-3);
         }
 
         // We should get much reduced credible regions with repeated pIC50 values
