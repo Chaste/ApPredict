@@ -172,16 +172,15 @@ OdeSolution AbstractActionPotentialMethod::SteadyStatePacingExperiment(
     double& rCaMin, const double printingTimeStep, const double conc)
 {
     mRunYet = true;
-    mRepeat = false; //    These two resets are for counting whether we should
-    //    repeat the last
+    mRepeat = false; //    These two resets are for counting whether we should repeat the last
     mRepeatNumber = 0u; // AP simulation to detect alternans or abnormal repolarization.
 
     /**
-   * STEADY STATE PACING EXPERIMENT
-   *
-   * Stimulate many times to establish the steady state response.
-   * Do most of the calculations in one go to avoid overhead setting up Cvode...
-   */
+     * STEADY STATE PACING EXPERIMENT
+     *
+     * Stimulate many times to establish the steady state response.
+     * Do most of the calculations in one go to avoid overhead setting up Cvode...
+     */
     bool skip_steady_state_calculation = false;
 
     // Get the stimulus parameters and make sure the maximum timestep is the

@@ -529,9 +529,8 @@ void ApPredictMethods::CalculateDoseResponseParameterSamples(
                          "without this.");
         }
 
-        std::cout << "Inferring the spread of dose-response parameters from your "
-                     "data (this can take a moment with large datasets)... "
-                  << std::flush;
+        std::cout << "Inferring the spread of dose-response parameters from your '" << mShortNames[channel_idx]
+                  << "' data (this can take a moment with large datasets)... " << std::flush;
         // Infer pIC50 spread.
         BayesianInferer ic50_inferer(PIC50);
         ic50_inferer.SetObservedData(pIC50s);
@@ -842,6 +841,15 @@ void ApPredictMethods::CommonRunMethod()
             default_value = mpModel->GetParameter(mMetadataNames[channel_idx]);
         }
         default_conductances.push_back(default_value);
+    }
+
+    // Work out the best voltage threshold to use for this model
+    // (in the same way as the LookupTableGenerator does to ensure consistent APD calcs with that).
+    {
+        SingleActionPotentialPrediction ap_runner(mpModel);
+        ap_runner.SuppressOutput();
+        ap_runner.SetMaxNumPaces(100u);
+        this->SetVoltageThresholdForRecordingAsActionPotential(ap_runner.DetectVoltageThresholdForActionPotential());
     }
 
     CalculateDoseResponseParameterSamples(IC50s, hills);

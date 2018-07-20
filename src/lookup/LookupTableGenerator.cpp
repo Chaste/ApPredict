@@ -160,13 +160,15 @@ bool LookupTableGenerator<DIM>::GenerateLookupTable()
             mUnscaledParameters.push_back(p_model->GetParameter(mParameterNames[i]));
         }
 
-        // We now do a special run of a model with sodium current set to zero, so we
-        // can see the effect
-        // of simply a stimulus current, and then set the threshold for APs
-        // accordingly.
-        mVoltageThreshold = DetectVoltageThresholdForActionPotential(p_model);
-        p_model->SetStateVariables(
-            mInitialConditions); // Put the model back to sensible state
+        // We now do a special run of a model with sodium current set to zero, so we can see the effect
+        // of simply a stimulus current, and then set the threshold for APs accordingly.
+        {
+            SingleActionPotentialPrediction ap_runner(p_model);
+            ap_runner.SuppressOutput();
+            ap_runner.SetMaxNumPaces(100u);
+            mVoltageThreshold = ap_runner.DetectVoltageThresholdForActionPotential();
+        }
+        p_model->SetStateVariables(mInitialConditions); // Put the model back to sensible state
 
         // Initial scalings
         CornerSet set_of_points = mpParentBox->GetCorners();
