@@ -78,7 +78,7 @@ LookupTableLoader::LookupTableLoader(const std::string& rModelName, const double
     LoadTableFromLocalBoostArchive(ideal_lookup_table);
 
     // Only continue with the logic if the local ideal table wasn't loaded.
-    if (!mpLookupTable)
+    if (mpLookupTable == nullptr)
     {
         std::string best_lookup_table = "";
 
@@ -316,7 +316,6 @@ std::vector<std::string> LookupTableLoader::GetManifestOfTablesOnGarysWebsite()
     hertz << mHertz;
     std::string hertz_string = hertz.str();
 
-
     while (manifest_stream >> filename)
     {
         // If the manifest file starts with the model name
@@ -481,12 +480,12 @@ void LookupTableLoader::DownloadAndUnpack(const std::string& rArchiveFileBaseNam
 
 bool LookupTableLoader::IsLookupTableAvailable()
 {
-    return (mpLookupTable!=nullptr);
+    return (mpLookupTable != nullptr);
 }
 
 boost::shared_ptr<AbstractUntemplatedLookupTableGenerator> LookupTableLoader::GetLookupTable()
 {
-    if (mpLookupTable==nullptr)
+    if (mpLookupTable == nullptr)
     {
         EXCEPTION("A lookup table could not be loaded.");
     }

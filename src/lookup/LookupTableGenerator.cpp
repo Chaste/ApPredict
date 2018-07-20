@@ -670,6 +670,13 @@ unsigned LookupTableGenerator<DIM>::GetDimension() const
     return DIM;
 }
 
+template <unsigned DIM>
+std::vector<std::string> LookupTableGenerator<DIM>::GetParameterNames() const
+{
+    assert(mParameterNames.size() == DIM);
+    return mParameterNames;
+}
+
 #include "SerializationExportWrapperForCpp.hpp"
 EXPORT_TEMPLATE_CLASS1(LookupTableGenerator, 1u)
 EXPORT_TEMPLATE_CLASS1(LookupTableGenerator, 2u)

@@ -209,52 +209,54 @@ public:
     //    std::vector<c_vector<double, DIM> >& rParameterPoints);
 
     /**
-   * Provide an interpolated estimate for the quantities of interest
-   * throughout
-   * parameter space.
-   *
-   * @param rParameterPoints  The points in parameter space at which we
-   * would like to estimate QoIs.
-   * @return The QoI estimates at these points.
-   */
+     * Provide an interpolated estimate for the quantities of interest
+     * throughout
+     * parameter space.
+     *
+     * @param rParameterPoints  The points in parameter space at which we
+     * would like to estimate QoIs.
+     * @return The QoI estimates at these points.
+     */
     virtual std::vector<std::vector<double> > Interpolate(
         const std::vector<std::vector<double> >& rParameterPoints)
         = 0;
 
     /**
-   * @return The number of evaluations (points in the lookup table at which
-   * Quantities of Interest have been evaluated).
-   */
+     * @return The number of evaluations (points in the lookup table at which
+     * Quantities of Interest have been evaluated).
+     */
     virtual unsigned GetNumEvaluations() = 0;
 
     /**
-   * Set the pacing frequency to use throughout the lookup table generation.
-   *
-   * @param frequency  The pacing frequency to use (in Hz).
-   */
+     * Set the pacing frequency to use throughout the lookup table generation.
+     *
+     * @param frequency  The pacing frequency to use (in Hz).
+     */
     virtual void SetPacingFrequency(double frequency) = 0;
 
     /**
-   * @param pModel a cell model
-   *
-   * @return the threshold at which we think a voltage signal is a real
-   * excited action potential, rather than simply a stimulus current and
-   * decay
-   * so we give the error code NoActionPotential_1 appropriately (rather
-   * than
-   * really small APDs).
-   *
-   * Note this method will mess up state variables and they will need
-   * resetting
-   * to normal steady state after calling it.
-   */
+     * @param pModel a cell model
+     *
+     * @return the threshold at which we think a voltage signal is a real
+     * excited action potential, rather than simply a stimulus current and decay
+     * so we give the error code NoActionPotential_1 appropriately (rather than
+     * really small APDs).
+     *
+     * Note this method will mess up state variables and they will need
+     * resetting to normal steady state after calling it.
+     */
     static double DetectVoltageThresholdForActionPotential(
         boost::shared_ptr<AbstractCvodeCell> pModel);
 
     /**
-   * Helper method that just returns DIM, to avoid template chaos.
-   */
+     * Helper method that just returns DIM, to avoid template chaos.
+     */
     virtual unsigned GetDimension() const = 0;
+
+    /**
+     * @return The names of each parameter in each dimension of this table.
+     */
+    virtual std::vector<std::string> GetParameterNames() const = 0;
 };
 
 #include "SerializationExportWrapper.hpp"
