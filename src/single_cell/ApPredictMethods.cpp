@@ -843,6 +843,15 @@ void ApPredictMethods::CommonRunMethod()
         default_conductances.push_back(default_value);
     }
 
+    // Work out the best voltage threshold to use for this model
+    // (in the same way as the LookupTableGenerator does to ensure consistent APD calcs with that).
+    {
+        SingleActionPotentialPrediction ap_runner(mpModel);
+        ap_runner.SuppressOutput();
+        ap_runner.SetMaxNumPaces(100u);
+        this->SetVoltageThresholdForRecordingAsActionPotential(ap_runner.DetectVoltageThresholdForActionPotential());
+    }
+
     CalculateDoseResponseParameterSamples(IC50s, hills);
 
     boost::shared_ptr<const AbstractOdeSystemInformation> p_ode_info = mpModel->GetSystemInformation();
