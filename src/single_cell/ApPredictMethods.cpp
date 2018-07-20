@@ -631,7 +631,7 @@ void ApPredictMethods::InterpolateFromLookupTableForThisConcentration(
 
     const unsigned table_dim = mpLookupTable->GetDimension();
 
-    std::vector<double> credible_intervals;
+    std::vector<double> credible_intervals(mPercentiles.size());
 
     // If this is the first concentration (control) say the percent change must be
     // zero
@@ -642,7 +642,7 @@ void ApPredictMethods::InterpolateFromLookupTableForThisConcentration(
     {
         for (unsigned i = 0; i < mPercentiles.size(); i++)
         {
-            credible_intervals.push_back(mApd90s[concIndex]);
+            credible_intervals[i] = mApd90s[concIndex];
         }
         mApd90CredibleRegions[concIndex] = credible_intervals;
         return;
@@ -652,28 +652,16 @@ void ApPredictMethods::InterpolateFromLookupTableForThisConcentration(
     // samples.
     const unsigned num_samples = mSampledIc50s[0].size();
 
-    // In the lookup table the order of parameters is given in the filename:
-    // "4d_hERG_IKs_INa_ICaL_generator.arch"
-    std::vector<std::string> required_channels;
-    required_channels.push_back("herg");
-    if (table_dim > 3u)
-    {
-        required_channels.push_back("iks");
-    }
-    required_channels.push_back("na");
-    required_channels.push_back("cal");
-
     // This slightly complicated loop is just seeing which entry in
-    // mSampledIC50/Hills corresponds
-    // to the ones that we want, so we've listed the ones we want above and search
-    // for them in
-    // mShortNames here.
+    // mSampledIC50/Hills corresponds to the ones that we want,
+    // so we've listed the ones we want above and search for them in mShortNames here.
     std::map<unsigned, unsigned> map_to_metadata_idx;
+    std::vector<std::string> parameters_in_table = mpLookupTable->GetParameterNames();
     for (unsigned channel_idx = 0; channel_idx < table_dim; channel_idx++)
     {
-        for (unsigned i = 0; i < mShortNames.size(); i++)
+        for (unsigned i = 0; i < mMetadataNames.size(); i++)
         {
-            if (mShortNames[i] == required_channels[channel_idx])
+            if (mMetadataNames[i] == parameters_in_table[channel_idx])
             {
                 map_to_metadata_idx[channel_idx] = i;
                 break;
@@ -701,8 +689,7 @@ void ApPredictMethods::InterpolateFromLookupTableForThisConcentration(
     assert(predictions.size() == mSampledIc50s[0].size());
 
     /*
-     * Compile all the lookup table predictions into a vector that we can sort
-     * to
+     * Compile all the lookup table predictions into a vector that we can sort to
      * get percentiles.
      */
     // std::vector<double> apd_50_predictions;
@@ -726,8 +713,7 @@ void ApPredictMethods::InterpolateFromLookupTableForThisConcentration(
         {
             index_in_sorted_apd90_vector = ceil(mPercentiles[i] / 100.0 * (double)(num_samples));
         }
-        credible_intervals.push_back(
-            apd_90_predictions[index_in_sorted_apd90_vector]);
+        credible_intervals[i] = apd_90_predictions[index_in_sorted_apd90_vector];
     }
 
     mApd90CredibleRegions[concIndex] = credible_intervals;
@@ -939,9 +925,9 @@ void ApPredictMethods::CommonRunMethod()
                                          "(%)</td></tr>\n"; // Header line
 
     /*
- * Work out the median IC50, Hill and saturation to use if more than one were
- * provided
- */
+     * Work out the median IC50, Hill and saturation to use if more than one were
+     * provided
+     */
     std::vector<double> median_ic50; // vector is over channel indices
     std::vector<double> median_hill; //               ""
     std::vector<double> median_saturation; //               ""
@@ -1007,8 +993,8 @@ void ApPredictMethods::CommonRunMethod()
     }
 
     /*
-   * START LOOP OVER EACH CONCENTRATION TO TEST WITH
-   */
+     * START LOOP OVER EACH CONCENTRATION TO TEST WITH
+     */
     bool reliable_credible_intervals = true;
     mApd90CredibleRegions.resize(mConcs.size());
     double control_apd90 = 0;

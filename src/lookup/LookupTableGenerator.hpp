@@ -364,6 +364,11 @@ public:
      * Helper method that just returns DIM, to avoid template chaos.
      */
     unsigned GetDimension() const;
+
+    /**
+     * @return The names of each parameter in each dimension of this table.
+     */
+    std::vector<std::string> GetParameterNames() const;
 };
 
 #include "SerializationExportWrapper.hpp"
