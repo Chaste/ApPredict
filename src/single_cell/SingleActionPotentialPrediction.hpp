@@ -163,6 +163,60 @@ public:
         return mCaMax;
     }
 
+    /**
+     * @param pModel a cell model
+     *
+     * @return the threshold at which we think a voltage signal is a real
+     * excited action potential, rather than simply a stimulus current and decay
+     * so we give the error code NoActionPotential_1 appropriately (rather than
+     * really small APDs).     *
+     */
+    double DetectVoltageThresholdForActionPotential()
+    {
+        OdeSolution baseline_solution = RunSteadyPacingExperiment();
+        std::vector<double> baseline_voltages = baseline_solution.GetAnyVariable("membrane_voltage");
+        double max_baseline_voltage = *(std::max_element(baseline_voltages.begin(), baseline_voltages.end()));
+        double min_baseline_voltage = *(std::min_element(baseline_voltages.begin(), baseline_voltages.end()));
+
+        // We switch off the sodium current and see how high the stimulus makes the voltage go.
+        if (mpModel->HasParameter("membrane_fast_sodium_current_conductance"))
+        {
+            const double original_na_conductance = mpModel->GetParameter("membrane_fast_sodium_current_conductance");
+            mpModel->SetParameter("membrane_fast_sodium_current_conductance", 0u);
+
+            // Remember state variables
+            N_Vector steady_full_gNa_conductance_state_vars = mpModel->GetStateVariables();
+
+            OdeSolution solution = RunSteadyPacingExperiment();
+
+            // Put it back where it was!
+            mpModel->SetParameter("membrane_fast_sodium_current_conductance",
+                                  original_na_conductance);
+            mpModel->SetStateVariables(steady_full_gNa_conductance_state_vars);
+            DeleteVector(steady_full_gNa_conductance_state_vars);
+
+            std::vector<double> voltages = solution.GetAnyVariable("membrane_voltage");
+            double max_voltage = *(std::max_element(voltages.begin(), voltages.end()));
+            double min_voltage = *(std::min_element(voltages.begin(), voltages.end()));
+
+            // Go 25% over the depolarization jump at gNa=0 as a threshold for 'this
+            // really is an AP'. This should be sensible for all models that fail to depolarise with gNa=0.
+            const double proposed_threshold = min_voltage + 1.25 * (max_voltage - min_voltage);
+
+            // BUT some models with a big stimulus fire off almost fully with gNa=0 anyway (e.g. ten Tusscher 2006)
+            // and so we need to prevent this proposed threshold being above (or near) the usual peak voltage
+            // (if we set threshold above we'd always get NoAP1 error codes, even when there are APs!)
+            const double two_thirds_of_full_AP = min_baseline_voltage + 0.666 * (max_baseline_voltage - min_baseline_voltage);
+            if (proposed_threshold <= two_thirds_of_full_AP)
+            {
+                return proposed_threshold;
+            }
+        }
+
+        // Otherwise we give a sensible default of 1/3 of the way up an AP.
+        return min_baseline_voltage + 0.333 * (max_baseline_voltage - min_baseline_voltage); // mV
+    }
+
 private:
     /**
      * Check whether the run has completed and was unsuccessful,

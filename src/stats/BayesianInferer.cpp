@@ -126,7 +126,7 @@ void BayesianInferer::PerformInference()
 
     // Set up our prior distribution - it is uniform, so just divide one by number of possible options.
     unsigned num_possible_values = mPossibleMuValues.size();
-    const double prior_prob_this_mu = 1.0 / ((double)(num_possible_values));
+    const double log_prior_prob_this_mu = log(1.0 / ((double)(num_possible_values)));
     mPosteriorPdf.resize(num_possible_values);
     mPosteriorCdf.resize(num_possible_values);
     std::vector<double> log_posterior(num_possible_values);
@@ -134,7 +134,7 @@ void BayesianInferer::PerformInference()
     // Calculate the modifications to the prior distribution
     for (unsigned i = 0; i < num_possible_values; i++)
     {
-        log_posterior[i] = log(prior_prob_this_mu);
+        log_posterior[i] = log_prior_prob_this_mu;
 
         for (unsigned j = 0; j < mpData->size(); j++)
         {
@@ -245,7 +245,3 @@ std::vector<double> BayesianInferer::GetPosteriorPdf()
     }
     return mPosteriorPdf;
 }
-
-
-
-

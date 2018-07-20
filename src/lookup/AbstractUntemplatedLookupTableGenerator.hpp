@@ -163,9 +163,7 @@ public:
       * between
       * lookup table points.
       */
-    virtual void AddQuantityOfInterest(QuantityOfInterest quantity,
-                                       double tolerance)
-        = 0;
+    virtual void AddQuantityOfInterest(QuantityOfInterest quantity, double tolerance) = 0;
 
     /**
       * Set maximum number of simulations to run when making the table.
@@ -190,9 +188,7 @@ public:
       * parameter
       * boxes to allow.
       */
-    virtual void SetMaxVariationInRefinement(
-        const unsigned& rMaxRefinementDifference)
-        = 0;
+    virtual void SetMaxVariationInRefinement(const unsigned& rMaxRefinementDifference) = 0;
 
     //    /**
     //	 * Provide an interpolated estimate for the quantities of interest
@@ -217,9 +213,7 @@ public:
      * would like to estimate QoIs.
      * @return The QoI estimates at these points.
      */
-    virtual std::vector<std::vector<double> > Interpolate(
-        const std::vector<std::vector<double> >& rParameterPoints)
-        = 0;
+    virtual std::vector<std::vector<double> > Interpolate(const std::vector<std::vector<double> >& rParameterPoints) = 0;
 
     /**
      * @return The number of evaluations (points in the lookup table at which
@@ -233,20 +227,6 @@ public:
      * @param frequency  The pacing frequency to use (in Hz).
      */
     virtual void SetPacingFrequency(double frequency) = 0;
-
-    /**
-     * @param pModel a cell model
-     *
-     * @return the threshold at which we think a voltage signal is a real
-     * excited action potential, rather than simply a stimulus current and decay
-     * so we give the error code NoActionPotential_1 appropriately (rather than
-     * really small APDs).
-     *
-     * Note this method will mess up state variables and they will need
-     * resetting to normal steady state after calling it.
-     */
-    static double DetectVoltageThresholdForActionPotential(
-        boost::shared_ptr<AbstractCvodeCell> pModel);
 
     /**
      * Helper method that just returns DIM, to avoid template chaos.

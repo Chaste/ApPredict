@@ -138,8 +138,11 @@ public:
             SetupModel setup(1.0, model_index); // models at 1 Hz
             boost::shared_ptr<AbstractCvodeCell> p_model = setup.GetModel();
 
-            LookupTableGenerator<2> generator(model_index, "dummy", "TestLookupTablesThreshold");
-            double threshold_voltage = generator.DetectVoltageThresholdForActionPotential(p_model);
+            SingleActionPotentialPrediction ap_runner(p_model);
+            ap_runner.SuppressOutput();
+            ap_runner.SetMaxNumPaces(100u);
+            double threshold_voltage = ap_runner.DetectVoltageThresholdForActionPotential();
+
             TS_ASSERT_DELTA(threshold_voltage, thresholds_for_each_model[model_index - 1u], 1e-2);
         }
     }

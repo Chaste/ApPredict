@@ -529,9 +529,8 @@ void ApPredictMethods::CalculateDoseResponseParameterSamples(
                          "without this.");
         }
 
-        std::cout << "Inferring the spread of dose-response parameters from your "
-                     "data (this can take a moment with large datasets)... "
-                  << std::flush;
+        std::cout << "Inferring the spread of dose-response parameters from your '" << mShortNames[channel_idx]
+                  << "' data (this can take a moment with large datasets)... " << std::flush;
         // Infer pIC50 spread.
         BayesianInferer ic50_inferer(PIC50);
         ic50_inferer.SetObservedData(pIC50s);
