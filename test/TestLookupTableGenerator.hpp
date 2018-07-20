@@ -185,7 +185,7 @@ public:
 
     void TestLookupTablesArchiver1d()
     {
-        OutputFileHandler handler("TestLookupTableArchiving", false);
+        OutputFileHandler handler("TestLookupTableArchiving");
         std::string archive_filename = handler.GetOutputDirectoryFullPath() + "Generator1d.arch";
 
         // Create data structures to store variables to test for equality here
