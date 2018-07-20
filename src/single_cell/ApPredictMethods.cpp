@@ -529,6 +529,9 @@ void ApPredictMethods::CalculateDoseResponseParameterSamples(
                          "without this.");
         }
 
+        std::cout << "Inferring the spread of dose-response parameters from your "
+                     "data (this can take a moment with large datasets)... "
+                  << std::flush;
         // Infer pIC50 spread.
         BayesianInferer ic50_inferer(PIC50);
         ic50_inferer.SetObservedData(pIC50s);
@@ -595,12 +598,10 @@ void ApPredictMethods::CalculateDoseResponseParameterSamples(
                 hill_inferer.SetObservedData(rHills[channel_idx]);
                 // This works with the Beta parameter, not the 1/Beta. So do 1/1/Beta to
                 // get Beta back!
-                hill_inferer.SetSpreadOfUnderlyingDistribution(
-                    1.0 / mHillSpreads[channel_idx]);
+                hill_inferer.SetSpreadOfUnderlyingDistribution(1.0 / mHillSpreads[channel_idx]);
                 hill_inferer.PerformInference();
 
-                mSampledHills[channel_idx] = hill_inferer.GetSampleMedianValue(
-                    num_samples); // Get 1000 inferred Hills
+                mSampledHills[channel_idx] = hill_inferer.GetSampleMedianValue(num_samples); // Get 1000 inferred Hills
             }
         }
         else
@@ -615,6 +616,7 @@ void ApPredictMethods::CalculateDoseResponseParameterSamples(
                 mSampledHills[channel_idx].push_back(-1.0);
             }
         }
+        std::cout << "done!" << std::endl;
     }
 }
 

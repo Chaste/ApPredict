@@ -92,9 +92,9 @@ BayesianInferer::BayesianInferer(DoseResponseParameter parameter)
     }
 
     // Set up a range of possible mu values for this parameter
-    for (unsigned i=0; i<num_values; i++)
+    for (unsigned i = 0; i < num_values; i++)
     {
-        mPossibleMuValues.push_back(min_value + ((double)(i))*(max_value-min_value)/((double)(num_values)-1.0));
+        mPossibleMuValues.push_back(min_value + ((double)(i)) * (max_value - min_value) / ((double)(num_values)-1.0));
     }
 };
 
@@ -119,49 +119,54 @@ void BayesianInferer::SetSpreadOfUnderlyingDistribution(double sigma)
 
 void BayesianInferer::PerformInference()
 {
-    if ( mSigma==DOUBLE_UNSET || mpData==NULL )
+    if (mSigma == DOUBLE_UNSET || mpData == NULL)
     {
         EXCEPTION("Please call SetObservedData() and SetSpreadOfUnderlyingDistribution() before PerformInference().");
     }
 
     // Set up our prior distribution - it is uniform, so just divide one by number of possible options.
     unsigned num_possible_values = mPossibleMuValues.size();
-    const double prior_prob_this_mu = 1.0/((double)(num_possible_values));
-    mPosteriorPdf.reserve(num_possible_values);
-    mPosteriorCdf.reserve(num_possible_values);
+    const double prior_prob_this_mu = 1.0 / ((double)(num_possible_values));
+    mPosteriorPdf.resize(num_possible_values);
+    mPosteriorCdf.resize(num_possible_values);
+    std::vector<double> log_posterior(num_possible_values);
 
     // Calculate the modifications to the prior distribution
-    for (unsigned i=0; i<num_possible_values; i++)
+    for (unsigned i = 0; i < num_possible_values; i++)
     {
-        mPosteriorPdf.push_back(prior_prob_this_mu);
+        log_posterior[i] = log(prior_prob_this_mu);
 
-        for (unsigned j=0; j<mpData->size(); j++)
+        for (unsigned j = 0; j < mpData->size(); j++)
         {
-            mPosteriorPdf[i] *= mpDistribution->EvaluatePdf(mPossibleMuValues[i], mSigma, (*mpData)[j]);
+            log_posterior[i] += log(mpDistribution->EvaluatePdf(mPossibleMuValues[i], mSigma, (*mpData)[j]));
         }
     }
 
+    double max_log_likelihood = *std::max_element(log_posterior.cbegin(), log_posterior.cend());
+
     // Do some scaling so that our posterior distribution is a PDF.
-    double sum = 0;
-    // Work out the sum of the posterior possibilities
-    for (unsigned i=0; i<num_possible_values; i++)
+    // First, work out the sum of the posterior likelihoods (scaled up to sensible numbers).
+    for (unsigned i = 0; i < num_possible_values; i++)
     {
-        sum += mPosteriorPdf[i];
+        mPosteriorPdf[i] = exp(log_posterior[i] - max_log_likelihood); // Add a constant to get these order one and nice for computations.
     }
-    double scaling_factor = (((double)(num_possible_values))/(mPossibleMuValues.back() - mPossibleMuValues[0]))/sum;
-    for (unsigned i=0; i<num_possible_values; i++)
+    double sum = std::accumulate(mPosteriorPdf.begin(), mPosteriorPdf.end(), 0.0);
+    assert(sum > 0.0);
+
+    double scaling_factor = (((double)(num_possible_values)) / (mPossibleMuValues.back() - mPossibleMuValues[0])) / sum;
+    for (unsigned i = 0; i < num_possible_values; i++)
     {
         mPosteriorPdf[i] *= scaling_factor;
     }
 
     // Do a simple sum to work out the CDF from the PDF
-    mPosteriorCdf.push_back(mPosteriorPdf[0]);
-    for (unsigned i=1; i<num_possible_values; i++)
+    mPosteriorCdf[0] = mPosteriorPdf[0];
+    for (unsigned i = 1; i < num_possible_values; i++)
     {
-        mPosteriorCdf.push_back(mPosteriorCdf[i-1u] + mPosteriorPdf[i]);
+        mPosteriorCdf[i] = mPosteriorCdf[i - 1u] + mPosteriorPdf[i];
     }
     // And scale so that it really is a CDF.
-    for (unsigned i=0; i<num_possible_values; i++)
+    for (unsigned i = 0; i < num_possible_values; i++)
     {
         mPosteriorCdf[i] /= mPosteriorCdf.back();
     }
@@ -187,7 +192,7 @@ double BayesianInferer::GetSampleMedianValue()
     // Loop through the CDF to see when it goes above this random number `p',
     // then do a bit of interpolation to give a unique sample 'x' for this `p'.
     unsigned index = UNSIGNED_UNSET;
-    for (unsigned i=0; i<mPosteriorCdf.size(); i++)
+    for (unsigned i = 0; i < mPosteriorCdf.size(); i++)
     {
         if (mPosteriorCdf[i] >= p)
         {
@@ -195,13 +200,13 @@ double BayesianInferer::GetSampleMedianValue()
             break;
         }
     }
-    assert(index!=UNSIGNED_UNSET);
+    assert(index != UNSIGNED_UNSET);
     double return_value = mPossibleMuValues[index];
-    if (index<mPosteriorCdf.size()-1u)
+    if (index < mPosteriorCdf.size() - 1u)
     {
         // Do a linear interpolation to ensure unique answers each call.
-        double proportion_through = (p - mPosteriorCdf[index])/(mPosteriorCdf[index+1]-mPosteriorCdf[index]);
-        return_value += proportion_through*(mPossibleMuValues[index+1] - mPossibleMuValues[index]);
+        double proportion_through = (p - mPosteriorCdf[index]) / (mPosteriorCdf[index + 1] - mPosteriorCdf[index]);
+        return_value += proportion_through * (mPossibleMuValues[index + 1] - mPossibleMuValues[index]);
     }
     return return_value;
 }
@@ -209,12 +214,12 @@ double BayesianInferer::GetSampleMedianValue()
 std::vector<double> BayesianInferer::GetSampleMedianValue(const unsigned numValues)
 {
     std::vector<double> samples(numValues);
-    for (unsigned i=0; i<numValues; i++)
+    for (unsigned i = 0; i < numValues; i++)
     {
         samples[i] = GetSampleMedianValue();
     }
 
-    assert(samples.size()==numValues);
+    assert(samples.size() == numValues);
     return samples;
 }
 
