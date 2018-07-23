@@ -1057,13 +1057,17 @@ void ApPredictMethods::CommonRunMethod()
             }
         }
 
-        // Store some things as member variables for returning later (mainly for
-        // testing)
-        mApd90s.push_back(apd90); // This is used by TorsadePredict and following
-        // method for control.
+        if (DidErrorOccur())
+        {
+            // Put a NaN in the APD90 vector if there was an error.
+            mApd90s.push_back(std::numeric_limits<double>::quiet_NaN());
+        }
+        else
+        {
+            mApd90s.push_back(apd90); // This is used by TorsadePredict and following method for control.
+        }
 
-        InterpolateFromLookupTableForThisConcentration(conc_index,
-                                                       median_saturation);
+        InterpolateFromLookupTableForThisConcentration(conc_index, median_saturation);
 
         if (!DidErrorOccur())
         {
