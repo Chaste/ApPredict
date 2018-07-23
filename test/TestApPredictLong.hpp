@@ -284,7 +284,7 @@ public:
         TS_ASSERT_EQUALS(apd90s.size(), 3u);
         TS_ASSERT_DELTA(apd90s[0], 219.60, 1e-1); // Very sensitive to compiler changes, so high tolerance.
         TS_ASSERT_DELTA(apd90s[1], 219.60, 1e-1);
-        TS_ASSERT_DELTA(apd90s[2], 217.469, 1e-1);
+        TS_ASSERT_EQUALS(std::isnan(apd90s[2]), true); // Top concentration has a NoAP1 error.
     }
 };
 
