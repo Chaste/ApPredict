@@ -70,7 +70,7 @@ public:
 
             std::vector<double> apd90s = methods.GetApd90s();
             TS_ASSERT_EQUALS(apd90s.size(), 3u);
-            TS_ASSERT_DELTA(apd90s[0], 286.4685, 1e-3);
+            TS_ASSERT_DELTA(apd90s[0], 286.4674, 1e-3);
             TS_ASSERT_DELTA(apd90s[1], 291.2857, 1e-3);
             TS_ASSERT_DELTA(apd90s[2], 313.4771, 1e-3);
 
