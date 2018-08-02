@@ -172,7 +172,6 @@ public:
 #include "SerializationExportWrapper.hpp"
 CHASTE_CLASS_EXPORT(ParameterPointData)
 BOOST_CLASS_VERSION(ParameterPointData, 1) // This is the second version of
-// archiving for this class (member
-// variable changed)
+// archiving for this class (member variable changed)
 
 #endif // PARAMETERPOINTDATA_HPP_

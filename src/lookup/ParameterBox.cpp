@@ -834,6 +834,8 @@ template class ParameterBox<2u>;
 template class ParameterBox<3u>;
 template class ParameterBox<4u>;
 template class ParameterBox<5u>;
+template class ParameterBox<6u>;
+template class ParameterBox<7u>;
 
 #include "SerializationExportWrapperForCpp.hpp"
 EXPORT_TEMPLATE_CLASS1(ParameterBox, 1u)
@@ -841,3 +843,5 @@ EXPORT_TEMPLATE_CLASS1(ParameterBox, 2u)
 EXPORT_TEMPLATE_CLASS1(ParameterBox, 3u)
 EXPORT_TEMPLATE_CLASS1(ParameterBox, 4u)
 EXPORT_TEMPLATE_CLASS1(ParameterBox, 5u)
+EXPORT_TEMPLATE_CLASS1(ParameterBox, 6u)
+EXPORT_TEMPLATE_CLASS1(ParameterBox, 7u)
