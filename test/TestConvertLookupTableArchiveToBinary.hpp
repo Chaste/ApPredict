@@ -36,6 +36,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef TESTCONVERTLOOKUPTABLEARCHIVETOBINARYGENERATOR_HPP_
 #define TESTCONVERTLOOKUPTABLEARCHIVETOBINARYGENERATOR_HPP_
 
+#include <boost/shared_ptr.hpp>
 #include <cxxtest/TestSuite.h>
 
 // This is defined in the hostconfig file,
@@ -49,10 +50,11 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "CheckpointArchiveTypes.hpp"
 
 #include "FileFinder.hpp"
-#include "Timer.hpp"
-
-#include "AbstractUntemplatedLookupTableGenerator.hpp"
 #include "LookupTableGenerator.hpp"
+#include "SetupModel.hpp"
+#include "SingleActionPotentialPrediction.hpp"
+
+#include "Timer.hpp"
 
 /**
  * Here we want to load an ascii archive file, then convert it into binary for this system.
@@ -80,6 +82,8 @@ private:
 public:
     void TestDownloadAsciiArchiveIfMissing()
     {
+        SetupModel setup(1.0, 1u); // Required to get archiving working with libraries according to #2969. Very undesirable!!
+
         // Just hard-code to this for now.
         std::string lookup_table_name = "shannon_wang_puglisi_weber_bers_2004_model_updated_4d_hERG_IKs_INa_ICaL_1Hz_generator";
 

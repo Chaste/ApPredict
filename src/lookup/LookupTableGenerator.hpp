@@ -43,6 +43,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/serialization/base_object.hpp>
 #include <boost/serialization/shared_ptr.hpp>
 #include <boost/serialization/vector.hpp>
+
 #include "ChasteSerialization.hpp" // Should be included before any other Chaste headers.
 #include "ChasteSerializationVersion.hpp"
 
@@ -377,6 +378,8 @@ EXPORT_TEMPLATE_CLASS1(LookupTableGenerator, 2u)
 EXPORT_TEMPLATE_CLASS1(LookupTableGenerator, 3u)
 EXPORT_TEMPLATE_CLASS1(LookupTableGenerator, 4u)
 EXPORT_TEMPLATE_CLASS1(LookupTableGenerator, 5u)
+EXPORT_TEMPLATE_CLASS1(LookupTableGenerator, 6u)
+EXPORT_TEMPLATE_CLASS1(LookupTableGenerator, 7u)
 
 // Keep track of the archive version we are using
 namespace boost

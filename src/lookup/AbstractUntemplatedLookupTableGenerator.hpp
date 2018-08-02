@@ -57,13 +57,13 @@ private:
     /** Needed for serialization. */
     friend class boost::serialization::access;
     /**
- * Main boost serialization method, some member variables are handled by
- * Save/Load constructs.
- *
- * @param archive  the archive file.
- * @param version  the version of archiving, defined in the macro at the
- * bottom of the class.
- */
+     * Main boost serialization method, some member variables are handled by
+     * Save/Load constructs.
+     *
+     * @param archive  the archive file.
+     * @param version  the version of archiving, defined in the macro at the
+     * bottom of the class.
+     */
     template <class Archive>
     void serialize(Archive& archive, const unsigned int version)
     {
@@ -239,7 +239,6 @@ public:
     virtual std::vector<std::string> GetParameterNames() const = 0;
 };
 
-#include "SerializationExportWrapper.hpp"
 CLASS_IS_ABSTRACT(AbstractUntemplatedLookupTableGenerator)
 
 #endif // ABSTRACTUNTEMPLATEDLOOKUPTABLEGENERATOR_HPP_

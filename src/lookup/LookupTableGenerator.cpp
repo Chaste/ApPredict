@@ -679,19 +679,23 @@ std::vector<std::string> LookupTableGenerator<DIM>::GetParameterNames() const
     return mParameterNames;
 }
 
+/////////////////////////////////////////////////////////////////////
+// Explicit instantiation
+/////////////////////////////////////////////////////////////////////
+template class LookupTableGenerator<1u>;
+template class LookupTableGenerator<2u>;
+template class LookupTableGenerator<3u>;
+template class LookupTableGenerator<4u>;
+template class LookupTableGenerator<5u>;
+template class LookupTableGenerator<6u>;
+template class LookupTableGenerator<7u>;
+// Just up to 7D for now, may need to be bigger eventually.
+
 #include "SerializationExportWrapperForCpp.hpp"
 EXPORT_TEMPLATE_CLASS1(LookupTableGenerator, 1u)
 EXPORT_TEMPLATE_CLASS1(LookupTableGenerator, 2u)
 EXPORT_TEMPLATE_CLASS1(LookupTableGenerator, 3u)
 EXPORT_TEMPLATE_CLASS1(LookupTableGenerator, 4u)
 EXPORT_TEMPLATE_CLASS1(LookupTableGenerator, 5u)
-
-/////////////////////////////////////////////////////////////////////
-// Explicit instantiation
-/////////////////////////////////////////////////////////////////////
-template class LookupTableGenerator<1>;
-template class LookupTableGenerator<2>;
-template class LookupTableGenerator<3>;
-template class LookupTableGenerator<4>;
-template class LookupTableGenerator<5>;
-// Just up to 5D for now, may need to be bigger eventually.
+EXPORT_TEMPLATE_CLASS1(LookupTableGenerator, 6u)
+EXPORT_TEMPLATE_CLASS1(LookupTableGenerator, 7u)
