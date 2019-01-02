@@ -1,6 +1,6 @@
 /*
 
-Copyright (c) 2005-2018, University of Oxford.
+Copyright (c) 2005-2019, University of Oxford.
 All rights reserved.
 
 University of Oxford means the Chancellor, Masters and Scholars of the
@@ -298,8 +298,7 @@ OdeSolution AbstractActionPotentialMethod::SteadyStatePacingExperiment(
 
     if (mRepeat)
     {
-        // std::cout << "Repeating simulation to order alternans APs
-        // consistently...\n";
+        // std::cout << "Repeating simulation to order alternans APs consistently...\n";
         // If we might benefit from pushing forward one period and re-analysing...
         PushModelForwardOneS1Interval(pModel, s1_period, maximum_time_step);
 
@@ -412,8 +411,9 @@ OdeSolution AbstractActionPotentialMethod::PerformAnalysisOfTwoPaces(
         // We didn't get back any action potentials,
         // which should be because of one of the following errors (if not throw the
         // exception).
-        if (e.GetShortMessage() != "AP did not occur, never exceeded threshold voltage." && e.GetShortMessage() != "No full action potential was recorded" && e.GetShortMessage() != "No MaxUpstrokeVelocity matching a full action potential was "
-                                                                                                                                                                                     "recorded.")
+        if (e.GetShortMessage() != "AP did not occur, never exceeded threshold voltage."
+            && e.GetShortMessage() != "No full action potential was recorded"
+            && e.GetShortMessage() != "No MaxUpstrokeVelocity matching a full action potential was recorded.")
         {
             throw e;
         }
