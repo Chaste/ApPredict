@@ -21,7 +21,7 @@ so that all the file paths can be picked up correctly (replacing ```<chaste sour
 
 This ApPredict project should be used with the current `develop` branch of [Chaste](https://github.com/Chaste/Chaste). If instead you want a version that works with a released version of Chaste, then please select the relevant Tag of this github repository.
 
-The following instructions should do the cloning, note that this project pulls in a submodule from the Chaste/cellml repository, so cloning it requires the ```--recursive``` option:
+The following instructions should do the cloning, note that this project pulls in a submodule from the [Chaste/cellml](https://github.com/chaste/cellml) repository, so cloning it requires the ```--recursive``` option:
 ```sh
 $ cd <chaste source directory>/projects
 $ git clone --recursive https://github.com/Chaste/ApPredict.git
