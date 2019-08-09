@@ -102,19 +102,13 @@ double CipaQNetCalculator::ComputeQNet()
     const double timestep_in_seconds = (detailed_solution.rGetTimes()[1] - detailed_solution.rGetTimes()[0]) / 1000.0;
 
     // Integrate over the whole AP.
-    for (unsigned i = 0; i < i_cal.size(); i++)
+    q_net[0] = 0.0;
+    for (unsigned i = 1u; i < i_cal.size(); i++)
     {
         i_net[i] = i_cal[i] + i_nal[i] + i_kr[i] + i_ks[i] + i_k1[i] + i_to[i]; // uA/uF
 
         // Hack in a trapezium rule for the integral, should be enough accuracy with this time resolution.
-        if (i > 0)
-        {
-            q_net[i] = q_net[i - 1] + timestep_in_seconds * 0.5 * (i_net[i] + i_net[i - 1]); // Coulomb is Amps * seconds (rather than milliseconds), so integral in uC/uF.
-        }
-        else
-        {
-            q_net[i] = 0.0;
-        }
+        q_net[i] = q_net[i - 1] + timestep_in_seconds * 0.5 * (i_net[i] + i_net[i - 1]); // Coulomb is Amps * seconds (rather than milliseconds), so integral in uC/uF.
     }
 
     // Integrate to get qNet
