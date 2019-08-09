@@ -197,11 +197,6 @@ private:
     bool mAllCornersEvaluated;
 
     /**
-     * The tolerance at which to stop refining box widths.
-     */
-    double mBoxWidthTolerance;
-
-    /**
      * Get a measure of the error associated with predicting the quantity of interest in this box.
      * Calculated by providing an interpolated estimate from parent, and then comparing with
      * our new assigned quantities of interest.
@@ -355,8 +350,7 @@ private:
      * Report whether this box needs further refinement or not.
      *
      * Contains a hard-coded limit on the maximum width in any dimension of the box, once this falls
-     * below a certain hard-coded limit (set in constructor for #mBoxWidthTolerance) we won't refine
-     * the boxes any more and will return false.
+     * below a certain hard-coded limit we won't refine the boxes any more and will return false.
      *
      * @param rTolerance  The error estimate in the QoI that we are happy with
      * @param rQuantityIndex  The QoI index that we are considering.
