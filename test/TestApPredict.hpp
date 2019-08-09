@@ -42,8 +42,8 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/shared_ptr.hpp>
 #include "ApPredictMethods.hpp"
 #include "CommandLineArgumentsMocker.hpp"
-#include "FileComparison.hpp"
 #include "FileFinder.hpp"
+#include "NumericFileComparison.hpp"
 
 class TestApPredict : public CxxTest::TestSuite
 {
@@ -121,8 +121,13 @@ public:
             TS_ASSERT(generated_file.IsFile());
             TS_ASSERT(reference_file.IsFile());
 
-            FileComparison comparer(generated_file, reference_file);
-            TS_ASSERT(comparer.CompareFiles());
+            NumericFileComparison comparer(generated_file, reference_file);
+            TS_ASSERT(comparer.CompareFiles(1.5e-2));
+
+            std::vector<double> apd90s = methods.GetApd90s();
+            TS_ASSERT_EQUALS(apd90s.size(), 2u);
+            TS_ASSERT_DELTA(apd90s[0], 232.777, 2e-2);
+            TS_ASSERT_DELTA(apd90s[1], 232.744, 2e-2);
         }
         {
             CommandLineArgumentsMocker wrapper("--model 4 --pacing-freq 1 --plasma-concs 0 --pacing-max-time 0.2 --no-downsampling --pacing-stim-duration 5 --pacing-stim-magnitude -16");
@@ -136,8 +141,13 @@ public:
             TS_ASSERT(generated_file.IsFile());
             TS_ASSERT(reference_file.IsFile());
 
-            FileComparison comparer(generated_file, reference_file);
-            TS_ASSERT(comparer.CompareFiles());
+            NumericFileComparison comparer(generated_file, reference_file);
+            TS_ASSERT(comparer.CompareFiles(1.5e-2));
+
+            std::vector<double> apd90s = methods.GetApd90s();
+            TS_ASSERT_EQUALS(apd90s.size(), 2u);
+            TS_ASSERT_DELTA(apd90s[0], 198.396, 2e-2);
+            TS_ASSERT_DELTA(apd90s[1], 198.309, 2e-2);
         }
     }
 };
