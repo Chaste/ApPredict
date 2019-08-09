@@ -1159,8 +1159,12 @@ void ApPredictMethods::CommonRunMethod()
                                          << "\t" << error_code << "\t";
             if (mLookupTableAvailable)
             {
-                *steady_voltage_results_file << error_code << "," << error_code << ","
-                                             << error_code << std::endl;
+                *steady_voltage_results_file << error_code;
+                for (unsigned i = 1; i < mPercentiles.size(); i++)
+                {
+                    *steady_voltage_results_file << "," << error_code;
+                }
+                *steady_voltage_results_file << std::endl;
             }
             else
             {
