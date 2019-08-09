@@ -46,8 +46,7 @@ ParameterBox<DIM>::ParameterBox(ParameterBox<DIM>* pParent,
           mpParentBox(pParent),
           mMin(rMin),
           mMax(rMax),
-          mAllCornersEvaluated(false),
-          mBoxWidthTolerance(1e-5)
+          mAllCornersEvaluated(false)
 {
     if (!mpParentBox)
     {
@@ -406,7 +405,8 @@ bool ParameterBox<DIM>::DoesBoxNeedFurtherRefinement(const double& rTolerance,
             max_width = box_width[i];
         }
     }
-    if (max_width < mBoxWidthTolerance)
+    double box_width_tolerance = 1e-5;
+    if (max_width < box_width_tolerance)
     {
         return false;
     }
