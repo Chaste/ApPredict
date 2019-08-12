@@ -50,7 +50,6 @@ LookupTableLoader::LookupTableLoader(const std::string& rModelName, const double
         : mModelName(rModelName),
           mHertz(rHertz)
 {
-
     // Here we will attempt to use any lookup table associated with this model and
     // pacing rate.
     std::stringstream lookup_table_archive_name;
@@ -280,21 +279,36 @@ std::vector<std::string> LookupTableLoader::GetManifestOfTablesOnGarysWebsite()
     std::vector<std::string> available_tables;
 
     // If no archive exists, try to download and unpack one.
+    //std::string mainfest_URL = "http://www.cs.ox.ac.uk/people/gary.mirams/files/sausages";
     std::string mainfest_URL = "http://www.cs.ox.ac.uk/people/gary.mirams/files/" + manifest_filename;
     FileFinder manifest(manifest_filename, RelativeTo::AbsoluteOrCwd);
+
+    // First check to see whether the remote manifest is accessible
+    // The "--server-response" argument prints the server status and the "--spider" means don't download anything.
+    std::string command = "wget --server-response --spider " + mainfest_URL;
+    int return_code = system(command.c_str());
+    if (return_code != 0)
+    {
+        std::cout << "Could not find the remote manifest of available Lookup Tables on the web, "
+                     "we either don't have web access or www.cs.ox.ac.uk is down..."
+                  << std::endl;
+        return available_tables;
+    }
+
     try
     {
-        // Clean up if this is running afresh, otherwise we use a stale archive
-        // because wget copies a new one to a different place with a suffix of ".<number>"
         if (manifest.IsFile())
         {
-            EXPECT0(system, "rm " + manifest_filename);
+            std::cout << "\n\nAttempting to overwrite local lookup table manifest with the latest from:\n"
+                      << mainfest_URL << "\n\n";
+        }
+        else
+        {
+            std::cout << "\n\nAttempting to download lookup table manifest from:\n"
+                      << mainfest_URL << "\n\n";
         }
 
-        std::cout << "\n\nAttempting to download lookup table manifest from:\n"
-                  << mainfest_URL << "\n\n";
-
-        EXPECT0(system, "wget --dns-timeout=10 --connect-timeout=10 " + mainfest_URL);
+        EXPECT0(system, "wget --dns-timeout=10 --connect-timeout=10 -O " + manifest_filename + " " + mainfest_URL);
 
         std::cout << "Download succeeded.\n";
     }
