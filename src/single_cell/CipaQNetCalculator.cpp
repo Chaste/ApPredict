@@ -96,23 +96,24 @@ double CipaQNetCalculator::ComputeQNet()
     std::vector<double> i_k1 = detailed_solution.GetAnyVariable("membrane_inward_rectifier_potassium_current");
     std::vector<double> i_to = detailed_solution.GetAnyVariable("membrane_transient_outward_current");
     std::vector<double> i_net(i_cal.size());
-    std::vector<double> q_net(i_cal.size());
 
     // assume equal spacing and convert from milliseconds to seconds.
     const double timestep_in_seconds = (detailed_solution.rGetTimes()[1] - detailed_solution.rGetTimes()[0]) / 1000.0;
 
     // Integrate over the whole AP.
-    q_net[0] = 0.0;
+    double q_net = 0.0; // Charge
+    i_net[0] = i_cal[0] + i_nal[0] + i_kr[0] + i_ks[0] + i_k1[0] + i_to[0]; // Current
+
     for (unsigned i = 1u; i < i_cal.size(); i++)
     {
         i_net[i] = i_cal[i] + i_nal[i] + i_kr[i] + i_ks[i] + i_k1[i] + i_to[i]; // uA/uF
 
         // Hack in a trapezium rule for the integral, should be enough accuracy with this time resolution.
-        q_net[i] = q_net[i - 1] + timestep_in_seconds * 0.5 * (i_net[i] + i_net[i - 1]); // Coulomb is Amps * seconds (rather than milliseconds), so integral in uC/uF.
+        q_net += timestep_in_seconds * 0.5 * (i_net[i] + i_net[i - 1]); // Coulomb is Amps * seconds (rather than milliseconds), so integral in uC/uF.
     }
 
     // Integrate to get qNet
-    //std::cout << "Total qNet = " << q_net.back() << " C/F" << std::endl;
+    //std::cout << "Total qNet = " << q_net << " C/F" << std::endl;
 
-    return q_net.back();
+    return q_net;
 }
