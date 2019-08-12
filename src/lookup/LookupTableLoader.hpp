@@ -43,9 +43,11 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /**
  * Class that will decide, based on the command line arguments supplied to ApPredict,
- * which is the most appropriate LookupTable to try and load.
+ * which is the most appropriate LookupTable to try and load. Most of the work is done
+ * in the constructor which calls a bunch of private methods to decide which, if any,
+ * lookup table is appropriate.
  *
- * The tables are generated using TestMakeALookupTable.hpp
+ * The tables can be generated using TestMakeALookupTable.hpp
  *
  * Also looks at the manifest of ones that are available to download from the web and does
  * that if needed.
@@ -124,7 +126,7 @@ public:
 	 * @param rHertz  the pacing frequency we are interested in.
 	 */
     LookupTableLoader(const std::string& rModelName, const double& rHertz);
-    
+
     /**
      * @return whether we have found and loaded a lookup table.
      */
