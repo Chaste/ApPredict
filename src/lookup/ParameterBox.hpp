@@ -365,7 +365,7 @@ public:
      *
      * @param pParent The parent of this box
      * @param rMin  The N-D minimum vertex of this box
-     * @param rMax  THe N-D maximum vertex of this box
+     * @param rMax  The N-D maximum vertex of this box
      */
     ParameterBox(ParameterBox<DIM>* pParent,
                  const c_vector<double, DIM>& rMin = zero_vector<double>(DIM),
