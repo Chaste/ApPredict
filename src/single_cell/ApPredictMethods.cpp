@@ -1164,6 +1164,11 @@ void ApPredictMethods::CommonRunMethod()
                 {
                     *steady_voltage_results_file << "," << error_code;
                 }
+                // If the percentiles didn't include 50% then there should also be a median entry to add an error code for.
+                if (std::find(mPercentiles.begin(), mPercentiles.end(), 50) == mPercentiles.end())
+                {
+                    *steady_voltage_results_file << "," << error_code;
+                }
                 *steady_voltage_results_file << std::endl;
             }
             else
