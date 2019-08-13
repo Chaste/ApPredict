@@ -91,21 +91,21 @@ public:
         boost::shared_ptr<AbstractCvodeCell> p_model = setup.GetModel();
 
         // Run this once, and copy state variable archive into ApPredict test data folder.
-        //        {
-        //            // Used to generate an archive with 0.5Hz variables.
-        //            SteadyStateRunner runner(p_model);
-        //            runner.RunToSteadyState();
-        //
-        //            OutputFileHandler handler("archive", false);
-        //            std::string archive_filename;
-        //            archive_filename = handler.GetOutputDirectoryFullPath() + "ord_cipa_0.5Hz_state_vars.arch";
-        //
-        //            std::ofstream ofs(archive_filename.c_str());
-        //            boost::archive::text_oarchive output_arch(ofs);
-        //
-        //            const std::vector<double> state_vars = MakeStdVec(p_model->GetStateVariables());
-        //            output_arch << state_vars;
-        //        }
+        // {
+        //     // Used to generate an archive with 0.5Hz variables.
+        //     SteadyStateRunner runner(p_model);
+        //     runner.RunToSteadyState();
+
+        //     OutputFileHandler handler("archive", false);
+        //     std::string archive_filename;
+        //     archive_filename = handler.GetOutputDirectoryFullPath() + "ord_cipa_0.5Hz_state_vars.arch";
+
+        //     std::ofstream ofs(archive_filename.c_str());
+        //     boost::archive::text_oarchive output_arch(ofs);
+
+        //     const std::vector<double> state_vars = MakeStdVec(p_model->GetStateVariables());
+        //     output_arch << state_vars;
+        // }
 
         // Load archive of 0.5Hz steady state variables.
         {
@@ -122,8 +122,8 @@ public:
         // Run qNet calculation.
         CipaQNetCalculator calculator(p_model);
         double q_net = calculator.ComputeQNet();
-
-        TS_ASSERT_DELTA(q_net, 0.06967, 1e-5);
+        std::cout << "q_net = " << q_net << std::endl;
+        TS_ASSERT_DELTA(q_net, 0.0690158, 1e-5);
     }
 
     void TestCipaQNetSimulations()
