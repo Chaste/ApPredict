@@ -266,21 +266,21 @@ public:
         // Now set sodium and vary gKr in the test cases:
         p_model->SetParameter(gna_name, gNa_max * 0.5);
 
-        {
-            std::cout << "\nCase 8a: NoAP3 (but a bit like 5):\n"
-                      << std::endl;
-            p_model->SetStateVariables(steady_state);
-            p_model->SetParameter(gkr_name, gKr_max * 0.0407);
-            message = Run(p_model, 100, true, voltage_threshold, default_apd, "_gKr_0.0407");
-            TS_ASSERT_EQUALS(message, "NoActionPotential_3");
-        }
-
         std::cout << "Appears that some of the tests below may be sensitive to CVODE version and a bit fragile."
                      " Don't panic if they fail!"
                   << std::endl;
 
         {
-            std::cout << "\nCase 8b: NoAP3 (but a bit like 5):\n"
+            std::cout << "\nCase 8a: NoAP6 (but a bit like 5):\n"
+                      << std::endl;
+            p_model->SetStateVariables(steady_state);
+            p_model->SetParameter(gkr_name, gKr_max * 0.0407);
+            message = Run(p_model, 100, true, voltage_threshold, default_apd, "_gKr_0.0407");
+            TS_ASSERT_EQUALS(message, "NoActionPotential_6");
+        }
+
+        {
+            std::cout << "\nCase 8b: NoAP6 (but a bit like 5):\n"
                       << std::endl;
             p_model->SetStateVariables(steady_state);
             p_model->SetParameter(gkr_name, gKr_max * 0.0408);
@@ -294,7 +294,7 @@ public:
             p_model->SetStateVariables(steady_state);
             p_model->SetParameter(gkr_name, gKr_max * 0.0409);
             message = Run(p_model, 100, true, voltage_threshold, default_apd, "_gKr_0.0409");
-            TS_ASSERT_EQUALS(message, "NoActionPotential_3");
+            TS_ASSERT_EQUALS(message, "NoActionPotential_6");
         }
 
         {
