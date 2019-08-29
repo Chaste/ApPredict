@@ -203,10 +203,8 @@ SetupModel::SetupModel(const double& rHertz, unsigned modelIndex,
     double s_start = 1.0; // ms
     boost::shared_ptr<RegularStimulus> p_regular_stimulus(new RegularStimulus(s_magnitude, s_duration, s1_period, s_start));
 
-    mpModel->SetStimulusFunction(p_regular_stimulus); // Assign the regular
-    // stimulus to the cell's
-    // stimulus
-    mpModel->SetTolerances(1e-6, 1e-8);
+    mpModel->SetStimulusFunction(p_regular_stimulus); // Assign the regular stimulus to the cell's stimulus
+    mpModel->SetTolerances(1e-8, 1e-8);
 }
 
 boost::shared_ptr<AbstractCvodeCell> SetupModel::GetModel() { return mpModel; }

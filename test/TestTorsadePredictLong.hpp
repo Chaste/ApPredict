@@ -80,6 +80,32 @@ public:
             TS_ASSERT_EQUALS(tdp_predictions[1], 3u); // Cat 3
             TS_ASSERT_EQUALS(tdp_predictions[2], 2u); // Cat 1/2
         }
+
+        // Add a check for sensible behaviour when APD calculation fails.
+        {
+            CommandLineArgumentsMocker wrapper("--pic50-herg 7 --pic50-na 5 --pic50-cal 6 --hill-na 2 --hill-cal 1.5 --plasma-concs 0 100");
+
+            TorsadePredictMethods methods;
+            methods.Run();
+            std::vector<double> concs = methods.GetConcentrations();
+
+            TS_ASSERT_EQUALS(concs.size(), 3u);
+            TS_ASSERT_DELTA(concs[0], 0.0, 1e-12);
+            TS_ASSERT_DELTA(concs[1], 0.001, 1e-12);
+            TS_ASSERT_DELTA(concs[2], 100, 1e-12);
+
+            std::vector<double> apd90s = methods.GetApd90s();
+            TS_ASSERT_EQUALS(apd90s.size(), 3u);
+            TS_ASSERT_DELTA(apd90s[0], 286.4674, 1e-3);
+            TS_ASSERT_DELTA(apd90s[1], 286.879, 1e-3);
+            TS_ASSERT_EQUALS(std::isnan(apd90s[2]), true);
+
+            std::vector<unsigned> tdp_predictions = methods.GetTorsadePredictions();
+            TS_ASSERT_EQUALS(tdp_predictions.size(), 3u);
+            TS_ASSERT_EQUALS(tdp_predictions[0], 4u); // Cat 4
+            TS_ASSERT_EQUALS(tdp_predictions[1], 4u); // Cat 4
+            TS_ASSERT_EQUALS(tdp_predictions[2], 2u); // Cat 1/2 - APD calc failure is high risk!
+        }
     }
 };
 

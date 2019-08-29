@@ -106,11 +106,19 @@ void TorsadePredictMethods::MakeTorsadePredictions()
 
     // Perform the LDA
     LinearDiscriminantAnalysis lda = LoadLdaFromDrugData();
-    for (unsigned i = 0; i < mApd90s.size(); i++)
+    for (unsigned i = 0; i < largest_percent_change.size(); i++)
     {
         vector<double> test_point(1);
         test_point(0) = largest_percent_change[i];
-        mTorsadePredictions.push_back(lda.ClassifyThisPoint(test_point) + 2u); // We add two because our redfern categories start at 2 not 0.
+        if (std::isnan(test_point(0)))
+        {
+            // Dire prognostications shall befall thee. (an error occurred in APD calculation. Call it dangerous)
+            mTorsadePredictions.push_back(2);
+        }
+        else
+        {
+            mTorsadePredictions.push_back(lda.ClassifyThisPoint(test_point) + 2u); // We add two because our redfern categories start at 2 not 0.
+        }
     }
 }
 
