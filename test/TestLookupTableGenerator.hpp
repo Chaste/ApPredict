@@ -131,7 +131,7 @@ public:
     void TestVoltageThresholdDetectionAlgorithm()
     {
         std::vector<double> thresholds_for_each_model = boost::assign::list_of(-46.6219) /*Shannon etc.*/
-            (-44.3656)(-34.5941)(-35.9230)(-28.3257)(-38.4384);
+            (-44.3656)(-34.5809)(-35.9230)(-28.3257)(-38.4384);
 
         for (unsigned model_index = 1; model_index < 7u; model_index++)
         {
