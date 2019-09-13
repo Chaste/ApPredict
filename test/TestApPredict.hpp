@@ -147,7 +147,7 @@ public:
             std::vector<double> apd90s = methods.GetApd90s();
             TS_ASSERT_EQUALS(apd90s.size(), 2u);
             TS_ASSERT_DELTA(apd90s[0], 198.381, 2e-2);
-            TS_ASSERT_DELTA(apd90s[1], 198.2879, 2e-2);
+            TS_ASSERT_DELTA(apd90s[1], 198.3093, 2e-2);
         }
     }
 };
