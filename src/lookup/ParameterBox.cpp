@@ -396,7 +396,8 @@ bool ParameterBox<DIM>::DoesBoxNeedFurtherRefinement(const double& rTolerance,
     assert(!mAmParent);
 
     // Hardcode a stopping criteria based on the width of the box.
-    c_vector<double, DIM> box_width = mMax - mMin;
+    c_vector<double, DIM> box_width; // should be able to combine with line below but optimised gcc 7.4.0 didn't like it!
+    box_width = mMax - mMin;
     double max_width = -DBL_MAX;
     for (unsigned i = 0; i < DIM; i++)
     {
@@ -800,7 +801,8 @@ double ParameterBox<DIM>::ReportPercentageOfSpaceWhereToleranceIsMetForQoI(const
             continue;
         }
 
-        c_vector<double, DIM> widths = all_boxes[i]->mMax - all_boxes[i]->mMin;
+        c_vector<double, DIM> widths; // should be able to combine with line below but optimised gcc 7.4.0 didn't like it!
+        widths = all_boxes[i]->mMax - all_boxes[i]->mMin;
         double area_box = widths[0];
         for (unsigned j = 1; j < DIM; j++)
         {
