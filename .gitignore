@@ -2,6 +2,7 @@ build/
 .cproject
 .pydevproject
 .settings
+*.DS_Store
 
 apps/src/ApPredict
 
