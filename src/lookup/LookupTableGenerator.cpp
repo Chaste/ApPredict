@@ -551,31 +551,43 @@ void LookupTableGenerator<DIM>::SetParameterToScale(
     SetupModel setup(1.0, mModelIndex); // model at 1 Hz
     boost::shared_ptr<AbstractCvodeCell> p_model = setup.GetModel();
 
-    if (!p_model->HasParameter(rMetadataName))
-    {
-        // Not all of the models have a distinct fast I_to component.
-        // In this case we look for the complete I_to current instead.
-        if (rMetadataName == "membrane_fast_transient_outward_current_conductance" && p_model->HasParameter("membrane_transient_outward_current_conductance"))
-        {
-            WARNING(p_model->GetSystemName()
-                    << " does not have "
-                       "'membrane_fast_transient_outward_current_conductance' "
-                       "labelled, "
-                       "using combined Ito (fast and slow) instead...");
-            mParameterNames.push_back(
-                "membrane_transient_outward_current_conductance");
-        }
-        else
-        {
-            EXCEPTION(p_model->GetSystemName()
-                      << " does not have '" << rMetadataName
-                      << "' labelled, please tag it in the CellML file.");
-        }
-    }
-    else
+    // The usual case where this is a parameter
+    if (p_model->HasParameter(rMetadataName))
     {
         mParameterNames.push_back(rMetadataName);
     }
+    // The case where this is not a parameter, but a scaling factor for it exists
+    else if (p_model->HasParameter(rMetadataName + "_scaling_factor"))
+    {
+        mParameterNames.push_back(rMetadataName + "_scaling_factor");
+    }
+    // A special treatment for Ito,fast - we use Ito if it isn't present separately.
+    else if (rMetadataName == "membrane_fast_transient_outward_current_conductance" 
+          && p_model->HasAnyVariable("membrane_transient_outward_current_conductance"))
+    {
+        WARNING(p_model->GetSystemName()
+                << " does not have "
+                   "'membrane_fast_transient_outward_current_conductance' "
+                   "labelled, "
+                   "using combined Ito (fast and slow) instead...");
+        if (p_model->HasParameter("membrane_transient_outward_current_conductance"))
+        {
+            mParameterNames.push_back(
+                "membrane_transient_outward_current_conductance");
+        }
+        else if (p_model->HasParameter("membrane_transient_outward_current_conductance_scaling_factor"))
+        {
+            mParameterNames.push_back(
+                "membrane_transient_outward_current_conductance_scaling_factor");
+        }
+    }
+    else // It's neither named nor a scaling factor.
+    {
+        EXCEPTION(p_model->GetSystemName()
+                  << " does not have '" << rMetadataName
+                  << "' labelled, please tag it in the CellML file.");
+    }
+
     mMinimums.push_back(rMin);
     mMaximums.push_back(rMax);
 }
