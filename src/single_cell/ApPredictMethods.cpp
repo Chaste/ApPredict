@@ -1,6 +1,6 @@
 /*
 
-Copyright (c) 2005-2019, University of Oxford.
+Copyright (c) 2005-2020, University of Oxford.
 All rights reserved.
 
 University of Oxford means the Chancellor, Masters and Scholars of the
@@ -350,8 +350,14 @@ void ApPredictMethods::ApplyDrugBlock(
         pModel->SetParameter(mMetadataNames[channel_index],
                              default_conductance * conductance_factor);
     }
-    else // We haven't got that conductance parameter, or at least it isn't
-    // labelled.
+    else if (pModel->HasParameter(mMetadataNames[channel_index] + "_scaling_factor"))
+    {
+        // For when a 'conductance' is a derived quantity (function) rather than a scalar,
+        // we modify a tagged variable that will multiply that function.
+        pModel->SetParameter(mMetadataNames[channel_index] + "_scaling_factor",
+                             default_conductance * conductance_factor);
+    }
+    else // We haven't got that conductance parameter, or at least it isn't labelled.
     {
         // If we aren't trying to change it - don't worry, just carry on.
         if (conductance_factor < 1)
