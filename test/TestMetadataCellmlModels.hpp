@@ -97,6 +97,70 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 class TestMetadataCellmlModels : public CxxTest::TestSuite
 {
+private:
+    bool HasAParameterForThisOrScalingFactorOfThis(AbstractUntemplatedParameterisedSystem* pCell, const std::string& rMetadata)
+    {
+        if (pCell->HasParameter(rMetadata))
+        {
+            return true;
+        }
+
+        if (pCell->HasParameter(rMetadata + "_scaling_factor"))
+        {
+            return true;
+        }
+
+        return false;
+    }
+
+    double GetParameterOrScalingFactorForThis(AbstractCardiacCell* pCell, const std::string& rMetadata)
+    {
+        try
+        {
+            return pCell->GetParameter(rMetadata + "_scaling_factor");
+        }
+        catch (Exception& e)
+        {
+            return pCell->GetParameter(rMetadata);
+        }
+    }
+
+    void SetParameterOrScalingFactorOfThis(AbstractCardiacCell* pCell, const std::string& rMetadata, double value)
+    {
+        try
+        {
+            pCell->SetParameter(rMetadata + "_scaling_factor", value);
+        }
+        catch (Exception& e)
+        {
+            pCell->SetParameter(rMetadata, value);
+        }
+    }
+
+    double GetParameterOrScalingFactorForThis(AbstractCvodeCell* pCell, const std::string& rMetadata)
+    {
+        try
+        {
+            return pCell->GetParameter(rMetadata + "_scaling_factor");
+        }
+        catch (Exception& e)
+        {
+            return pCell->GetParameter(rMetadata);
+        }
+    }
+
+    void SetParameterOrScalingFactorOfThis(AbstractCvodeCell* pCell, const std::string& rMetadata, double value)
+    {
+        try
+        {
+            pCell->SetParameter(rMetadata + "_scaling_factor", value);
+        }
+        catch (Exception& e)
+        {
+            pCell->SetParameter(rMetadata, value);
+        }
+    }
+
 public:
     /**
 	* This test just ensures that all cell models can be compiled and given
@@ -104,7 +168,7 @@ public:
 	*
 	* (i.e. that pyCML and the metadata tags generated valid Chaste cell models.)
 	*/
-    void TestMetadataHasBeenCorrectlyTranslatedToChaste(void)
+    void TestMetadataHasBeenCorrectlyTranslatedToChaste(void) throw(Exception)
     {
 #ifdef CHASTE_CVODE
         // Regular stimulus and an ode solver object
@@ -133,46 +197,33 @@ public:
                 case 1u:
                 {
                     p_chaste_cell = new CellShannon2004FromCellML(p_solver, p_stimulus);
-                    p_chaste_cell_opt = new CellShannon2004FromCellML(
-                        p_solver,
-                        p_stimulus); // Opt files not made as Shannon is in trunk
+                    p_chaste_cell_opt = new CellShannon2004FromCellML(p_solver, p_stimulus); // Opt files not made as Shannon is in trunk
                     p_cvode_cell = new CellShannon2004FromCellMLCvode(p_solver, p_stimulus);
-                    p_cvode_cell_opt = new CellShannon2004FromCellMLCvode(
-                        p_solver,
-                        p_stimulus); // Opt files not made as Shannon is in trunk
+                    p_cvode_cell_opt = new CellShannon2004FromCellMLCvode(p_solver, p_stimulus); // Opt files not made as Shannon is in trunk
                     break;
                 }
                 case 2u:
                 {
-                    p_chaste_cell = new Cellten_tusscher_model_2006_epiFromCellML(
-                        p_solver, p_stimulus);
-                    p_chaste_cell_opt = new Cellten_tusscher_model_2006_epiFromCellMLOpt(
-                        p_solver, p_stimulus);
-                    p_cvode_cell = new Cellten_tusscher_model_2006_epiFromCellMLCvode(
-                        p_solver, p_stimulus);
-                    p_cvode_cell_opt = new Cellten_tusscher_model_2006_epiFromCellMLCvodeOpt(p_solver,
-                                                                                             p_stimulus);
+                    p_chaste_cell = new Cellten_tusscher_model_2006_epiFromCellML(p_solver, p_stimulus);
+                    p_chaste_cell_opt = new Cellten_tusscher_model_2006_epiFromCellMLOpt(p_solver, p_stimulus);
+                    p_cvode_cell = new Cellten_tusscher_model_2006_epiFromCellMLCvode(p_solver, p_stimulus);
+                    p_cvode_cell_opt = new Cellten_tusscher_model_2006_epiFromCellMLCvodeOpt(p_solver, p_stimulus);
                     break;
                 }
                 case 3u:
                 {
                     p_chaste_cell = new Cellpriebe_beuckelmann_1998FromCellML(p_solver, p_stimulus);
-                    p_chaste_cell_opt = new Cellpriebe_beuckelmann_1998FromCellMLOpt(
-                        p_solver, p_stimulus);
-                    p_cvode_cell = new Cellpriebe_beuckelmann_1998FromCellMLCvode(
-                        p_solver, p_stimulus);
-                    p_cvode_cell_opt = new Cellpriebe_beuckelmann_1998FromCellMLCvodeOpt(
-                        p_solver, p_stimulus);
+                    p_chaste_cell_opt = new Cellpriebe_beuckelmann_1998FromCellMLOpt(p_solver, p_stimulus);
+                    p_cvode_cell = new Cellpriebe_beuckelmann_1998FromCellMLCvode(p_solver, p_stimulus);
+                    p_cvode_cell_opt = new Cellpriebe_beuckelmann_1998FromCellMLCvodeOpt(p_solver, p_stimulus);
                     break;
                 }
                 case 4u:
                 {
                     p_chaste_cell = new Cellmahajan_shiferaw_2008FromCellML(p_solver, p_stimulus);
                     p_chaste_cell_opt = new Cellmahajan_shiferaw_2008FromCellMLOpt(p_solver, p_stimulus);
-                    p_cvode_cell = new Cellmahajan_shiferaw_2008FromCellMLCvode(
-                        p_solver, p_stimulus);
-                    p_cvode_cell_opt = new Cellmahajan_shiferaw_2008FromCellMLCvodeOpt(
-                        p_solver, p_stimulus);
+                    p_cvode_cell = new Cellmahajan_shiferaw_2008FromCellMLCvode(p_solver, p_stimulus);
+                    p_cvode_cell_opt = new Cellmahajan_shiferaw_2008FromCellMLCvodeOpt(p_solver, p_stimulus);
                     break;
                 }
                 case 5u:
@@ -180,8 +231,7 @@ public:
                     p_chaste_cell = new Celllivshitz_rudy_2007FromCellML(p_solver, p_stimulus);
                     p_chaste_cell_opt = new Celllivshitz_rudy_2007FromCellMLOpt(p_solver, p_stimulus);
                     p_cvode_cell = new Celllivshitz_rudy_2007FromCellMLCvode(p_solver, p_stimulus);
-                    p_cvode_cell_opt = new Celllivshitz_rudy_2007FromCellMLCvodeOpt(
-                        p_solver, p_stimulus);
+                    p_cvode_cell_opt = new Celllivshitz_rudy_2007FromCellMLCvodeOpt(p_solver, p_stimulus);
                     break;
                 }
                 case 6u:
@@ -194,14 +244,10 @@ public:
                 }
                 case 7u:
                 {
-                    p_chaste_cell = new Cellgrandi_pasqualini_bers_2010_ssFromCellML(
-                        p_solver, p_stimulus);
-                    p_chaste_cell_opt = new Cellgrandi_pasqualini_bers_2010_ssFromCellMLOpt(p_solver,
-                                                                                            p_stimulus);
-                    p_cvode_cell = new Cellgrandi_pasqualini_bers_2010_ssFromCellMLCvode(
-                        p_solver, p_stimulus);
-                    p_cvode_cell_opt = new Cellgrandi_pasqualini_bers_2010_ssFromCellMLCvodeOpt(
-                        p_solver, p_stimulus);
+                    p_chaste_cell = new Cellgrandi_pasqualini_bers_2010_ssFromCellML(p_solver, p_stimulus);
+                    p_chaste_cell_opt = new Cellgrandi_pasqualini_bers_2010_ssFromCellMLOpt(p_solver, p_stimulus);
+                    p_cvode_cell = new Cellgrandi_pasqualini_bers_2010_ssFromCellMLCvode(p_solver, p_stimulus);
+                    p_cvode_cell_opt = new Cellgrandi_pasqualini_bers_2010_ssFromCellMLCvodeOpt(p_solver, p_stimulus);
                     break;
                 }
                 case 8u:
@@ -217,8 +263,7 @@ public:
                     p_chaste_cell = new Cellohara_rudy_2011_endoFromCellML(p_solver, p_stimulus);
                     p_chaste_cell_opt = new Cellohara_rudy_2011_endoFromCellMLOpt(p_solver, p_stimulus);
                     p_cvode_cell = new Cellohara_rudy_2011_endoFromCellMLCvode(p_solver, p_stimulus);
-                    p_cvode_cell_opt = new Cellohara_rudy_2011_endoFromCellMLCvodeOpt(
-                        p_solver, p_stimulus);
+                    p_cvode_cell_opt = new Cellohara_rudy_2011_endoFromCellMLCvodeOpt(p_solver, p_stimulus);
                     break;
                 }
                 case 10u:
@@ -226,8 +271,7 @@ public:
                     p_chaste_cell = new Cellohara_rudy_cipa_v1_2017FromCellML(p_solver, p_stimulus);
                     p_chaste_cell_opt = new Cellohara_rudy_cipa_v1_2017FromCellMLOpt(p_solver, p_stimulus);
                     p_cvode_cell = new Cellohara_rudy_cipa_v1_2017FromCellMLCvode(p_solver, p_stimulus);
-                    p_cvode_cell_opt = new Cellohara_rudy_cipa_v1_2017FromCellMLCvodeOpt(
-                        p_solver, p_stimulus);
+                    p_cvode_cell_opt = new Cellohara_rudy_cipa_v1_2017FromCellMLCvodeOpt(p_solver, p_stimulus);
                     break;
                 }
                 case 11u:
@@ -240,14 +284,10 @@ public:
                 }
                 case 12u:
                 {
-                    p_chaste_cell = new Cellpaci_hyttinen_aaltosetala_severi_ventricularVersionFromCellML(
-                        p_solver, p_stimulus);
-                    p_chaste_cell_opt = new Cellpaci_hyttinen_aaltosetala_severi_ventricularVersionFromCellMLOpt(
-                        p_solver, p_stimulus);
-                    p_cvode_cell = new Cellpaci_hyttinen_aaltosetala_severi_ventricularVersionFromCellMLCvode(
-                        p_solver, p_stimulus);
-                    p_cvode_cell_opt = new Cellpaci_hyttinen_aaltosetala_severi_ventricularVersionFromCellMLCvodeOpt(
-                        p_solver, p_stimulus);
+                    p_chaste_cell = new Cellpaci_hyttinen_aaltosetala_severi_ventricularVersionFromCellML(p_solver, p_stimulus);
+                    p_chaste_cell_opt = new Cellpaci_hyttinen_aaltosetala_severi_ventricularVersionFromCellMLOpt(p_solver, p_stimulus);
+                    p_cvode_cell = new Cellpaci_hyttinen_aaltosetala_severi_ventricularVersionFromCellMLCvode(p_solver, p_stimulus);
+                    p_cvode_cell_opt = new Cellpaci_hyttinen_aaltosetala_severi_ventricularVersionFromCellMLCvodeOpt(p_solver, p_stimulus);
                     break;
                 }
                 default:
@@ -257,81 +297,53 @@ public:
             }
             std::cout << p_chaste_cell->GetSystemName() << std::endl
                       << std::flush;
-            TS_ASSERT_EQUALS(p_chaste_cell->HasParameter(
-                                 "membrane_fast_sodium_current_conductance"),
-                             true);
-            TS_ASSERT_EQUALS(p_chaste_cell->HasParameter(
-                                 "membrane_L_type_calcium_current_conductance"),
-                             true);
-            TS_ASSERT_EQUALS(
-                p_chaste_cell->HasParameter(
-                    "membrane_rapid_delayed_rectifier_potassium_current_conductance"),
-                true);
-            TS_ASSERT_EQUALS(
-                p_chaste_cell->HasParameter(
-                    "membrane_slow_delayed_rectifier_potassium_current_conductance"),
-                true);
 
-            const double default_a = p_chaste_cell->GetParameter(
-                "membrane_fast_sodium_current_conductance");
-            const double default_b = p_chaste_cell->GetParameter(
-                "membrane_L_type_calcium_current_conductance");
-            const double default_c = p_chaste_cell->GetParameter(
-                "membrane_rapid_delayed_rectifier_potassium_current_conductance");
-            const double default_d = p_chaste_cell->GetParameter(
-                "membrane_slow_delayed_rectifier_potassium_current_conductance");
+            TS_ASSERT_EQUALS(HasAParameterForThisOrScalingFactorOfThis(p_chaste_cell, "membrane_fast_sodium_current_conductance"), true);
+            TS_ASSERT_EQUALS(HasAParameterForThisOrScalingFactorOfThis(p_chaste_cell, "membrane_L_type_calcium_current_conductance"), true);
+            TS_ASSERT_EQUALS(HasAParameterForThisOrScalingFactorOfThis(p_chaste_cell, "membrane_rapid_delayed_rectifier_potassium_current_conductance"), true);
+            TS_ASSERT_EQUALS(HasAParameterForThisOrScalingFactorOfThis(p_chaste_cell, "membrane_slow_delayed_rectifier_potassium_current_conductance"), true);
+
+            const double default_a = GetParameterOrScalingFactorForThis(p_chaste_cell, "membrane_fast_sodium_current_conductance");
+            const double default_b = GetParameterOrScalingFactorForThis(p_chaste_cell, "membrane_L_type_calcium_current_conductance");
+            const double default_c = GetParameterOrScalingFactorForThis(p_chaste_cell, "membrane_rapid_delayed_rectifier_potassium_current_conductance");
+            const double default_d = GetParameterOrScalingFactorForThis(p_chaste_cell, "membrane_slow_delayed_rectifier_potassium_current_conductance");
 
             double default_e = 0;
-            if (model_index == 7u)
+            if (model_index == 7u || model_index == 4u)
             {
-                TS_ASSERT_EQUALS(
-                    p_chaste_cell->HasParameter(
-                        "membrane_fast_transient_outward_current_conductance"),
-                    true);
-                default_e = p_chaste_cell->GetParameter(
-                    "membrane_fast_transient_outward_current_conductance");
+                TS_ASSERT_EQUALS(HasAParameterForThisOrScalingFactorOfThis(p_chaste_cell, "membrane_fast_transient_outward_current_conductance"), true);
+                default_e = GetParameterOrScalingFactorForThis(p_chaste_cell, "membrane_fast_transient_outward_current_conductance");
             }
             else if (model_index != 5u)
             {
-                TS_ASSERT_EQUALS(p_chaste_cell->HasParameter(
-                                     "membrane_transient_outward_current_conductance"),
-                                 true);
-                default_e = p_chaste_cell->GetParameter(
-                    "membrane_transient_outward_current_conductance");
+                TS_ASSERT_EQUALS(HasAParameterForThisOrScalingFactorOfThis(p_chaste_cell, "membrane_transient_outward_current_conductance"), true);
+                default_e = GetParameterOrScalingFactorForThis(p_chaste_cell, "membrane_transient_outward_current_conductance");
             }
 
             double default_f = 0;
-            if (model_index == 9u || model_index == 10u) // O'Hara and variant
+            if (model_index == 9u || model_index == 10u || model_index == 6u) // Hund-Rudy, O'Hara and variants
             {
-                default_f = p_chaste_cell->GetParameter("membrane_persistent_sodium_current_conductance");
+                default_f = GetParameterOrScalingFactorForThis(p_chaste_cell, "membrane_persistent_sodium_current_conductance");
             }
 
             {
-                p_chaste_cell->SetParameter("membrane_fast_sodium_current_conductance",
-                                            default_a * a);
-                p_chaste_cell->SetParameter(
-                    "membrane_L_type_calcium_current_conductance", default_b * b);
-                p_chaste_cell->SetParameter(
-                    "membrane_rapid_delayed_rectifier_potassium_current_conductance",
-                    default_c * c);
-                p_chaste_cell->SetParameter(
-                    "membrane_slow_delayed_rectifier_potassium_current_conductance",
-                    default_d * d);
-                if (model_index == 7u)
+                SetParameterOrScalingFactorOfThis(p_chaste_cell, "membrane_fast_sodium_current_conductance", default_a * a);
+                SetParameterOrScalingFactorOfThis(p_chaste_cell, "membrane_L_type_calcium_current_conductance", default_b * b);
+                SetParameterOrScalingFactorOfThis(p_chaste_cell, "membrane_rapid_delayed_rectifier_potassium_current_conductance", default_c * c);
+                SetParameterOrScalingFactorOfThis(p_chaste_cell, "membrane_slow_delayed_rectifier_potassium_current_conductance", default_d * d);
+
+                if (model_index == 7u || model_index == 4u)
                 {
-                    p_chaste_cell->SetParameter(
-                        "membrane_fast_transient_outward_current_conductance",
-                        default_e * e);
+                    SetParameterOrScalingFactorOfThis(p_chaste_cell, "membrane_fast_transient_outward_current_conductance", default_e * e);
                 }
                 else if (model_index != 5u)
                 {
-                    p_chaste_cell->SetParameter(
-                        "membrane_transient_outward_current_conductance", default_e * e);
+                    SetParameterOrScalingFactorOfThis(p_chaste_cell, "membrane_transient_outward_current_conductance", default_e * e);
                 }
 
-                if (model_index == 9u || model_index == 10u) // O'Hara and variant
+                if (model_index == 9u || model_index == 10u || model_index == 6u) // O'Hara and variant
                 {
-                    p_chaste_cell->SetParameter("membrane_persistent_sodium_current_conductance", f * default_f);
+                    SetParameterOrScalingFactorOfThis(p_chaste_cell, "membrane_persistent_sodium_current_conductance", f * default_f);
                 }
 
                 TS_ASSERT_EQUALS(p_chaste_cell->HasCellMLDefaultStimulus(), true);
@@ -339,31 +351,22 @@ public:
             }
 
             {
-                p_chaste_cell_opt->SetParameter(
-                    "membrane_fast_sodium_current_conductance", default_a * a);
-                p_chaste_cell_opt->SetParameter(
-                    "membrane_L_type_calcium_current_conductance", default_b * b);
-                p_chaste_cell_opt->SetParameter(
-                    "membrane_rapid_delayed_rectifier_potassium_current_conductance",
-                    default_c * c);
-                p_chaste_cell_opt->SetParameter(
-                    "membrane_slow_delayed_rectifier_potassium_current_conductance",
-                    default_d * d);
-                if (model_index == 7u)
+                SetParameterOrScalingFactorOfThis(p_chaste_cell_opt, "membrane_fast_sodium_current_conductance", default_a * a);
+                SetParameterOrScalingFactorOfThis(p_chaste_cell_opt, "membrane_L_type_calcium_current_conductance", default_b * b);
+                SetParameterOrScalingFactorOfThis(p_chaste_cell_opt, "membrane_rapid_delayed_rectifier_potassium_current_conductance", default_c * c);
+                SetParameterOrScalingFactorOfThis(p_chaste_cell_opt, "membrane_slow_delayed_rectifier_potassium_current_conductance", default_d * d);
+                if (model_index == 7u || model_index == 4u)
                 {
-                    p_chaste_cell_opt->SetParameter(
-                        "membrane_fast_transient_outward_current_conductance",
-                        default_e * e);
+                    SetParameterOrScalingFactorOfThis(p_chaste_cell_opt, "membrane_fast_transient_outward_current_conductance", default_e * e);
                 }
                 else if (model_index != 5u)
                 {
-                    p_chaste_cell_opt->SetParameter(
-                        "membrane_transient_outward_current_conductance", default_e * e);
+                    SetParameterOrScalingFactorOfThis(p_chaste_cell_opt, "membrane_transient_outward_current_conductance", default_e * e);
                 }
 
-                if (model_index == 9u || model_index == 10u) // O'Hara and variant
+                if (model_index == 9u || model_index == 10u || model_index == 6u) // O'Hara and variant
                 {
-                    p_chaste_cell_opt->SetParameter("membrane_persistent_sodium_current_conductance", f * default_f);
+                    SetParameterOrScalingFactorOfThis(p_chaste_cell_opt, "membrane_persistent_sodium_current_conductance", f * default_f);
                 }
 
                 TS_ASSERT_EQUALS(p_chaste_cell_opt->HasCellMLDefaultStimulus(), true);
@@ -371,31 +374,22 @@ public:
             }
 
             {
-                p_cvode_cell->SetParameter("membrane_fast_sodium_current_conductance",
-                                           default_a * a);
-                p_cvode_cell->SetParameter(
-                    "membrane_L_type_calcium_current_conductance", default_b * b);
-                p_cvode_cell->SetParameter(
-                    "membrane_rapid_delayed_rectifier_potassium_current_conductance",
-                    default_c * c);
-                p_cvode_cell->SetParameter(
-                    "membrane_slow_delayed_rectifier_potassium_current_conductance",
-                    default_d * d);
-                if (model_index == 7u)
+                SetParameterOrScalingFactorOfThis(p_cvode_cell, "membrane_fast_sodium_current_conductance", default_a * a);
+                SetParameterOrScalingFactorOfThis(p_cvode_cell, "membrane_L_type_calcium_current_conductance", default_b * b);
+                SetParameterOrScalingFactorOfThis(p_cvode_cell, "membrane_rapid_delayed_rectifier_potassium_current_conductance", default_c * c);
+                SetParameterOrScalingFactorOfThis(p_cvode_cell, "membrane_slow_delayed_rectifier_potassium_current_conductance", default_d * d);
+                if (model_index == 7u || model_index == 4u)
                 {
-                    p_cvode_cell->SetParameter(
-                        "membrane_fast_transient_outward_current_conductance",
-                        default_e * e);
+                    SetParameterOrScalingFactorOfThis(p_cvode_cell, "membrane_fast_transient_outward_current_conductance", default_e * e);
                 }
                 else if (model_index != 5u)
                 {
-                    p_cvode_cell->SetParameter(
-                        "membrane_transient_outward_current_conductance", default_e * e);
+                    SetParameterOrScalingFactorOfThis(p_cvode_cell, "membrane_transient_outward_current_conductance", default_e * e);
                 }
 
-                if (model_index == 9u || model_index == 10u) // O'Hara and variant
+                if (model_index == 9u || model_index == 10u || model_index == 6u) // O'Hara and variants
                 {
-                    p_cvode_cell->SetParameter("membrane_persistent_sodium_current_conductance", f * default_f);
+                    SetParameterOrScalingFactorOfThis(p_cvode_cell, "membrane_persistent_sodium_current_conductance", f * default_f);
                 }
 
                 TS_ASSERT_EQUALS(p_cvode_cell->HasCellMLDefaultStimulus(), true);
@@ -403,30 +397,21 @@ public:
             }
 
             {
-                p_cvode_cell_opt->SetParameter(
-                    "membrane_fast_sodium_current_conductance", default_a * a);
-                p_cvode_cell_opt->SetParameter(
-                    "membrane_L_type_calcium_current_conductance", default_b * b);
-                p_cvode_cell_opt->SetParameter(
-                    "membrane_rapid_delayed_rectifier_potassium_current_conductance",
-                    default_c * c);
-                p_cvode_cell_opt->SetParameter(
-                    "membrane_slow_delayed_rectifier_potassium_current_conductance",
-                    default_d * d);
-                if (model_index == 7u)
+                SetParameterOrScalingFactorOfThis(p_cvode_cell_opt, "membrane_fast_sodium_current_conductance", default_a * a);
+                SetParameterOrScalingFactorOfThis(p_cvode_cell_opt, "membrane_L_type_calcium_current_conductance", default_b * b);
+                SetParameterOrScalingFactorOfThis(p_cvode_cell_opt, "membrane_rapid_delayed_rectifier_potassium_current_conductance", default_c * c);
+                SetParameterOrScalingFactorOfThis(p_cvode_cell_opt, "membrane_slow_delayed_rectifier_potassium_current_conductance", default_d * d);
+                if (model_index == 7u || model_index == 4u)
                 {
-                    p_cvode_cell_opt->SetParameter(
-                        "membrane_fast_transient_outward_current_conductance",
-                        default_e * e);
+                    SetParameterOrScalingFactorOfThis(p_cvode_cell_opt, "membrane_fast_transient_outward_current_conductance", default_e * e);
                 }
                 else if (model_index != 5u)
                 {
-                    p_cvode_cell_opt->SetParameter(
-                        "membrane_transient_outward_current_conductance", default_e * e);
+                    SetParameterOrScalingFactorOfThis(p_cvode_cell_opt, "membrane_transient_outward_current_conductance", default_e * e);
                 }
-                if (model_index == 9u || model_index == 10u) // O'Hara and variant
+                if (model_index == 9u || model_index == 10u || model_index == 6u) // O'Hara and variants
                 {
-                    p_cvode_cell_opt->SetParameter("membrane_persistent_sodium_current_conductance", f * default_f);
+                    SetParameterOrScalingFactorOfThis(p_cvode_cell_opt, "membrane_persistent_sodium_current_conductance", f * default_f);
                 }
 
                 TS_ASSERT_EQUALS(p_cvode_cell_opt->HasCellMLDefaultStimulus(), true);
