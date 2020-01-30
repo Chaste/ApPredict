@@ -51,15 +51,15 @@ public:
      * Constructor
      */
     SingleActionPotentialPrediction(boost::shared_ptr<AbstractCvodeCell> pModel)
-            : AbstractActionPotentialMethod(),
-              mApd90(DOUBLE_UNSET),
-              mApd50(DOUBLE_UNSET),
-              mUpstroke(DOUBLE_UNSET),
-              mPeak(DOUBLE_UNSET),
-              mPeakTime(DOUBLE_UNSET),
-              mCaMin(DOUBLE_UNSET),
-              mCaMax(DOUBLE_UNSET),
-              mpModel(pModel){};
+        : AbstractActionPotentialMethod(),
+          mApd90(DOUBLE_UNSET),
+          mApd50(DOUBLE_UNSET),
+          mUpstroke(DOUBLE_UNSET),
+          mPeak(DOUBLE_UNSET),
+          mPeakTime(DOUBLE_UNSET),
+          mCaMin(DOUBLE_UNSET),
+          mCaMax(DOUBLE_UNSET),
+          mpModel(pModel){};
 
     /**
      * Run the steady state pacing and evaluate action potential markers (APD90, APD50, Peak and upstroke velocity).
@@ -178,11 +178,17 @@ public:
         double max_baseline_voltage = *(std::max_element(baseline_voltages.begin(), baseline_voltages.end()));
         double min_baseline_voltage = *(std::min_element(baseline_voltages.begin(), baseline_voltages.end()));
 
-        // We switch off the sodium current and see how high the stimulus makes the voltage go.
-        if (mpModel->HasParameter("membrane_fast_sodium_current_conductance"))
+        std::string fast_sodium_name = "membrane_fast_sodium_current_conductance";
+        if (mpModel->HasParameter(fast_sodium_name + "_scaling_factor"))
         {
-            const double original_na_conductance = mpModel->GetParameter("membrane_fast_sodium_current_conductance");
-            mpModel->SetParameter("membrane_fast_sodium_current_conductance", 0u);
+            fast_sodium_name += "_scaling_factor";
+        }
+
+        // We switch off the sodium current and see how high the stimulus makes the voltage go.
+        if (mpModel->HasParameter(fast_sodium_name))
+        {
+            const double original_na_conductance = mpModel->GetParameter(fast_sodium_name);
+            mpModel->SetParameter(fast_sodium_name, 0u);
 
             // Remember state variables
             N_Vector steady_full_gNa_conductance_state_vars = mpModel->GetStateVariables();
@@ -190,7 +196,7 @@ public:
             OdeSolution solution = RunSteadyPacingExperiment();
 
             // Put it back where it was!
-            mpModel->SetParameter("membrane_fast_sodium_current_conductance",
+            mpModel->SetParameter(fast_sodium_name,
                                   original_na_conductance);
             mpModel->SetStateVariables(steady_full_gNa_conductance_state_vars);
             DeleteVector(steady_full_gNa_conductance_state_vars);
