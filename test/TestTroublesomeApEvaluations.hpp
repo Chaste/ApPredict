@@ -99,7 +99,7 @@ public:
         SetupModel setup(1.0, 2u); // TT06, 1.0Hz
         boost::shared_ptr<AbstractCvodeCell> p_model = setup.GetModel();
 
-        const std::string gkr_name = "membrane_rapid_delayed_rectifier_potassium_current_conductance";
+        const std::string gkr_name = "membrane_rapid_delayed_rectifier_potassium_current_conductance_scaling_factor";
         const std::string gks_name = "membrane_slow_delayed_rectifier_potassium_current_conductance";
 
         const double gKr_max = p_model->GetParameter(gkr_name);
@@ -174,7 +174,7 @@ public:
         SetupModel setup(1.0, 6u); // O'Hara, 1.0Hz
         boost::shared_ptr<AbstractCvodeCell> p_model = setup.GetModel();
 
-        const std::string gkr_name = "membrane_rapid_delayed_rectifier_potassium_current_conductance";
+        const std::string gkr_name = "membrane_rapid_delayed_rectifier_potassium_current_conductance_scaling_factor";
         const std::string gna_name = "membrane_fast_sodium_current_conductance";
 
         const double gKr_max = p_model->GetParameter(gkr_name);
