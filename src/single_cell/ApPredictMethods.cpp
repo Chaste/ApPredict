@@ -386,20 +386,16 @@ ApPredictMethods::ApPredictMethods()
     mMetadataNames.push_back("membrane_L_type_calcium_current_conductance");
     mShortNames.push_back("cal");
 
-    mMetadataNames.push_back(
-        "membrane_rapid_delayed_rectifier_potassium_current_conductance");
+    mMetadataNames.push_back("membrane_rapid_delayed_rectifier_potassium_current_conductance");
     mShortNames.push_back("herg");
 
-    mMetadataNames.push_back(
-        "membrane_slow_delayed_rectifier_potassium_current_conductance");
+    mMetadataNames.push_back("membrane_slow_delayed_rectifier_potassium_current_conductance");
     mShortNames.push_back("iks");
 
-    mMetadataNames.push_back(
-        "membrane_inward_rectifier_potassium_current_conductance");
+    mMetadataNames.push_back("membrane_inward_rectifier_potassium_current_conductance");
     mShortNames.push_back("ik1");
 
-    mMetadataNames.push_back(
-        "membrane_fast_transient_outward_current_conductance");
+    mMetadataNames.push_back("membrane_fast_transient_outward_current_conductance");
     mShortNames.push_back("ito");
 
     mMetadataNames.push_back("membrane_persistent_sodium_current_conductance");
@@ -845,6 +841,10 @@ void ApPredictMethods::CommonRunMethod()
         if (mpModel->HasParameter(mMetadataNames[channel_idx]))
         {
             default_value = mpModel->GetParameter(mMetadataNames[channel_idx]);
+        }
+        else if (mpModel->HasParameter(mMetadataNames[channel_idx] + "_scaling_factor"))
+        {
+            default_value = mpModel->GetParameter(mMetadataNames[channel_idx] + "_scaling_factor");
         }
         default_conductances.push_back(default_value);
     }
