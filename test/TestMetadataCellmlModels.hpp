@@ -298,6 +298,8 @@ public:
             std::cout << p_chaste_cell->GetSystemName() << std::endl
                       << std::flush;
 
+            //std::cout << "Getting default params" << std::endl;
+
             TS_ASSERT_EQUALS(HasAParameterForThisOrScalingFactorOfThis(p_chaste_cell, "membrane_fast_sodium_current_conductance"), true);
             TS_ASSERT_EQUALS(HasAParameterForThisOrScalingFactorOfThis(p_chaste_cell, "membrane_L_type_calcium_current_conductance"), true);
             TS_ASSERT_EQUALS(HasAParameterForThisOrScalingFactorOfThis(p_chaste_cell, "membrane_rapid_delayed_rectifier_potassium_current_conductance"), true);
@@ -326,6 +328,7 @@ public:
                 default_f = GetParameterOrScalingFactorForThis(p_chaste_cell, "membrane_persistent_sodium_current_conductance");
             }
 
+            //std::cout << "Chaste std::vec" << std::endl;
             {
                 SetParameterOrScalingFactorOfThis(p_chaste_cell, "membrane_fast_sodium_current_conductance", default_a * a);
                 SetParameterOrScalingFactorOfThis(p_chaste_cell, "membrane_L_type_calcium_current_conductance", default_b * b);
@@ -350,6 +353,7 @@ public:
                 p_chaste_cell->UseCellMLDefaultStimulus();
             }
 
+            //std::cout << "Chaste std::vec Opt" << std::endl;
             {
                 SetParameterOrScalingFactorOfThis(p_chaste_cell_opt, "membrane_fast_sodium_current_conductance", default_a * a);
                 SetParameterOrScalingFactorOfThis(p_chaste_cell_opt, "membrane_L_type_calcium_current_conductance", default_b * b);
@@ -373,6 +377,7 @@ public:
                 p_chaste_cell_opt->UseCellMLDefaultStimulus();
             }
 
+            //std::cout << "CVODE Cell" << std::endl;
             {
                 SetParameterOrScalingFactorOfThis(p_cvode_cell, "membrane_fast_sodium_current_conductance", default_a * a);
                 SetParameterOrScalingFactorOfThis(p_cvode_cell, "membrane_L_type_calcium_current_conductance", default_b * b);
@@ -396,6 +401,7 @@ public:
                 p_cvode_cell->UseCellMLDefaultStimulus();
             }
 
+            //std::cout << "CVODE Cell" << std::endl;
             {
                 SetParameterOrScalingFactorOfThis(p_cvode_cell_opt, "membrane_fast_sodium_current_conductance", default_a * a);
                 SetParameterOrScalingFactorOfThis(p_cvode_cell_opt, "membrane_L_type_calcium_current_conductance", default_b * b);
