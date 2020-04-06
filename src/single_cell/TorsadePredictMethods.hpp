@@ -79,7 +79,7 @@ public:
 protected:
     /**
      * Load up the Torsade training data from file.
-     * This relies on "drug_data.dat" being present.
+     * This relies on "paper_drug_data.dat" being present.
      *
      * @return a Linear Discriminant Analysis (LDA) object preloaded with the Grandi APD90 training data.
      */
