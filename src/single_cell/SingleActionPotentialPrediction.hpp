@@ -56,6 +56,7 @@ public:
           mApd50(DOUBLE_UNSET),
           mUpstroke(DOUBLE_UNSET),
           mPeak(DOUBLE_UNSET),
+          mQNet(DOUBLE_UNSET),
           mPeakTime(DOUBLE_UNSET),
           mCaMin(DOUBLE_UNSET),
           mCaMax(DOUBLE_UNSET),
@@ -116,6 +117,15 @@ public:
     {
         CheckItRan();
         return mApd50;
+    }
+
+    /**
+     * @return The qNet for the trace (ms).
+     */
+    double GetQNet()
+    {
+        CheckItRan();
+        return mQNet;
     }
 
     /**
@@ -241,6 +251,7 @@ private:
     double mApd50;
     double mUpstroke;
     double mPeak;
+    double mQNet;
     double mPeakTime;
     double mCaMin;
     double mCaMax;

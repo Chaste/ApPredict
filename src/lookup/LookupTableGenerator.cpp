@@ -518,6 +518,10 @@ void* ThreadedActionPotential(void* argument)
         {
             temp = ap_runner.GetPeakVoltage();
         }
+        if (my_data->mQuantitiesToRecord[i] == QNet)
+        {
+            temp = ap_runner.GetQNet();
+        }
         results.push_back(temp);
     }
 

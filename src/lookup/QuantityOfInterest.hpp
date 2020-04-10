@@ -47,7 +47,8 @@ typedef enum QuantityOfInterest_
     Apd50 = 0,
     Apd90,
     UpstrokeVelocity,
-    PeakVoltage
+    PeakVoltage,
+    Qnet
 } QuantityOfInterest;
 
 
