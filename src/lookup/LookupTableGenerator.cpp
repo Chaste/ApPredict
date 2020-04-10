@@ -520,7 +520,7 @@ void* ThreadedActionPotential(void* argument)
         }
         if (my_data->mQuantitiesToRecord[i] == QNet)
         {
-            temp = ap_runner.GetQNet();
+            temp = ap_runner.CalculateQNet();
         }
         results.push_back(temp);
     }

@@ -37,6 +37,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define SINGLEACTIONPOTENTIALPREDICTION_HPP_
 
 #include "AbstractActionPotentialMethod.hpp"
+#include "CipaQNetCalculator.hpp"
 
 /**
  * A class to be used to construct lookup tables for drug action,
@@ -56,7 +57,6 @@ public:
           mApd50(DOUBLE_UNSET),
           mUpstroke(DOUBLE_UNSET),
           mPeak(DOUBLE_UNSET),
-          mQNet(DOUBLE_UNSET),
           mPeakTime(DOUBLE_UNSET),
           mCaMin(DOUBLE_UNSET),
           mCaMax(DOUBLE_UNSET),
@@ -122,10 +122,12 @@ public:
     /**
      * @return The qNet for the trace (ms).
      */
-    double GetQNet()
+    double CalculateQNet()
     {
         CheckItRan();
-        return mQNet;
+
+        CipaQNetCalculator calculator(mpModel);
+        return calculator.ComputeQNet();
     }
 
     /**
@@ -251,7 +253,6 @@ private:
     double mApd50;
     double mUpstroke;
     double mPeak;
-    double mQNet;
     double mPeakTime;
     double mCaMin;
     double mCaMax;
