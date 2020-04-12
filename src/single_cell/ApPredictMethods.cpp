@@ -890,8 +890,7 @@ void ApPredictMethods::CommonRunMethod()
 
     boost::shared_ptr<const AbstractOdeSystemInformation> p_ode_info = mpModel->GetSystemInformation();
     std::string model_name = mpModel->GetSystemName();
-    boost::shared_ptr<RegularStimulus> p_reg_stim = boost::static_pointer_cast<RegularStimulus>(
-        mpModel->GetStimulusFunction());
+    boost::shared_ptr<RegularStimulus> p_reg_stim = boost::static_pointer_cast<RegularStimulus>(mpModel->GetStimulusFunction());
     p_reg_stim->SetStartTime(5.0);
 
     // If we are using ORdCiPAv1 and 0.5Hz, calculate qNet.
