@@ -1072,14 +1072,10 @@ void ApPredictMethods::CommonRunMethod()
             mApd90s.push_back(apd90); // This is used by TorsadePredict and following method for control.
         }
 
-        InterpolateFromLookupTableForThisConcentration(conc_index, median_saturation);
-
         if (mCalculateQNet)
         {
             CipaQNetCalculator calculator(mpModel);
             double q_net = calculator.ComputeQNet();
-            std::cout << "qNet at " << mConcs[conc_index] << "uM = " << q_net << " C/F" << std::endl;
-            *q_net_results_file << mConcs[conc_index] << "\t" << q_net << std::endl;
             mQNets.push_back(q_net);
             
             if (conc_index == mConcs.size() - 1u && this->GetMaxNumPaces() < 750u)
@@ -1103,6 +1099,9 @@ void ApPredictMethods::CommonRunMethod()
             }
         }
 
+        // Populates mApd90CredibleRegions and mQNetCredibleRegions, relies on mApd90s and mQNets.
+        InterpolateFromLookupTableForThisConcentration(conc_index, median_saturation);
+
         if (!DidErrorOccur())
         {
             // Record the control APD90 if this concentration is zero.
@@ -1110,6 +1109,8 @@ void ApPredictMethods::CommonRunMethod()
             {
                 control_apd90 = apd90;
             }
+
+            // Convert raw APD90 ranked samples into percent change from control
             double delta_apd90 = 100 * (apd90 - control_apd90) / control_apd90;
             std::vector<double> delta_percentiles(mPercentiles.size());
             if (mLookupTableAvailable)
@@ -1130,10 +1131,21 @@ void ApPredictMethods::CommonRunMethod()
                     std::cout << delta_percentiles[0] << "," << delta_apd90 << ","
                               << delta_percentiles[mPercentiles.size() - 1u]
                               << std::endl; // << std::flush;
+
+                    if (mCalculateQNet)
+                    {
+                        //std::cout << "QNet at " << mConcs[conc_index] << "uM: for lower, median and upper percentiles: " 
+                        //      << mQNetCredibleRegions[0] << "," << mQNets[conc_index] << ","
+                        //      << mQNetCredibleRegions[mPercentiles.size() - 1u] << std::endl; // << std::flush;
+                    }
                 }
                 else
                 {
                     std::cout << delta_apd90 << std::endl; // << std::flush;
+                    if (mCalculateQNet)
+                    {
+                        std::cout << "qNet at " << mConcs[conc_index] << "uM = " << mQNets[conc_index] << " C/F" << std::endl;
+                    }
                 }
             }
             *steady_voltage_results_file_html
@@ -1143,6 +1155,11 @@ void ApPredictMethods::CommonRunMethod()
             *steady_voltage_results_file << mConcs[conc_index] << "\t" << upstroke
                                          << "\t" << peak << "\t" << apd50 << "\t"
                                          << apd90 << "\t";
+            if (mCalculateQNet)
+            {
+                *q_net_results_file <<  mConcs[conc_index] << "\t";
+            }
+
             if (mLookupTableAvailable)
             {
                 for (unsigned i = 0; i < mPercentiles.size(); i++)
@@ -1152,9 +1169,8 @@ void ApPredictMethods::CommonRunMethod()
                         *steady_voltage_results_file << delta_apd90 << ",";
                     }
                     // Now add a check to see whether the middle 30% of our credible
-                    // interval contains
-                    // the simulated 'median' answer. If not, log it and report a warning
-                    // later.
+                    // interval contains the simulated 'median' answer. 
+                    // If not, log it and report a warning later.
                     const double tolerance_on_percent_change = 1e-2;
                     if ((mPercentiles[i] < 35 && delta_percentiles[i] > delta_apd90 + tolerance_on_percent_change) || (mPercentiles[i] > 75 && delta_percentiles[i] < delta_apd90 - tolerance_on_percent_change))
                     {
@@ -1170,11 +1186,14 @@ void ApPredictMethods::CommonRunMethod()
             }
             else
             {
-                *steady_voltage_results_file << delta_apd90
-                                             << std::endl; // << std::flush;
+                *steady_voltage_results_file << delta_apd90 << std::endl; // << std::flush;
+                if (mCalculateQNet)
+                {
+                    *q_net_results_file << mQNets[conc_index] << std::endl;
+                }
             }
         }
-        else
+        else // error occurred in postprocessing APD
         {
             std::string error_code = GetErrorMessage();
             if (!mSuppressOutput)
