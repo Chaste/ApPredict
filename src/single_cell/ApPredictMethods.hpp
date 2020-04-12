@@ -315,7 +315,7 @@ public:
     /**
      * @return The credible regions at #mPercentiles for the QNet predictions
      */
-    std::vector<std::vector<double> > GetQNetCredibleRegions(void)
+    std::vector<std::vector<double> > GetQNetCredibleRegions(void);
 };
 
 #endif //_APPREDICTMETHODS_HPP_

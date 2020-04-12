@@ -1062,6 +1062,18 @@ void ApPredictMethods::CommonRunMethod()
             mpModel, apd90, apd50, upstroke, peak, peak_time, ca_max, ca_min,
             0.1 /*ms printing timestep*/, mConcs[conc_index]);
 
+        if (DidErrorOccur())
+        {
+            // Put a NaN in the APD90 vector if there was an error.
+            mApd90s.push_back(std::numeric_limits<double>::quiet_NaN());
+        }
+        else
+        {
+            mApd90s.push_back(apd90); // This is used by TorsadePredict and following method for control.
+        }
+
+        InterpolateFromLookupTableForThisConcentration(conc_index, median_saturation);
+
         if (mCalculateQNet)
         {
             CipaQNetCalculator calculator(mpModel);
@@ -1090,18 +1102,6 @@ void ApPredictMethods::CommonRunMethod()
                 WriteMessageToFile(message.str());
             }
         }
-
-        if (DidErrorOccur())
-        {
-            // Put a NaN in the APD90 vector if there was an error.
-            mApd90s.push_back(std::numeric_limits<double>::quiet_NaN());
-        }
-        else
-        {
-            mApd90s.push_back(apd90); // This is used by TorsadePredict and following method for control.
-        }
-
-        InterpolateFromLookupTableForThisConcentration(conc_index, median_saturation);
 
         if (!DidErrorOccur())
         {
@@ -1218,9 +1218,7 @@ void ApPredictMethods::CommonRunMethod()
             mpModel->GetStimulusFunction());
         double s1_period = p_default_stimulus->GetPeriod();
         double s_start = p_default_stimulus->GetStartTime();
-        std::vector<double> voltages = solution.GetVariableAtIndex(
-            mpModel->GetSystemInformation()->GetStateVariableIndex(
-                "membrane_voltage"));
+        std::vector<double> voltages = solution.GetVariableAtIndex(mpModel->GetSystemInformation()->GetStateVariableIndex("membrane_voltage"));
         double window = s1_period;
         if (this->mPeriodTwoBehaviour)
         {
