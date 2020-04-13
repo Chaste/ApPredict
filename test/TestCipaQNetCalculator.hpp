@@ -124,7 +124,14 @@ public:
         double q_net = calculator.ComputeQNet();
         std::cout << "q_net = " << q_net << std::endl;
         TS_ASSERT_DELTA(q_net, 0.0690158, 1e-5);
+
+        // Set full hERG block
+        p_model->SetParameter("membrane_rapid_delayed_rectifier_potassium_current_conductance_scaling_factor",0);
+        q_net = calculator.ComputeQNet();
+        std::cout << "q_net = " << q_net << std::endl;
+        TS_ASSERT_DELTA(q_net, -DBL_MAX, 1e-5);
     }
+
 
     void TestCipaQNetSimulations()
     {
