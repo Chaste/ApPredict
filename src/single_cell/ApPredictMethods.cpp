@@ -1088,7 +1088,7 @@ void ApPredictMethods::CommonRunMethod()
                 WriteMessageToFile(message.str());
             }
 
-            if (q_net == std::numeric_limits<double>::quiet_NaN())
+            if (q_net == -DBL_MAX)
             {
                 std::stringstream message;
                 message << "At a concentration of " << mConcs[conc_index]

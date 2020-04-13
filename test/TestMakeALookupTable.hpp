@@ -230,7 +230,7 @@ public:
             if (fabs(hertz-0.5)<1e-12 && model_index==8u)
             {
                 // This is ORd at 0.5Hz, also make lookup table for QNet
-                p_generator->AddQuantityOfInterest(QNet, 0.002 /*Coulombs per Farad*/);
+                p_generator->AddQuantityOfInterest(QNet, 0.001 /*Coulombs per Farad*/);
             }
             
             //p_generator->AddQuantityOfInterest(Apd50, 1 /*ms*/); // QoI and tolerance
