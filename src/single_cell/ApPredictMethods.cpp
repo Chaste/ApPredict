@@ -903,8 +903,7 @@ void ApPredictMethods::CommonRunMethod()
     }
 
     // Print out a progress file for monitoring purposes.
-    ProgressReporter progress_reporter(mOutputFolder, 0.0,
-                                       (double)(mConcs.size()));
+    ProgressReporter progress_reporter(mOutputFolder, 0.0, (double)(mConcs.size()));
     progress_reporter.PrintInitialising();
 
     // Open files and write headers
@@ -928,7 +927,7 @@ void ApPredictMethods::CommonRunMethod()
                     *steady_voltage_results_file << "median_delta_APD90,";
                     if (mCalculateQNet)
                     {
-                        *q_net_results_file << "median_qNet,";
+                        *q_net_results_file << "qNet_median(C/F),";
                     }
                 }
             }
