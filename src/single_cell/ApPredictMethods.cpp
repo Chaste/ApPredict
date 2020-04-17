@@ -899,7 +899,7 @@ void ApPredictMethods::CommonRunMethod()
     {
         mCalculateQNet = true;
         q_net_results_file = mpFileHandler->OpenOutputFile("q_net.txt");
-        *q_net_results_file << "Concentration(uM)\tqNet(C/F)" << std::endl;
+        *q_net_results_file << "Concentration(uM)\t";
     }
 
     // Print out a progress file for monitoring purposes.
@@ -913,6 +913,8 @@ void ApPredictMethods::CommonRunMethod()
     out_stream steady_voltage_results_file = mpFileHandler->OpenOutputFile("voltage_results.dat");
     *steady_voltage_results_file << "Concentration(uM)\tUpstrokeVelocity(mV/"
                                     "ms)\tPeakVm(mV)\tAPD50(ms)\tAPD90(ms)\t";
+
+    // All this is about writing out a nice header line.
     if (mLookupTableAvailable)
     {
         for (unsigned i = 0; i < mPercentiles.size(); i++)
@@ -923,8 +925,11 @@ void ApPredictMethods::CommonRunMethod()
                 lower_or_upper = "upp";
                 if (mPercentiles[i - 1] < 50)
                 {
-                    *steady_voltage_results_file << "median_delta_APD90"
-                                                 << ",";
+                    *steady_voltage_results_file << "median_delta_APD90,";
+                    if (mCalculateQNet)
+                    {
+                        *q_net_results_file << "median_qNet,";
+                    }
                 }
             }
             double credible_interval;
@@ -936,18 +941,34 @@ void ApPredictMethods::CommonRunMethod()
             {
                 credible_interval = 100 - 2 * (100 - mPercentiles[i]);
             }
-            *steady_voltage_results_file << "dAp" << credible_interval << "%"
-                                         << lower_or_upper;
+            *steady_voltage_results_file << "dAp" << credible_interval << "%" << lower_or_upper;
+            if (mCalculateQNet)
+            {
+                *q_net_results_file << "qNet" << credible_interval << lower_or_upper;
+            }
+
             if (i < mPercentiles.size() - 1u)
             {
                 *steady_voltage_results_file << ",";
+                if (mCalculateQNet)
+                {
+                    *q_net_results_file << ",";
+                }
             }
         }
         *steady_voltage_results_file << std::endl;
+        if (mCalculateQNet)
+        {
+            *q_net_results_file << std::endl;
+        }
     }
     else
     {
         *steady_voltage_results_file << "delta_APD90(%)\n";
+        if (mCalculateQNet)
+        {
+            *q_net_results_file << "qNet(C/F)" << std::endl;
+        }
     }
 
     *steady_voltage_results_file_html << "<html>\n<head><title>" << mProgramName
@@ -1133,9 +1154,9 @@ void ApPredictMethods::CommonRunMethod()
 
                     if (mCalculateQNet)
                     {
-                        //std::cout << "QNet at " << mConcs[conc_index] << "uM: for lower, median and upper percentiles: " 
-                        //      << mQNetCredibleRegions[0] << "," << mQNets[conc_index] << ","
-                        //      << mQNetCredibleRegions[mPercentiles.size() - 1u] << std::endl; // << std::flush;
+                        std::cout << "QNet at " << mConcs[conc_index] << "uM: for lower, median and upper percentiles: " 
+                              << mQNetCredibleRegions[conc_index][0] << "," << mQNets[conc_index] << ","
+                              << mQNetCredibleRegions[conc_index][mPercentiles.size() - 1u] << std::endl; // << std::flush;
                     }
                 }
                 else
@@ -1166,6 +1187,11 @@ void ApPredictMethods::CommonRunMethod()
                     if (mPercentiles[i] > 50 && mPercentiles[i - 1] < 50)
                     {
                         *steady_voltage_results_file << delta_apd90 << ",";
+                    }                    
+                    *steady_voltage_results_file << delta_percentiles[i];
+                    if (i < mPercentiles.size() - 1u)
+                    {
+                        *steady_voltage_results_file << ",";
                     }
                     // Now add a check to see whether the middle 30% of our credible
                     // interval contains the simulated 'median' answer. 
@@ -1175,13 +1201,27 @@ void ApPredictMethods::CommonRunMethod()
                     {
                         reliable_credible_intervals = false;
                     }
-                    *steady_voltage_results_file << delta_percentiles[i];
-                    if (i < mPercentiles.size() - 1u)
+
+                    if (mCalculateQNet)
                     {
-                        *steady_voltage_results_file << ",";
+                        if (mPercentiles[i] > 50 && mPercentiles[i - 1] < 50)
+                        {
+                            *q_net_results_file << mQNets[conc_index] << ",";
+                        }                    
+                        *q_net_results_file << mQNetCredibleRegions[conc_index][i];
+                        if (i < mPercentiles.size() - 1u)
+                        {
+                            *q_net_results_file << ",";
+                        }
+                        // No extra check on calculated QNet being in lookup table intervals, relying
+                        // on the APD calculation to do this for us.
                     }
                 }
                 *steady_voltage_results_file << std::endl; // << std::flush;
+                if (mCalculateQNet)
+                {
+                    *q_net_results_file <<  std::endl;
+                }
             }
             else
             {
