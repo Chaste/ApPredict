@@ -63,7 +63,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * ./ApPredict --model 1 --credible-intervals [any drug options]
  *
  * or you can download it from
- * https://uniofnottm-my.sharepoint.com/:f:/g/personal/gary_mirams_nottingham_ac_uk/EqTVP8GNOMdLlI4LtX6AOSoBlr5fi4c4jenyBTKNxZrF9w?e=dgMErw/shannon_wang_puglisi_weber_bers_2004_model_updated_4d_hERG_IKs_INa_ICaL_1Hz_generator.arch.tgz
+ * https://cardiac.nottingham.ac.uk/lookup_tables/
  * (will require unpacking)
  *
  * Finally we want to compare times for loading the various archive files from disk.
