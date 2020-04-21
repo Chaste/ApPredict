@@ -63,7 +63,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * ./ApPredict --model 1 --credible-intervals [any drug options]
  *
  * or you can download it from
- * http://www.cs.ox.ac.uk/people/gary.mirams/files/shannon_wang_puglisi_weber_bers_2004_model_updated_4d_hERG_IKs_INa_ICaL_1Hz_generator.arch.tgz
+ * https://cardiac.nottingham.ac.uk/lookup_tables/
  * (will require unpacking)
  *
  * Finally we want to compare times for loading the various archive files from disk.
@@ -94,7 +94,7 @@ public:
 
         if (!mpAsciiArchiveFile->IsFile())
         {
-            std::string lookup_table_URL = "http://www.cs.ox.ac.uk/people/gary.mirams/files/" + lookup_table_name + ".arch.tgz";
+            std::string lookup_table_URL = "https://cardiac.nottingham.ac.uk/lookup_tables/" + lookup_table_name + ".arch.tgz";
             std::cout << "\n\nAttempting to download an action potential lookup table from:\n"
                       << lookup_table_URL << "\n\n";
             EXPECT0(system, "wget " + lookup_table_URL);

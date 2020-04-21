@@ -157,7 +157,16 @@ bool LookupTableGenerator<DIM>::GenerateLookupTable()
         // First thing to do is to record the unscaled parameter values.
         for (unsigned i = 0; i < mParameterNames.size(); i++)
         {
-            mUnscaledParameters.push_back(p_model->GetParameter(mParameterNames[i]));
+            double default_value;
+            if (p_model->HasParameter(mParameterNames[i]))
+            {
+                default_value = p_model->GetParameter(mParameterNames[i]);
+            }
+            else if (p_model->HasParameter(mParameterNames[i] + "_scaling_factor"))
+            {
+                default_value = p_model->GetParameter(mParameterNames[i] + "_scaling_factor");
+            }
+            mUnscaledParameters.push_back(default_value);
         }
 
         // We now do a special run of a model with sodium current set to zero, so we can see the effect
@@ -407,7 +416,16 @@ void* ThreadedActionPotential(void* argument)
     // Do parameter scalings
     for (unsigned i = 0; i < scalings.size(); i++)
     {
-        p_model->SetParameter(my_data->mParameterNames[i],
+        std::string param_name;
+        if (p_model->HasParameter(my_data->mParameterNames[i]))
+        {
+            param_name = my_data->mParameterNames[i];
+        }
+        else
+        {
+            param_name = my_data->mParameterNames[i] + "_scaling_factor";
+        }
+        p_model->SetParameter(param_name,
                               my_data->mUnscaledParameters[i] * (scalings[i]));
     }
 
@@ -551,31 +569,34 @@ void LookupTableGenerator<DIM>::SetParameterToScale(
     SetupModel setup(1.0, mModelIndex); // model at 1 Hz
     boost::shared_ptr<AbstractCvodeCell> p_model = setup.GetModel();
 
-    if (!p_model->HasParameter(rMetadataName))
-    {
-        // Not all of the models have a distinct fast I_to component.
-        // In this case we look for the complete I_to current instead.
-        if (rMetadataName == "membrane_fast_transient_outward_current_conductance" && p_model->HasParameter("membrane_transient_outward_current_conductance"))
-        {
-            WARNING(p_model->GetSystemName()
-                    << " does not have "
-                       "'membrane_fast_transient_outward_current_conductance' "
-                       "labelled, "
-                       "using combined Ito (fast and slow) instead...");
-            mParameterNames.push_back(
-                "membrane_transient_outward_current_conductance");
-        }
-        else
-        {
-            EXCEPTION(p_model->GetSystemName()
-                      << " does not have '" << rMetadataName
-                      << "' labelled, please tag it in the CellML file.");
-        }
-    }
-    else
+    // The usual case where this is a parameter
+    // We'll keep referring to it as a scaling factor, but check before tweaking it whether we need to do this!
+    if (p_model->HasParameter(rMetadataName) || p_model->HasParameter(rMetadataName + "_scaling_factor"))
     {
         mParameterNames.push_back(rMetadataName);
     }
+    // A special treatment for Ito,fast - we use Ito if it isn't present separately.
+    else if (rMetadataName == "membrane_fast_transient_outward_current_conductance"
+             && p_model->HasAnyVariable("membrane_transient_outward_current_conductance"))
+    {
+        WARNING(p_model->GetSystemName()
+                << " does not have "
+                   "'membrane_fast_transient_outward_current_conductance' "
+                   "labelled, "
+                   "using combined Ito (fast and slow) instead...");
+        if (p_model->HasParameter("membrane_transient_outward_current_conductance") || p_model->HasParameter("membrane_transient_outward_current_conductance_scaling_factor"))
+        {
+            mParameterNames.push_back(
+                "membrane_transient_outward_current_conductance");
+        }
+    }
+    else // It's neither named nor a scaling factor.
+    {
+        EXCEPTION(p_model->GetSystemName()
+                  << " does not have '" << rMetadataName
+                  << "' labelled, please tag it in the CellML file.");
+    }
+
     mMinimums.push_back(rMin);
     mMaximums.push_back(rMax);
 }
