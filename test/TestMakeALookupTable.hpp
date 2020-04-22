@@ -141,7 +141,8 @@ public:
             if (std::get<2>(*it) == true)
             {
                 // If the model doesn't have this parameter, throw an error.
-                if (!setup_model.GetModel()->HasParameter(std::get<1>(*it)))
+                if (!setup_model.GetModel()->HasParameter(std::get<1>(*it)) 
+                 && !setup_model.GetModel()->HasParameter(std::get<1>(*it) + "_scaling_factor"))
                 {
                     EXCEPTION("The model " << model_name << " does not have the parameter '" << std::get<1>(*it)
                                            << "' (or it is not tagged in the CellML). Cannot generate lookup table - quitting.");
