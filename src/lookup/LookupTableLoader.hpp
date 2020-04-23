@@ -56,8 +56,8 @@ class LookupTableLoader
 {
 private:
     /**
-	 * The lookup table to return.
-	 */
+	   * The lookup table to return.
+	   */
     boost::shared_ptr<AbstractUntemplatedLookupTableGenerator> mpLookupTable;
 
     /**
@@ -89,8 +89,7 @@ private:
     std::vector<std::string> GenerateAllCompatibleTables();
 
     /**
-     * A list of tables that are available at:
-     * http://www.cs.ox.ac.uk/people/gary.mirams/files/
+     * A list of tables that are available at #mRemoteURL.
      *
      * Only returns tables that are relevant for this model and pacing rate.
      *
@@ -99,10 +98,10 @@ private:
     std::vector<std::string> GetManifestOfTablesOnGarysWebsite();
 
     /**
-	 * A list of tables that are available in the current working directory.
-	 *
-	 * @return an unordered list of available tables.
-	 */
+     * A list of tables that are available in the current working directory.
+     *
+     * @return an unordered list of available tables.
+     */
     std::vector<std::string> GetManifestOfLocalTablesInCwd();
 
     /**
@@ -111,20 +110,27 @@ private:
     void LoadTableFromLocalBoostArchive(const std::string& rLookupTableBaseName);
 
     /**
-     * Download and unzip a particular archive from
-     * http://www.cs.ox.ac.uk/people/gary.mirams/files/
+     * Download and unzip a particular archive from #mRemoteURL.
      *
      * @param rArchiveFileBaseName  the archive to get.
      */
     void DownloadAndUnpack(const std::string& rArchiveFileBaseName);
 
+    /**
+     * The URL where the manifest and lookup tables are available from.
+     * N.B. This string should be a folder and end in a "/".
+     *
+     * Value is set in the .cpp file.
+     */
+    static const std::string mRemoteURL;
+     
 public:
     /**
-	 * Constructor
-	 *
-	 * @param rModelName  the CellML model's name (as specified by ODE GetSystemName() method).
-	 * @param rHertz  the pacing frequency we are interested in.
-	 */
+	   * Constructor
+	   *
+	   * @param rModelName  the CellML model's name (as specified by ODE GetSystemName() method).
+	   * @param rHertz  the pacing frequency we are interested in.
+	   */
     LookupTableLoader(const std::string& rModelName, const double& rHertz);
 
     /**
@@ -133,8 +139,8 @@ public:
     bool IsLookupTableAvailable();
 
     /**
-	 * @return  a pointer to the lowest dimension LookupTable that is available.
-	 */
+	   * @return  a pointer to the lowest dimension LookupTable that is available.
+	   */
     boost::shared_ptr<AbstractUntemplatedLookupTableGenerator> GetLookupTable();
 };
 

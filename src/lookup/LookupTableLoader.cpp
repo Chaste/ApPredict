@@ -46,6 +46,8 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "LookupTableGenerator.hpp"
 #include "LookupTableLoader.hpp"
 
+const std::string LookupTableLoader::mRemoteURL = "https://cardiac.nottingham.ac.uk/lookup_tables/";
+
 LookupTableLoader::LookupTableLoader(const std::string& rModelName, const double& rHertz)
         : mModelName(rModelName),
           mHertz(rHertz)
@@ -279,8 +281,7 @@ std::vector<std::string> LookupTableLoader::GetManifestOfTablesOnGarysWebsite()
     std::vector<std::string> available_tables;
 
     // If no archive exists, try to download and unpack one.
-    //std::string mainfest_URL = "http://www.cs.ox.ac.uk/people/gary.mirams/files/sausages";
-    std::string mainfest_URL = "http://www.cs.ox.ac.uk/people/gary.mirams/files/" + manifest_filename;
+    std::string mainfest_URL = mRemoteURL + manifest_filename;
     FileFinder manifest(manifest_filename, RelativeTo::AbsoluteOrCwd);
 
     // First check to see whether the remote manifest is accessible
@@ -290,7 +291,7 @@ std::vector<std::string> LookupTableLoader::GetManifestOfTablesOnGarysWebsite()
     if (return_code != 0)
     {
         std::cout << "Could not find the remote manifest of available Lookup Tables on the web, "
-                     "we either don't have web access or www.cs.ox.ac.uk is down..."
+                     "we either don't have web access or the lookup table host server is down..."
                   << std::endl;
         return available_tables;
     }
@@ -315,7 +316,7 @@ std::vector<std::string> LookupTableLoader::GetManifestOfTablesOnGarysWebsite()
     catch (Exception& e)
     {
         std::cout << "Could not download and unpack the Lookup Table manifest, "
-                     "we either don't have web access or www.cs.ox.ac.uk is down..."
+                     "we either don't have web access or the lookup table host server is down..."
                   << std::endl;
         return available_tables;
     }
@@ -470,7 +471,7 @@ std::vector<std::string> LookupTableLoader::GenerateAllCompatibleTables()
 
 void LookupTableLoader::DownloadAndUnpack(const std::string& rArchiveFileBaseName)
 {
-    std::string lookup_table_URL = "http://www.cs.ox.ac.uk/people/gary.mirams/files/" + rArchiveFileBaseName + ".arch.tgz";
+    std::string lookup_table_URL = mRemoteURL + rArchiveFileBaseName + ".arch.tgz";
     try
     {
         std::cout << "\n\nAttempting to download an action potential lookup table from:\n"
