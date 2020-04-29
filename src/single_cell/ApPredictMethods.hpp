@@ -157,10 +157,19 @@ private:
      * At each concentration we have a vector of values for the percentiles in #mPercentiles.
      */
     std::vector<std::vector<double> > mApd90CredibleRegions;
+
+    /**
+     * A vector of pairs used to store the credible regions for QNet,
+     * calculated in the main method if a suitable Lookup Table is present.
+     *
+     * The outer vector loops over concentrations.
+     * At each concentration we have a vector of values for the percentiles in #mPercentiles.
+     */
+    std::vector<std::vector<double> > mQNetCredibleRegions;
     
     /**
      * The percentiles that the credible region APD90 values in #mApd90CredibleRegions
-     * correspond to.
+     * and #mQNetCredibleRegions correspond to.
      */
     std::vector<double> mPercentiles;
 
@@ -178,6 +187,12 @@ protected:
 
     /** A vector used to store the APD90s calculated in the main method */
     std::vector<double> mApd90s;
+
+    /** Whether we are running ORd-CiPA at 0.5Hz and are going to calculate QNet */
+    bool mCalculateQNet;
+
+    /** A vector used to store the QNets calculated in the main method */
+    std::vector<double> mQNets;
 
     /** A vector used to store the Drug Concentrations at which APDs are calculated*/
     std::vector<double> mConcs;
@@ -292,10 +307,15 @@ public:
     std::vector<double> GetApd90s(void);
 
     /**
-     * @return The 95% credible regions that are associated with the APD90 predictions given by
-     * #GetApd90s().
+     * @return The credible regions at #mPercentiles for the APD90 predictions given by
+     * #GetApd90s()
      */
     std::vector<std::vector<double> > GetApd90CredibleRegions(void);
+
+    /**
+     * @return The credible regions at #mPercentiles for the QNet predictions
+     */
+    std::vector<std::vector<double> > GetQNetCredibleRegions(void);
 };
 
 #endif //_APPREDICTMETHODS_HPP_

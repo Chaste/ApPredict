@@ -481,9 +481,19 @@ void* ThreadedActionPotential(void* argument)
             std::cout << "Lookup table generator reports that " << error_message
                       << "\n"
                       << std::flush;
+
+            // We could use different numerical codes for different errors here if we
+            // wanted to, but for QNet all AP errors are just set to -DBL_MAX.
+            if (my_data->mQuantitiesToRecord[i] == QNet)
+            {
+                results.push_back(-DBL_MAX);
+                continue;
+            }
+
             // We could use different numerical codes for different errors here if we
             // wanted to.
-            if ((error_message == "NoActionPotential_2" || error_message == "NoActionPotential_3") && (my_data->mQuantitiesToRecord[i] == Apd90 || my_data->mQuantitiesToRecord[i] == Apd50))
+            if ((error_message == "NoActionPotential_2" || error_message == "NoActionPotential_3") 
+                && (my_data->mQuantitiesToRecord[i] == Apd90 || my_data->mQuantitiesToRecord[i] == Apd50))
             {
                 // For an APD calculation failure on repolarisation put in the stimulus
                 // period.
@@ -501,22 +511,27 @@ void* ThreadedActionPotential(void* argument)
             continue;
         }
 
+        // No error cases
         double temp;
         if (my_data->mQuantitiesToRecord[i] == Apd90)
         {
             temp = ap_runner.GetApd90();
         }
-        if (my_data->mQuantitiesToRecord[i] == Apd50)
+        else if (my_data->mQuantitiesToRecord[i] == Apd50)
         {
             temp = ap_runner.GetApd50();
         }
-        if (my_data->mQuantitiesToRecord[i] == UpstrokeVelocity)
+        else if (my_data->mQuantitiesToRecord[i] == UpstrokeVelocity)
         {
             temp = ap_runner.GetUpstrokeVelocity();
         }
-        if (my_data->mQuantitiesToRecord[i] == PeakVoltage)
+        else if (my_data->mQuantitiesToRecord[i] == PeakVoltage)
         {
             temp = ap_runner.GetPeakVoltage();
+        }
+        else if (my_data->mQuantitiesToRecord[i] == QNet)
+        {
+            temp = ap_runner.CalculateQNet();
         }
         results.push_back(temp);
     }

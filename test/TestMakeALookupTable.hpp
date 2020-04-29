@@ -144,8 +144,11 @@ public:
                 if (!setup_model.GetModel()->HasParameter(std::get<1>(*it)) 
                  && !setup_model.GetModel()->HasParameter(std::get<1>(*it) + "_scaling_factor"))
                 {
-                    EXCEPTION("The model " << model_name << " does not have the parameter '" << std::get<1>(*it)
+                    if (!setup_model.GetModel()->HasParameter(std::get<1>(*it)+"_scaling_factor"))
+                    {
+                        EXCEPTION("The model " << model_name << " does not have the parameter '" << std::get<1>(*it)
                                            << "' (or it is not tagged in the CellML). Cannot generate lookup table - quitting.");
+                    }
                 }
             }
         }
@@ -225,6 +228,12 @@ public:
                 tolerance = 0.5;
             }
             p_generator->AddQuantityOfInterest(Apd90, tolerance /*ms*/); // QoI and tolerance
+            if (fabs(hertz-0.5)<1e-12 && model_index==8u)
+            {
+                // This is ORd at 0.5Hz, also make lookup table for QNet
+                p_generator->AddQuantityOfInterest(QNet, 0.0005 /*Coulombs per Farad*/);
+            }
+            
             //p_generator->AddQuantityOfInterest(Apd50, 1 /*ms*/); // QoI and tolerance
             p_generator->SetMaxNumPaces(30u * 60u); // This is 30 minutes of 1Hz pacing
             p_generator->SetMaxVariationInRefinement(5u); // This prevents over-refining in one area.
