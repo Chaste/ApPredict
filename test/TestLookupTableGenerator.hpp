@@ -128,25 +128,6 @@ public:
         TS_ASSERT_EQUALS(quantities_of_interest.size(), 10u);
     }
 
-    void TestVoltageThresholdDetectionAlgorithm()
-    {
-        std::vector<double> thresholds_for_each_model = boost::assign::list_of(-46.6219) /*Shannon etc.*/
-            (-44.3656)(-34.5945)(-35.9230)(-28.3257)(-38.4384)(-40.3365);
-
-        for (unsigned model_index = 1; model_index < 8u; model_index++)
-        {
-            SetupModel setup(1.0, model_index); // models at 1 Hz
-            boost::shared_ptr<AbstractCvodeCell> p_model = setup.GetModel();
-
-            SingleActionPotentialPrediction ap_runner(p_model);
-            ap_runner.SuppressOutput();
-            ap_runner.SetMaxNumPaces(100u);
-            double threshold_voltage = ap_runner.DetectVoltageThresholdForActionPotential();
-
-            TS_ASSERT_DELTA(threshold_voltage, thresholds_for_each_model[model_index - 1u], 1e-2);
-        }
-    }
-
     void TestLookupTableMaker5d()
     {
         unsigned model_index = 2u; // Ten tusscher '06 (table generated for 1 Hz at present)

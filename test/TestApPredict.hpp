@@ -85,13 +85,32 @@ public:
         }
     }
 
+    void TestVoltageThresholdDetectionAlgorithm()
+    {
+        std::vector<double> thresholds_for_each_model = boost::assign::list_of(-46.6219) /*Shannon etc.*/
+            (-44.3656)(-34.5945)(-35.9230)(-28.3257)(-38.4384)(-40.3365);
+
+        for (unsigned model_index = 1; model_index < 8u; model_index++)
+        {
+            SetupModel setup(1.0, model_index); // models at 1 Hz
+            boost::shared_ptr<AbstractCvodeCell> p_model = setup.GetModel();
+
+            SingleActionPotentialPrediction ap_runner(p_model);
+            ap_runner.SuppressOutput();
+            ap_runner.SetMaxNumPaces(100u);
+            double threshold_voltage = ap_runner.DetectVoltageThresholdForActionPotential();
+
+            TS_ASSERT_DELTA(threshold_voltage, thresholds_for_each_model[model_index - 1u], 1e-2);
+        }
+    }
+
     /**
      * This test should emulate the standalone executable and read your command line arguments.
      */
     void TestDrugAffectByVaryingConductances(void)
     {
         //////////// DEFINE PARAMETERS ///////////////
-        CommandLineArguments* p_args = CommandLineArguments::Instance();
+        CommandLineArguments *p_args = CommandLineArguments::Instance();
         unsigned argc = *(p_args->p_argc); // has the number of arguments, and
         //char **argv = *(p_args->p_argv); // is a char** of them.
         unsigned num_args = argc - 1;
