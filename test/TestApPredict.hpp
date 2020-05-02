@@ -37,6 +37,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef _TESTAPPREDICT_HPP_
 #define _TESTAPPREDICT_HPP_
 
+#include <boost/assign/list_of.hpp>
 #include <cxxtest/TestSuite.h>
 
 #include <boost/shared_ptr.hpp>

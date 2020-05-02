@@ -36,7 +36,6 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef TESTLOOKUPTABLEGENERATOR_HPP_
 #define TESTLOOKUPTABLEGENERATOR_HPP_
 
-#include <boost/assign/list_of.hpp>
 #include <cxxtest/TestSuite.h>
 
 #include "CheckpointArchiveTypes.hpp"
