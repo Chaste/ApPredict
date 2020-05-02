@@ -191,27 +191,43 @@ public:
         double min_baseline_voltage = *(std::min_element(baseline_voltages.begin(), baseline_voltages.end()));
 
         std::string fast_sodium_name = "membrane_fast_sodium_current_conductance";
+        std::string l_type_cal_name = "membrane_L_type_calcium_current_conductance";
         if (mpModel->HasParameter(fast_sodium_name + "_scaling_factor"))
         {
             fast_sodium_name += "_scaling_factor";
         }
+        if (mpModel->HasParameter(l_type_cal_name + "_scaling_factor"))
+        {
+            l_type_cal_name += "_scaling_factor";
+        }
 
-        // We switch off the sodium current and see how high the stimulus makes the voltage go.
+        // We switch off the sodium and calcium currents and see how high the stimulus makes the voltage go.
         if (mpModel->HasParameter(fast_sodium_name))
         {
+            // Remember original conductances and set them to zero.
             const double original_na_conductance = mpModel->GetParameter(fast_sodium_name);
+            double original_ca_conductance;
             mpModel->SetParameter(fast_sodium_name, 0u);
+            if (mpModel->HasParameter(l_type_cal_name))
+            {
+                original_ca_conductance = mpModel->GetParameter(l_type_cal_name);
+                mpModel->SetParameter(l_type_cal_name, 0u);
+            }
 
             // Remember state variables
-            N_Vector steady_full_gNa_conductance_state_vars = mpModel->GetStateVariables();
+            N_Vector steady_full_conductance_state_vars = mpModel->GetStateVariables();
 
             OdeSolution solution = RunSteadyPacingExperiment();
 
-            // Put it back where it was!
-            mpModel->SetParameter(fast_sodium_name,
-                                  original_na_conductance);
-            mpModel->SetStateVariables(steady_full_gNa_conductance_state_vars);
-            DeleteVector(steady_full_gNa_conductance_state_vars);
+            // Put conductances back where they were!
+            mpModel->SetParameter(fast_sodium_name, original_na_conductance);
+            if (mpModel->HasParameter(l_type_cal_name))
+            {
+                mpModel->SetParameter(l_type_cal_name, original_ca_conductance);
+            }
+
+            mpModel->SetStateVariables(steady_full_conductance_state_vars);
+            DeleteVector(steady_full_conductance_state_vars);
 
             std::vector<double> voltages = solution.GetAnyVariable("membrane_voltage");
             double max_voltage = *(std::max_element(voltages.begin(), voltages.end()));
