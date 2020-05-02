@@ -44,6 +44,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "ApPredictMethods.hpp"
 #include "CommandLineArgumentsMocker.hpp"
 #include "FileFinder.hpp"
+#include "SetupModel.hpp"
 #include "NumericFileComparison.hpp"
 
 class TestApPredict : public CxxTest::TestSuite
