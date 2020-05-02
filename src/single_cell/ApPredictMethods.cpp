@@ -377,7 +377,8 @@ ApPredictMethods::ApPredictMethods()
           mLookupTableAvailable(false),
           mPercentiles(std::vector<double>{ 2.5, 97.5 }),
           mConcentrationsFromFile(false),
-          mComplete(false)
+          mComplete(false),
+          mCalculateQNet(false)
 {
     // Here we list the possible drug blocks that can be applied with ApPredict
     mMetadataNames.push_back("membrane_fast_sodium_current_conductance");
@@ -634,7 +635,8 @@ void ApPredictMethods::InterpolateFromLookupTableForThisConcentration(
 
     const unsigned table_dim = mpLookupTable->GetDimension();
 
-    std::vector<double> credible_intervals(mPercentiles.size());
+    std::vector<double> apd90_credible_intervals(mPercentiles.size());
+    std::vector<double> qnet_credible_intervals(mPercentiles.size());
 
     // If this is the first concentration (control) say the percent change must be
     // zero
@@ -645,9 +647,17 @@ void ApPredictMethods::InterpolateFromLookupTableForThisConcentration(
     {
         for (unsigned i = 0; i < mPercentiles.size(); i++)
         {
-            credible_intervals[i] = mApd90s[concIndex];
+            apd90_credible_intervals[i] = mApd90s[concIndex];
+            if (mCalculateQNet)
+            {
+                qnet_credible_intervals[i] = mQNets[concIndex];
+            }
         }
-        mApd90CredibleRegions[concIndex] = credible_intervals;
+        mApd90CredibleRegions[concIndex] = apd90_credible_intervals;
+        if (mCalculateQNet)
+        {
+            mQNetCredibleRegions[concIndex] = qnet_credible_intervals;
+        }
         return;
     }
 
@@ -689,6 +699,8 @@ void ApPredictMethods::InterpolateFromLookupTableForThisConcentration(
     }
 
     std::vector<std::vector<double> > predictions = mpLookupTable->Interpolate(sampling_points);
+
+    // Expecting this line to fail when we try to use ORdCiPA 0.5Hz table, needs refining...
     assert(predictions.size() == mSampledIc50s[0].size());
 
     /*
@@ -697,29 +709,45 @@ void ApPredictMethods::InterpolateFromLookupTableForThisConcentration(
      */
     // std::vector<double> apd_50_predictions;
     std::vector<double> apd_90_predictions;
+    std::vector<double> qnet_predictions;
     for (unsigned rand_idx = 0; rand_idx < num_samples; rand_idx++)
     {
         // apd_50_predictions.push_back(predictions[rand_idx][1]);
         apd_90_predictions.push_back(predictions[rand_idx][0]);
+        if (mCalculateQNet) 
+        {
+            qnet_predictions.push_back(predictions[rand_idx][1]);
+        }
     }
     std::sort(apd_90_predictions.begin(), apd_90_predictions.end());
+    if (mCalculateQNet) 
+    {
+        std::sort(qnet_predictions.begin(), qnet_predictions.end());
+    }
 
     for (unsigned i = 0; i < mPercentiles.size(); i++)
     {
         // Now work out the confidence intervals, err on conservative side.
-        unsigned index_in_sorted_apd90_vector;
+        unsigned index_in_sorted_prediction_vector;
         if (mPercentiles[i] < 50)
         {
-            index_in_sorted_apd90_vector = floor(mPercentiles[i] / 100.0 * (double)(num_samples));
+            index_in_sorted_prediction_vector = floor(mPercentiles[i] / 100.0 * (double)(num_samples));
         }
         else
         {
-            index_in_sorted_apd90_vector = ceil(mPercentiles[i] / 100.0 * (double)(num_samples));
+            index_in_sorted_prediction_vector = ceil(mPercentiles[i] / 100.0 * (double)(num_samples));
         }
-        credible_intervals[i] = apd_90_predictions[index_in_sorted_apd90_vector];
+        apd90_credible_intervals[i] = apd_90_predictions[index_in_sorted_prediction_vector];
+        if (mCalculateQNet)
+        {
+            qnet_credible_intervals[i] = qnet_predictions[index_in_sorted_prediction_vector];
+        }
     }
-
-    mApd90CredibleRegions[concIndex] = credible_intervals;
+    mApd90CredibleRegions[concIndex] = apd90_credible_intervals;
+    if (mCalculateQNet)
+    {
+        mQNetCredibleRegions[concIndex] = qnet_credible_intervals;
+    }
     std::cout << "done." << std::endl;
 }
 
@@ -862,23 +890,20 @@ void ApPredictMethods::CommonRunMethod()
 
     boost::shared_ptr<const AbstractOdeSystemInformation> p_ode_info = mpModel->GetSystemInformation();
     std::string model_name = mpModel->GetSystemName();
-    boost::shared_ptr<RegularStimulus> p_reg_stim = boost::static_pointer_cast<RegularStimulus>(
-        mpModel->GetStimulusFunction());
+    boost::shared_ptr<RegularStimulus> p_reg_stim = boost::static_pointer_cast<RegularStimulus>(mpModel->GetStimulusFunction());
     p_reg_stim->SetStartTime(5.0);
 
     // If we are using ORdCiPAv1 and 0.5Hz, calculate qNet.
-    bool calculate_qNet = false;
     out_stream q_net_results_file;
     if (model_name == "ohara_rudy_cipa_v1_2017" && p_reg_stim->GetPeriod() == 2000)
     {
-        calculate_qNet = true;
+        mCalculateQNet = true;
         q_net_results_file = mpFileHandler->OpenOutputFile("q_net.txt");
-        *q_net_results_file << "Concentration(uM)\tqNet(C/F)" << std::endl;
+        *q_net_results_file << "Concentration(uM)\t";
     }
 
     // Print out a progress file for monitoring purposes.
-    ProgressReporter progress_reporter(mOutputFolder, 0.0,
-                                       (double)(mConcs.size()));
+    ProgressReporter progress_reporter(mOutputFolder, 0.0, (double)(mConcs.size()));
     progress_reporter.PrintInitialising();
 
     // Open files and write headers
@@ -887,6 +912,8 @@ void ApPredictMethods::CommonRunMethod()
     out_stream steady_voltage_results_file = mpFileHandler->OpenOutputFile("voltage_results.dat");
     *steady_voltage_results_file << "Concentration(uM)\tUpstrokeVelocity(mV/"
                                     "ms)\tPeakVm(mV)\tAPD50(ms)\tAPD90(ms)\t";
+
+    // All this is about writing out a nice header line.
     if (mLookupTableAvailable)
     {
         for (unsigned i = 0; i < mPercentiles.size(); i++)
@@ -897,8 +924,11 @@ void ApPredictMethods::CommonRunMethod()
                 lower_or_upper = "upp";
                 if (mPercentiles[i - 1] < 50)
                 {
-                    *steady_voltage_results_file << "median_delta_APD90"
-                                                 << ",";
+                    *steady_voltage_results_file << "median_delta_APD90,";
+                    if (mCalculateQNet)
+                    {
+                        *q_net_results_file << "qNet_median(C/F),";
+                    }
                 }
             }
             double credible_interval;
@@ -910,18 +940,34 @@ void ApPredictMethods::CommonRunMethod()
             {
                 credible_interval = 100 - 2 * (100 - mPercentiles[i]);
             }
-            *steady_voltage_results_file << "dAp" << credible_interval << "%"
-                                         << lower_or_upper;
+            *steady_voltage_results_file << "dAp" << credible_interval << "%" << lower_or_upper;
+            if (mCalculateQNet)
+            {
+                *q_net_results_file << "qNet" << credible_interval << lower_or_upper;
+            }
+
             if (i < mPercentiles.size() - 1u)
             {
                 *steady_voltage_results_file << ",";
+                if (mCalculateQNet)
+                {
+                    *q_net_results_file << ",";
+                }
             }
         }
         *steady_voltage_results_file << std::endl;
+        if (mCalculateQNet)
+        {
+            *q_net_results_file << std::endl;
+        }
     }
     else
     {
         *steady_voltage_results_file << "delta_APD90(%)\n";
+        if (mCalculateQNet)
+        {
+            *q_net_results_file << "qNet(C/F)" << std::endl;
+        }
     }
 
     *steady_voltage_results_file_html << "<html>\n<head><title>" << mProgramName
@@ -1013,6 +1059,7 @@ void ApPredictMethods::CommonRunMethod()
      */
     bool reliable_credible_intervals = true;
     mApd90CredibleRegions.resize(mConcs.size());
+    mQNetCredibleRegions.resize(mConcs.size());
     double control_apd90 = 0;
     for (unsigned conc_index = 0u; conc_index < mConcs.size(); conc_index++)
     {
@@ -1034,14 +1081,22 @@ void ApPredictMethods::CommonRunMethod()
             mpModel, apd90, apd50, upstroke, peak, peak_time, ca_max, ca_min,
             0.1 /*ms printing timestep*/, mConcs[conc_index]);
 
-        if (calculate_qNet)
+        if (DidErrorOccur())
+        {
+            // Put a NaN in the APD90 vector if there was an error.
+            mApd90s.push_back(std::numeric_limits<double>::quiet_NaN());
+        }
+        else
+        {
+            mApd90s.push_back(apd90); // This is used by TorsadePredict and following method for control.
+        }
+
+        if (mCalculateQNet)
         {
             CipaQNetCalculator calculator(mpModel);
             double q_net = calculator.ComputeQNet();
-            std::cout << "qNet at " << mConcs[conc_index] << "uM = " << q_net
-                      << " C/F" << std::endl;
-            *q_net_results_file << mConcs[conc_index] << "\t" << q_net << std::endl;
-
+            mQNets.push_back(q_net);
+            
             if (conc_index == mConcs.size() - 1u && this->GetMaxNumPaces() < 750u)
             {
                 std::stringstream message;
@@ -1053,7 +1108,7 @@ void ApPredictMethods::CommonRunMethod()
                 WriteMessageToFile(message.str());
             }
 
-            if (q_net == std::numeric_limits<double>::quiet_NaN())
+            if (q_net == -DBL_MAX)
             {
                 std::stringstream message;
                 message << "At a concentration of " << mConcs[conc_index]
@@ -1063,16 +1118,7 @@ void ApPredictMethods::CommonRunMethod()
             }
         }
 
-        if (DidErrorOccur())
-        {
-            // Put a NaN in the APD90 vector if there was an error.
-            mApd90s.push_back(std::numeric_limits<double>::quiet_NaN());
-        }
-        else
-        {
-            mApd90s.push_back(apd90); // This is used by TorsadePredict and following method for control.
-        }
-
+        // Populates mApd90CredibleRegions and mQNetCredibleRegions, relies on mApd90s and mQNets.
         InterpolateFromLookupTableForThisConcentration(conc_index, median_saturation);
 
         if (!DidErrorOccur())
@@ -1082,6 +1128,8 @@ void ApPredictMethods::CommonRunMethod()
             {
                 control_apd90 = apd90;
             }
+
+            // Convert raw APD90 ranked samples into percent change from control
             double delta_apd90 = 100 * (apd90 - control_apd90) / control_apd90;
             std::vector<double> delta_percentiles(mPercentiles.size());
             if (mLookupTableAvailable)
@@ -1102,10 +1150,21 @@ void ApPredictMethods::CommonRunMethod()
                     std::cout << delta_percentiles[0] << "," << delta_apd90 << ","
                               << delta_percentiles[mPercentiles.size() - 1u]
                               << std::endl; // << std::flush;
+
+                    if (mCalculateQNet)
+                    {
+                        std::cout << "QNet at " << mConcs[conc_index] << "uM: for lower, median and upper percentiles: " 
+                              << mQNetCredibleRegions[conc_index][0] << "," << mQNets[conc_index] << ","
+                              << mQNetCredibleRegions[conc_index][mPercentiles.size() - 1u] << std::endl; // << std::flush;
+                    }
                 }
                 else
                 {
                     std::cout << delta_apd90 << std::endl; // << std::flush;
+                    if (mCalculateQNet)
+                    {
+                        std::cout << "qNet at " << mConcs[conc_index] << "uM = " << mQNets[conc_index] << " C/F" << std::endl;
+                    }
                 }
             }
             *steady_voltage_results_file_html
@@ -1115,6 +1174,11 @@ void ApPredictMethods::CommonRunMethod()
             *steady_voltage_results_file << mConcs[conc_index] << "\t" << upstroke
                                          << "\t" << peak << "\t" << apd50 << "\t"
                                          << apd90 << "\t";
+            if (mCalculateQNet)
+            {
+                *q_net_results_file <<  mConcs[conc_index] << "\t";
+            }
+
             if (mLookupTableAvailable)
             {
                 for (unsigned i = 0; i < mPercentiles.size(); i++)
@@ -1122,31 +1186,52 @@ void ApPredictMethods::CommonRunMethod()
                     if (mPercentiles[i] > 50 && mPercentiles[i - 1] < 50)
                     {
                         *steady_voltage_results_file << delta_apd90 << ",";
-                    }
-                    // Now add a check to see whether the middle 30% of our credible
-                    // interval contains
-                    // the simulated 'median' answer. If not, log it and report a warning
-                    // later.
-                    const double tolerance_on_percent_change = 1e-2;
-                    if ((mPercentiles[i] < 35 && delta_percentiles[i] > delta_apd90 + tolerance_on_percent_change) || (mPercentiles[i] > 75 && delta_percentiles[i] < delta_apd90 - tolerance_on_percent_change))
-                    {
-                        reliable_credible_intervals = false;
-                    }
+                    }                    
                     *steady_voltage_results_file << delta_percentiles[i];
                     if (i < mPercentiles.size() - 1u)
                     {
                         *steady_voltage_results_file << ",";
                     }
+                    // Now add a check to see whether the middle 30% of our credible
+                    // interval contains the simulated 'median' answer. 
+                    // If not, log it and report a warning later.
+                    const double tolerance_on_percent_change = 1e-2;
+                    if ((mPercentiles[i] < 35 && delta_percentiles[i] > delta_apd90 + tolerance_on_percent_change) || (mPercentiles[i] > 75 && delta_percentiles[i] < delta_apd90 - tolerance_on_percent_change))
+                    {
+                        reliable_credible_intervals = false;
+                    }
+
+                    if (mCalculateQNet)
+                    {
+                        if (mPercentiles[i] > 50 && mPercentiles[i - 1] < 50)
+                        {
+                            *q_net_results_file << mQNets[conc_index] << ",";
+                        }                    
+                        *q_net_results_file << mQNetCredibleRegions[conc_index][i];
+                        if (i < mPercentiles.size() - 1u)
+                        {
+                            *q_net_results_file << ",";
+                        }
+                        // No extra check on calculated QNet being in lookup table intervals, relying
+                        // on the APD calculation to do this for us.
+                    }
                 }
                 *steady_voltage_results_file << std::endl; // << std::flush;
+                if (mCalculateQNet)
+                {
+                    *q_net_results_file <<  std::endl;
+                }
             }
             else
             {
-                *steady_voltage_results_file << delta_apd90
-                                             << std::endl; // << std::flush;
+                *steady_voltage_results_file << delta_apd90 << std::endl; // << std::flush;
+                if (mCalculateQNet)
+                {
+                    *q_net_results_file << mQNets[conc_index] << std::endl;
+                }
             }
         }
-        else
+        else // error occurred in postprocessing APD
         {
             std::string error_code = GetErrorMessage();
             if (!mSuppressOutput)
@@ -1190,9 +1275,7 @@ void ApPredictMethods::CommonRunMethod()
             mpModel->GetStimulusFunction());
         double s1_period = p_default_stimulus->GetPeriod();
         double s_start = p_default_stimulus->GetStartTime();
-        std::vector<double> voltages = solution.GetVariableAtIndex(
-            mpModel->GetSystemInformation()->GetStateVariableIndex(
-                "membrane_voltage"));
+        std::vector<double> voltages = solution.GetVariableAtIndex(mpModel->GetSystemInformation()->GetStateVariableIndex("membrane_voltage"));
         double window = s1_period;
         if (this->mPeriodTwoBehaviour)
         {
@@ -1218,7 +1301,7 @@ void ApPredictMethods::CommonRunMethod()
     *steady_voltage_results_file_html << "</table>\n</body>\n</html>\n";
     steady_voltage_results_file_html->close();
     steady_voltage_results_file->close();
-    if (calculate_qNet)
+    if (mCalculateQNet)
     {
         q_net_results_file->close();
     }
@@ -1311,8 +1394,7 @@ std::vector<double> ApPredictMethods::GetApd90s(void)
     return mApd90s;
 }
 
-std::vector<std::vector<double> > ApPredictMethods::GetApd90CredibleRegions(
-    void)
+std::vector<std::vector<double> > ApPredictMethods::GetApd90CredibleRegions(void)
 {
     if (!mComplete)
     {
@@ -1327,6 +1409,23 @@ std::vector<std::vector<double> > ApPredictMethods::GetApd90CredibleRegions(
     }
 
     return mApd90CredibleRegions;
+}
+
+std::vector<std::vector<double> > ApPredictMethods::GetQNetCredibleRegions(void)
+{
+    if (!mComplete)
+    {
+        EXCEPTION("Simulation has not been run - check arguments.");
+    }
+
+    if (!mLookupTableAvailable)
+    {
+        EXCEPTION(
+            "There was no Lookup Table available for credible interval "
+            "calculations with these settings.");
+    }
+
+    return mQNetCredibleRegions;
 }
 
 void ApPredictMethods::ParameterWrapper(
