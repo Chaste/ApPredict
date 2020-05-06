@@ -36,7 +36,6 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef TESTLOOKUPTABLEGENERATOR_HPP_
 #define TESTLOOKUPTABLEGENERATOR_HPP_
 
-#include <boost/assign/list_of.hpp>
 #include <cxxtest/TestSuite.h>
 
 #include "CheckpointArchiveTypes.hpp"
@@ -58,7 +57,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 class TestLookupTableGenerator : public CxxTest::TestSuite
 {
 private:
-    AbstractUntemplatedLookupTableGenerator* mpGenerator;
+    AbstractUntemplatedLookupTableGenerator *mpGenerator;
 
 public:
     void TestSingleRun()
@@ -105,8 +104,8 @@ public:
         generator.SetMaxNumEvaluations(5u);
         generator.GenerateLookupTable();
 
-        std::vector<c_vector<double, 1u> > parameter_values = generator.GetParameterPoints();
-        std::vector<std::vector<double> > quantities_of_interest = generator.GetFunctionValues();
+        std::vector<c_vector<double, 1u>> parameter_values = generator.GetParameterPoints();
+        std::vector<std::vector<double>> quantities_of_interest = generator.GetFunctionValues();
 
         TS_ASSERT_EQUALS(parameter_values.size(), 5u);
         TS_ASSERT_EQUALS(quantities_of_interest.size(), 5u);
@@ -126,25 +125,6 @@ public:
 
         TS_ASSERT_EQUALS(parameter_values.size(), 10u);
         TS_ASSERT_EQUALS(quantities_of_interest.size(), 10u);
-    }
-
-    void TestVoltageThresholdDetectionAlgorithm()
-    {
-        std::vector<double> thresholds_for_each_model = boost::assign::list_of(-46.6219) /*Shannon etc.*/
-            (-44.3656)(-34.5945)(-35.9230)(-28.3257)(-38.4384);
-
-        for (unsigned model_index = 1; model_index < 7u; model_index++)
-        {
-            SetupModel setup(1.0, model_index); // models at 1 Hz
-            boost::shared_ptr<AbstractCvodeCell> p_model = setup.GetModel();
-
-            SingleActionPotentialPrediction ap_runner(p_model);
-            ap_runner.SuppressOutput();
-            ap_runner.SetMaxNumPaces(100u);
-            double threshold_voltage = ap_runner.DetectVoltageThresholdForActionPotential();
-
-            TS_ASSERT_DELTA(threshold_voltage, thresholds_for_each_model[model_index - 1u], 1e-2);
-        }
     }
 
     void TestLookupTableMaker5d()
@@ -168,9 +148,9 @@ public:
         mpGenerator->SetMaxNumEvaluations(1u); // This will still do a load of things, for first run, but won't do any refinement.
         mpGenerator->GenerateLookupTable();
 
-        LookupTableGenerator<5>* p_temp = dynamic_cast<LookupTableGenerator<5>*>(mpGenerator);
-        std::vector<c_vector<double, 5u> > parameter_values = p_temp->GetParameterPoints();
-        std::vector<std::vector<double> > quantities_of_interest = mpGenerator->GetFunctionValues();
+        LookupTableGenerator<5> *p_temp = dynamic_cast<LookupTableGenerator<5> *>(mpGenerator);
+        std::vector<c_vector<double, 5u>> parameter_values = p_temp->GetParameterPoints();
+        std::vector<std::vector<double>> quantities_of_interest = mpGenerator->GetFunctionValues();
 
         TS_ASSERT_EQUALS(parameter_values.size(), 32u);
         TS_ASSERT_EQUALS(quantities_of_interest.size(), 32u);
@@ -197,7 +177,7 @@ public:
             unsigned model_index = 2u; // Ten tusscher '06 at 1 Hz
             std::string file_name = "1d_test";
 
-            AbstractUntemplatedLookupTableGenerator* const p_generator = new LookupTableGenerator<1>(model_index, file_name, "TestLookupTableArchiving");
+            AbstractUntemplatedLookupTableGenerator *const p_generator = new LookupTableGenerator<1>(model_index, file_name, "TestLookupTableArchiving");
 
             p_generator->SetParameterToScale("membrane_rapid_delayed_rectifier_potassium_current_conductance", 0.0, 1.0);
             p_generator->AddQuantityOfInterest(Apd90, 0.5 /*ms*/); // QoI and tolerance
@@ -212,7 +192,7 @@ public:
         }
 
         {
-            AbstractUntemplatedLookupTableGenerator* p_abstract_generator;
+            AbstractUntemplatedLookupTableGenerator *p_abstract_generator;
 
             // Create an input archive
             std::ifstream ifs(archive_filename.c_str(), std::ios::binary);
@@ -223,10 +203,10 @@ public:
 
             TS_ASSERT_EQUALS(p_abstract_generator->GetDimension(), 1u);
 
-            LookupTableGenerator<1u>* p_generator = dynamic_cast<LookupTableGenerator<1u>*>(p_abstract_generator);
+            LookupTableGenerator<1u> *p_generator = dynamic_cast<LookupTableGenerator<1u> *>(p_abstract_generator);
 
-            std::vector<c_vector<double, 1u> > points = p_generator->GetParameterPoints();
-            std::vector<std::vector<double> > values = p_generator->GetFunctionValues();
+            std::vector<c_vector<double, 1u>> points = p_generator->GetParameterPoints();
+            std::vector<std::vector<double>> values = p_generator->GetFunctionValues();
 
             TS_ASSERT_EQUALS(points.size(), num_evals_before_save);
             TS_ASSERT_EQUALS(values.size(), num_evals_before_save);
@@ -253,7 +233,7 @@ public:
         const unsigned num_evals_before_save = 32u;
         {
             // Save this generator we have sneakily kept a pointer to from a previous test.
-            AbstractUntemplatedLookupTableGenerator* const p_generator = mpGenerator;
+            AbstractUntemplatedLookupTableGenerator *const p_generator = mpGenerator;
 
             std::ofstream ofs(archive_filename.c_str());
             boost::archive::text_oarchive output_arch(ofs);
@@ -263,7 +243,7 @@ public:
         }
 
         {
-            AbstractUntemplatedLookupTableGenerator* p_abstract_generator;
+            AbstractUntemplatedLookupTableGenerator *p_abstract_generator;
 
             // Create an input archive
             std::ifstream ifs(archive_filename.c_str(), std::ios::binary);
@@ -274,10 +254,10 @@ public:
 
             TS_ASSERT_EQUALS(p_abstract_generator->GetDimension(), 5u);
 
-            LookupTableGenerator<5u>* p_generator = dynamic_cast<LookupTableGenerator<5u>*>(p_abstract_generator);
+            LookupTableGenerator<5u> *p_generator = dynamic_cast<LookupTableGenerator<5u> *>(p_abstract_generator);
 
-            std::vector<c_vector<double, 5u> > points = p_generator->GetParameterPoints();
-            std::vector<std::vector<double> > values = p_generator->GetFunctionValues();
+            std::vector<c_vector<double, 5u>> points = p_generator->GetParameterPoints();
+            std::vector<std::vector<double>> values = p_generator->GetFunctionValues();
 
             TS_ASSERT_EQUALS(points.size(), num_evals_before_save);
             TS_ASSERT_EQUALS(values.size(), num_evals_before_save);

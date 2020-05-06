@@ -219,132 +219,132 @@ protected:
         const double conc = DOUBLE_UNSET);
 
     /**
-   * This method just passes any message into the WARNINGS macro.
-   *
-   * It can be called from subclass methods to write a log message to the
-   * messages.txt file
-   * that should be displayed alongside the results.
-   * (for example a warning that the cell failed to de/re-polarise at a certain
-   * concentration.)
-   * @param rMessage  The message to write to file
-   */
+      * This method just passes any message into the WARNINGS macro.
+      *
+      * It can be called from subclass methods to write a log message to the
+      * messages.txt file
+      * that should be displayed alongside the results.
+      * (for example a warning that the cell failed to de/re-polarise at a certain
+      * concentration.)
+      * @param rMessage  The message to write to file
+      */
     virtual void WriteMessageToFile(const std::string& rMessage);
 
 public:
     /**
-     * The main constructor, sets a few defaults and reads some command line
-     * options.
-     */
+    * The main constructor, sets a few defaults and reads some command line
+    * options.
+    */
     AbstractActionPotentialMethod();
 
     /**
-     * Destructor
-     */
+    * Destructor
+    */
     virtual ~AbstractActionPotentialMethod(){};
 
     /**
-     * Set the maximum number of paces to run for.
-     * Use of this method will override any command line modifications
-     * set in the constructor.
-     *
-     * @param numPaces  The maximum number of paces to run in an attempt to get to
-     * steady state.
-     */
+    * Set the maximum number of paces to run for.
+    * Use of this method will override any command line modifications
+    * set in the constructor.
+    *
+    * @param numPaces  The maximum number of paces to run in an attempt to get to
+    * steady state.
+    */
     void SetMaxNumPaces(unsigned numPaces);
 
     /**
-     * @return the maximum number of paces to run to steady state.
-     */
+    * @return the maximum number of paces to run to steady state.
+    */
     unsigned GetMaxNumPaces();
 
     /**
-     * @return  whether an error occurred in the action potential marker
-     * evaluation (not simulation itself).
-     */
+    * @return  whether an error occurred in the action potential marker
+    * evaluation (not simulation itself).
+    */
     bool DidErrorOccur(void);
 
     /**
-	 * @return The error message from attempting to evaluate markers, such as
-	 * APD90.
-	 *
-	 * This is "NoActionPotential_1" if the cell failed to depolarise (no AP
-	 * occurs).
-	 *
-	 * Or "NoActionPotential_2" if the cell failed to repolarise (AP never returns
-	 * to resting potential).
-	 *
-	 * Or "NoActionPotential_3" action potential did not repolarise in time for
-	 * the next stimulus (no 1:1 correspondence).
-	 *         This only occurs if #SetLackOfOneToOneCorrespondenceIsError() has
-	 * been called.
-	 *
-	 * Or "NoActionPotential_4" if alternans is occurring (different APD on
-	 * subsequent beats).
-	 * This only occurs if #SetAlternansIsError() has been called,
-	 * otherwise a warning is printed to screen.
-	 * If SetControlActionPotentialDuration90() has been set, then this code
-	 * indicates short
-	 * alternans and NoActionPotential_6 indicates long alternans. Otherwise this
-	 * code covers both
-	 *
-	 * Or "NoActionPotential_5" if alternans is occurring but second AP is
-	 * sub-threshold on
-	 * the next stimulus (no 1:1 correspondence).
-	 * This only occurs if #SetLackOfOneToOneCorrespondenceIsError() has been
-	 * called.
-	 *
-	 * Or "NoActionPotential_6" - long alternans or period two behaviour is
-	 * occurring.
-	 * This is only an error if #SetLackOfOneToOneCorrespondenceIsError() has been
-	 * called,
-	 * otherwise it is a warning. You will only get this code if
-	 * SetControlActionPotentialDuration90()
-	 * has been set.
-	 *
-	 * Or "NoActionPotential_7" if depolarisation abnormalities are occurring
-	 * You will only get this code if SetControlTimeOfPeakVoltage()
-	 * has been set.
-	 */
+     * @return The error message from attempting to evaluate markers, such as
+     * APD90.
+     *
+     * This is "NoActionPotential_1" if the cell failed to depolarise (no AP
+     * occurs).
+     *
+     * Or "NoActionPotential_2" if the cell failed to repolarise (AP never returns
+     * to resting potential).
+     *
+     * Or "NoActionPotential_3" action potential did not repolarise in time for
+     * the next stimulus (no 1:1 correspondence).
+     *         This only occurs if #SetLackOfOneToOneCorrespondenceIsError() has
+     * been called.
+     *
+     * Or "NoActionPotential_4" if alternans is occurring (different APD on
+     * subsequent beats).
+     * This only occurs if #SetAlternansIsError() has been called,
+     * otherwise a warning is printed to screen.
+     * If SetControlActionPotentialDuration90() has been set, then this code
+     * indicates short
+     * alternans and NoActionPotential_6 indicates long alternans. Otherwise this
+     * code covers both
+     *
+     * Or "NoActionPotential_5" if alternans is occurring but second AP is
+     * sub-threshold on
+     * the next stimulus (no 1:1 correspondence).
+     * This only occurs if #SetLackOfOneToOneCorrespondenceIsError() has been
+     * called.
+     *
+     * Or "NoActionPotential_6" - long alternans or period two behaviour is
+     * occurring.
+     * This is only an error if #SetLackOfOneToOneCorrespondenceIsError() has been
+     * called,
+     * otherwise it is a warning. You will only get this code if
+     * SetControlActionPotentialDuration90()
+     * has been set.
+     *
+     * Or "NoActionPotential_7" if depolarisation abnormalities are occurring
+     * You will only get this code if SetControlTimeOfPeakVoltage()
+     * has been set.
+     */
     std::string GetErrorMessage();
 
     /**
-	 * @return The error code from attempting to evaluate markers, such as APD90.
-	 *
-	 * Returns "0" if no error occurred.
-	 *
-	 * This is "1" if the cell failed to depolarise (no AP occurs).
-	 *
-	 * Or "2" if the cell failed to repolarise (AP never returns to resting
-	 * potential).
-	 *
-	 * Or "3" action potential did not repolarise in time for the next stimulus
-	 * (no 1:1 correspondence).
-	 *         This only occurs if #SetLackOfOneToOneCorrespondenceIsError() has
-	 * been called.
-	 *
-	 * Or "4" if alternans is occurring (different APD on subsequent beats).
-	 * This only occurs if #SetAlternansIsError() has been called,
-	 * otherwise a warning is printed to screen. If
-	 * SetControlActionPotentialDuration90()
-	 * has been set you get this error code for shorter than average APDs, if not
-	 * you
-	 * get this error code for short and long alternans.
-	 *
-	 * Or "5" if alternans is occurring but second AP is sub-threshold on
-	 * the next stimulus (no 1:1 correspondence).
-	 * This only occurs if #SetLackOfOneToOneCorrespondenceIsError() has been
-	 * called.
-	 *
-	 * Or "6" if alternans is occurring (with longer than default APD90s)
-	 * This only occurs if #SetLackOfOneToOneCorrespondenceIsError() has been
-	 * called.
-	 * You will only get this code if SetControlActionPotentialDuration90()
-	 * has been set.
-	 *
-	 * Or "7" if depolarisation abnormalities are occurring
-	 * You will only get this code if SetControlTimeOfPeakVoltage()
-	 * has been set.
-	 */
+     * @return The error code from attempting to evaluate markers, such as APD90.
+     *
+     * Returns "0" if no error occurred.
+     *
+     * This is "1" if the cell failed to depolarise (no AP occurs).
+     *
+     * Or "2" if the cell failed to repolarise (AP never returns to resting
+     * potential).
+     *
+     * Or "3" action potential did not repolarise in time for the next stimulus
+     * (no 1:1 correspondence).
+     *         This only occurs if #SetLackOfOneToOneCorrespondenceIsError() has
+     * been called.
+     *
+     * Or "4" if alternans is occurring (different APD on subsequent beats).
+     * This only occurs if #SetAlternansIsError() has been called,
+     * otherwise a warning is printed to screen. If
+     * SetControlActionPotentialDuration90()
+     * has been set you get this error code for shorter than average APDs, if not
+     * you
+     * get this error code for short and long alternans.
+     *
+     * Or "5" if alternans is occurring but second AP is sub-threshold on
+     * the next stimulus (no 1:1 correspondence).
+     * This only occurs if #SetLackOfOneToOneCorrespondenceIsError() has been
+     * called.
+     *
+     * Or "6" if alternans is occurring (with longer than default APD90s)
+     * This only occurs if #SetLackOfOneToOneCorrespondenceIsError() has been
+     * called.
+     * You will only get this code if SetControlActionPotentialDuration90()
+     * has been set.
+     *
+     * Or "7" if depolarisation abnormalities are occurring
+     * You will only get this code if SetControlTimeOfPeakVoltage()
+     * has been set.
+     */
     unsigned GetErrorCode();
 
     /**
