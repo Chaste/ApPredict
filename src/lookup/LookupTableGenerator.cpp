@@ -34,9 +34,9 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include <boost/scoped_array.hpp> // to avoid variable length arrays.
-#include <iomanip> // for setprecision()
-#include <pthread.h> // for pthread_create, pthread_join, etc
-#include <unistd.h> // Timing delays to make pthreads behave themselves
+#include <iomanip>                // for setprecision()
+#include <pthread.h>              // for pthread_create, pthread_join, etc
+#include <unistd.h>               // Timing delays to make pthreads behave themselves
 
 #include "FileFinder.hpp"
 #include "LookupTableGenerator.hpp"
@@ -44,7 +44,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "SetupModel.hpp"
 #include "SingleActionPotentialPrediction.hpp"
 
-void* ThreadedActionPotential(void* argument); // Forward declaration.
+void *ThreadedActionPotential(void *argument); // Forward declaration.
 
 struct ThreadReturnData
 {
@@ -70,26 +70,26 @@ struct ThreadInputData
 /* Private constructor - just for archiving */
 template <unsigned DIM>
 LookupTableGenerator<DIM>::LookupTableGenerator()
-        : AbstractUntemplatedLookupTableGenerator(),
-          mModelIndex(0u),
-          mpParentBox(NULL){};
+    : AbstractUntemplatedLookupTableGenerator(),
+      mModelIndex(0u),
+      mpParentBox(NULL){};
 
 template <unsigned DIM>
 LookupTableGenerator<DIM>::LookupTableGenerator(
-    const unsigned& rModelIndex, const std::string& rOutputFileName,
-    const std::string& rOutputFolder)
-        : AbstractUntemplatedLookupTableGenerator(),
-          mModelIndex(rModelIndex),
-          mFrequency(1.0),
-          mMaxNumEvaluations(UNSIGNED_UNSET),
-          mNumEvaluations(0u),
-          mOutputFileName(rOutputFileName),
-          mOutputFolder(rOutputFolder),
-          mGenerationHasBegun(false),
-          mMaxRefinementDifference(UNSIGNED_UNSET),
-          mpParentBox(new ParameterBox<DIM>(NULL)),
-          mMaxNumPaces(UNSIGNED_UNSET),
-          mVoltageThreshold(-50.0)
+    const unsigned &rModelIndex, const std::string &rOutputFileName,
+    const std::string &rOutputFolder)
+    : AbstractUntemplatedLookupTableGenerator(),
+      mModelIndex(rModelIndex),
+      mFrequency(1.0),
+      mMaxNumEvaluations(UNSIGNED_UNSET),
+      mNumEvaluations(0u),
+      mOutputFileName(rOutputFileName),
+      mOutputFolder(rOutputFolder),
+      mGenerationHasBegun(false),
+      mMaxRefinementDifference(UNSIGNED_UNSET),
+      mpParentBox(new ParameterBox<DIM>(NULL)),
+      mMaxNumPaces(UNSIGNED_UNSET),
+      mVoltageThreshold(-50.0)
 {
     // empty
 }
@@ -229,7 +229,7 @@ bool LookupTableGenerator<DIM>::GenerateLookupTable()
         while (mNumEvaluations < mMaxNumEvaluations)
         {
             // Find which parameter box has the largest variation between its corners
-            ParameterBox<DIM>* p_box = mpParentBox->FindBoxWithLargestQoIErrorEstimate(
+            ParameterBox<DIM> *p_box = mpParentBox->FindBoxWithLargestQoIErrorEstimate(
                 quantitiy_idx, mQoITolerances[quantitiy_idx],
                 mMaxRefinementDifference);
 
@@ -277,14 +277,13 @@ bool LookupTableGenerator<DIM>::GenerateLookupTable()
 
 template <unsigned DIM>
 void LookupTableGenerator<DIM>::RunEvaluationsForThesePoints(
-    CornerSet setOfPoints, out_stream& rFile)
+    CornerSet setOfPoints, out_stream &rFile)
 {
     // Setup variables to control threading
     unsigned num_threads = setOfPoints.size();
-    boost::scoped_array<ThreadInputData> thread_data(
-        new ThreadInputData[num_threads]);
+    boost::scoped_array<ThreadInputData> thread_data(new ThreadInputData[num_threads]);
     // struct ThreadInputData thread_data[num_threads];
-    boost::scoped_array<void*> answers(new void*[num_threads]);
+    boost::scoped_array<void *> answers(new void *[num_threads]);
     int return_code;
 
     // Generate the threads
@@ -320,7 +319,7 @@ void LookupTableGenerator<DIM>::RunEvaluationsForThesePoints(
 
         // Launch the ThreadedActionPotential method on this thread
         return_code = pthread_create(&threads[i], NULL, ThreadedActionPotential,
-                                     (void*)&thread_data[i]);
+                                     (void *)&thread_data[i]);
 
         assert(0 == return_code); // Check launch worked OK
         EXCEPT_IF_NOT(0 == return_code);
@@ -342,7 +341,7 @@ void LookupTableGenerator<DIM>::RunEvaluationsForThesePoints(
         EXCEPT_IF_NOT(0 == return_code);
 
         // Translate back from the structs to sensible formats.
-        ThreadReturnData* thread_results = (ThreadReturnData*)answers[i];
+        ThreadReturnData *thread_results = (ThreadReturnData *)answers[i];
         if (thread_results->exceptionOccurred)
         {
             EXCEPTION(
@@ -351,7 +350,7 @@ void LookupTableGenerator<DIM>::RunEvaluationsForThesePoints(
 
         unsigned error_occurred = thread_results->errorOccurred;
         std::vector<double> results = thread_results->QoIs;
-        c_vector<double, DIM>* p_scalings = *iter;
+        c_vector<double, DIM> *p_scalings = *iter;
         delete thread_results; // Clean up memory
 
         // Store all the info in the master process and tell boxes about it.
@@ -399,12 +398,12 @@ void LookupTableGenerator<DIM>::RunEvaluationsForThesePoints(
     }
 }
 
-void* ThreadedActionPotential(void* argument)
+void *ThreadedActionPotential(void *argument)
 {
     // bool debugging_on = true;
 
-    struct ThreadInputData* my_data;
-    my_data = (struct ThreadInputData*)argument;
+    struct ThreadInputData *my_data;
+    my_data = (struct ThreadInputData *)argument;
 
     std::vector<double> scalings = my_data->scalings;
     assert(scalings.size() == my_data->mParameterNames.size());
@@ -459,9 +458,9 @@ void* ThreadedActionPotential(void* argument)
         ap_runner.RunSteadyPacingExperiment();
         //        }
     }
-    catch (Exception& e)
+    catch (Exception &e)
     {
-        ThreadReturnData* return_data = new ThreadReturnData;
+        ThreadReturnData *return_data = new ThreadReturnData;
         return_data->exceptionOccurred = true;
         return_data->exceptionMessage = e.GetShortMessage();
 
@@ -492,8 +491,7 @@ void* ThreadedActionPotential(void* argument)
 
             // We could use different numerical codes for different errors here if we
             // wanted to.
-            if ((error_message == "NoActionPotential_2" || error_message == "NoActionPotential_3") 
-                && (my_data->mQuantitiesToRecord[i] == Apd90 || my_data->mQuantitiesToRecord[i] == Apd50))
+            if ((error_message == "NoActionPotential_2" || error_message == "NoActionPotential_3") && (my_data->mQuantitiesToRecord[i] == Apd90 || my_data->mQuantitiesToRecord[i] == Apd50))
             {
                 // For an APD calculation failure on repolarisation put in the stimulus
                 // period.
@@ -536,7 +534,7 @@ void* ThreadedActionPotential(void* argument)
         results.push_back(temp);
     }
 
-    ThreadReturnData* return_data = new ThreadReturnData;
+    ThreadReturnData *return_data = new ThreadReturnData;
     return_data->QoIs = results;
     return_data->errorOccurred = error_occurred;
     return_data->exceptionOccurred = false;
@@ -546,17 +544,17 @@ void* ThreadedActionPotential(void* argument)
 }
 
 template <unsigned DIM>
-std::vector<c_vector<double, DIM> >
+std::vector<c_vector<double, DIM>>
 LookupTableGenerator<DIM>::GetParameterPoints()
 {
     return mParameterPoints;
 }
 
 template <unsigned DIM>
-std::vector<std::vector<double> >
+std::vector<std::vector<double>>
 LookupTableGenerator<DIM>::GetFunctionValues()
 {
-    std::vector<std::vector<double> > results;
+    std::vector<std::vector<double>> results;
     for (unsigned i = 0; i < mParameterPointData.size(); i++)
     {
         results.push_back(mParameterPointData[i]->GetQoIs());
@@ -566,7 +564,7 @@ LookupTableGenerator<DIM>::GetFunctionValues()
 
 template <unsigned DIM>
 void LookupTableGenerator<DIM>::SetParameterToScale(
-    const std::string& rMetadataName, const double& rMin, const double& rMax)
+    const std::string &rMetadataName, const double &rMin, const double &rMax)
 {
     if (mParameterNames.size() == DIM)
     {
@@ -591,8 +589,7 @@ void LookupTableGenerator<DIM>::SetParameterToScale(
         mParameterNames.push_back(rMetadataName);
     }
     // A special treatment for Ito,fast - we use Ito if it isn't present separately.
-    else if (rMetadataName == "membrane_fast_transient_outward_current_conductance"
-             && p_model->HasAnyVariable("membrane_transient_outward_current_conductance"))
+    else if (rMetadataName == "membrane_fast_transient_outward_current_conductance" && p_model->HasAnyVariable("membrane_transient_outward_current_conductance"))
     {
         WARNING(p_model->GetSystemName()
                 << " does not have "
@@ -631,23 +628,23 @@ void LookupTableGenerator<DIM>::AddQuantityOfInterest(
 
 template <unsigned DIM>
 void LookupTableGenerator<DIM>::SetMaxNumEvaluations(
-    const unsigned& rMaxNumEvals)
+    const unsigned &rMaxNumEvals)
 {
     mMaxNumEvaluations = rMaxNumEvals;
 }
 
 template <unsigned DIM>
 void LookupTableGenerator<DIM>::SetMaxVariationInRefinement(
-    const unsigned& rMaxRefinementDifference)
+    const unsigned &rMaxRefinementDifference)
 {
     mMaxRefinementDifference = rMaxRefinementDifference;
 }
 
 template <unsigned DIM>
-std::vector<std::vector<double> > LookupTableGenerator<DIM>::Interpolate(
-    const std::vector<c_vector<double, DIM> >& rParameterPoints)
+std::vector<std::vector<double>> LookupTableGenerator<DIM>::Interpolate(
+    const std::vector<c_vector<double, DIM>> &rParameterPoints)
 {
-    std::vector<std::vector<double> > interpolated_values;
+    std::vector<std::vector<double>> interpolated_values;
 
     for (unsigned i = 0; i < rParameterPoints.size(); i++)
     {
@@ -659,11 +656,11 @@ std::vector<std::vector<double> > LookupTableGenerator<DIM>::Interpolate(
 }
 
 template <unsigned DIM>
-std::vector<std::vector<double> > LookupTableGenerator<DIM>::Interpolate(
-    const std::vector<std::vector<double> >& rParameterPoints)
+std::vector<std::vector<double>> LookupTableGenerator<DIM>::Interpolate(
+    const std::vector<std::vector<double>> &rParameterPoints)
 {
     // Convert std::vector to c_vector...
-    std::vector<c_vector<double, DIM> > c_vec_parameter_points;
+    std::vector<c_vector<double, DIM>> c_vec_parameter_points;
     for (unsigned i = 0; i < rParameterPoints.size(); i++)
     {
         assert(rParameterPoints[i].size() == DIM);
