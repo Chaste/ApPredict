@@ -74,6 +74,9 @@ private:
      * @param iC50  The IC50 for this channel.
      * @param hill  The Hill for this channel.
      * @param saturation  The saturation level for this channel and drug (e.g. 0% = full block, 150% = 50% activator).
+     * @param ic50DrugTwo  The IC50 for the second drug for this channel
+     * @param hillDrugTwo  The Hill for the second drug for this channel
+     * @param saturationDrugTwo  The saturation level for this channel and second drug.
      */
     void ApplyDrugBlock(boost::shared_ptr<AbstractCvodeCell> pModel,
                         unsigned channel_index,
@@ -81,7 +84,10 @@ private:
                         const double concentration,
                         const double iC50,
                         const double hill,
-                        const double saturation);
+                        const double saturation,
+                        double ic50DrugTwo=-1,
+                        double hillDrugTwo=-1,
+                        double saturationDrugTwo=-1);
 
     /**
      * Takes the inputted IC50 and Hill coefficients
@@ -94,9 +100,11 @@ private:
      *
      * @param rIC50s  The IC50 values for each channel, and any repeated measurements (inner vec).
      * @param rHills  The Hill coefficients for each channel, and any repeated measurements (inner vec).
+     * @param secondDrug  Whether this is for the second drug, defaults to false.
      */
     void CalculateDoseResponseParameterSamples(const std::vector<std::vector<double> >& rIC50s,
-                                               const std::vector<std::vector<double> >& rHills);
+                                               const std::vector<std::vector<double> >& rHills,
+                                               bool secondDrug=false);
 
     /**
      * Uses the lookup table and entries in mSampledIc50s and mSampledHills
@@ -105,9 +113,11 @@ private:
      *
      * @param concIndex  The index of the concentration (in mConcs).
      * @param rMedianSaturationLevels  The saturation levels for each channel to assume in all samples.
+     * @param rMedianSaturationLevelsDrugTwo  The saturation levels for each channel for drug two to assume in all samples (can be an empty vector if one drug only being used).
      */
     void InterpolateFromLookupTableForThisConcentration(const unsigned concIndex,
-                                                        const std::vector<double>& rMedianSaturationLevels);
+                                                        const std::vector<double>& rMedianSaturationLevels,
+                                                        const std::vector<double>& rMedianSaturationLevelsDrugTwo);
 
     /**
       * Perform linear interpolation to get an estimate of y_star at x_star
@@ -137,14 +147,40 @@ private:
      */
     std::vector<std::vector<double> > mSampledHills;
 
+    /**
+     * The IC50 samples for credible interval calculations for drug two.
+     * The first index is for channel (corresponding to mMetadataNames)
+     * The second (inner) vector is for each random sample.
+     */
+    std::vector<std::vector<double> > mSampledIc50sDrugTwo;
+
+    /**
+     * The Hill coefficient samples for credible interval calculations for drug two.
+     * The first index is for channel (corresponding to mMetadataNames)
+     * The second (inner) vector is for each random sample.
+     */
+    std::vector<std::vector<double> > mSampledHillsDrugTwo;
+
     /** The inputted spread parameters - for pIC50 Logistic Distbn this is 'sigma' */
     std::vector<double> mPic50Spreads;
 
     /** The inputted spread parameters - for Hill Log-Logisitic this is '1/Beta' */
     std::vector<double> mHillSpreads;
 
+    /** The inputted spread parameters for second drug - for pIC50 Logistic Distbn this is 'sigma' */
+    std::vector<double> mPic50SpreadsDrugTwo;
+
+    /** The inputted spread parameters for second drug - for Hill Log-Logisitic this is '1/Beta' */
+    std::vector<double> mHillSpreadsDrugTwo;
+
+    /** A factor that specifies all the concentrations for drug two, by multiplying those of drug one.*/
+    double mDrugTwoConcentrationFactor;
+
     /** Whether there is a lookup table we can use for credible interval calculations */
     bool mLookupTableAvailable;
+
+    /** Whether there are two drugs being analysed */
+    bool mTwoDrugs;
 
     /** A pointer to a lookup table */
     boost::shared_ptr<AbstractUntemplatedLookupTableGenerator> mpLookupTable;
@@ -221,11 +257,13 @@ protected:
      * @param rHill  default Hill coefficients (usually -1), overwritten if argument is present.
      * @param rSaturation  default saturation levels (usually -1), overwritten if argument is present.
      * @param channelIdx  The index of the channel in mMetadataNames.
+     * @param secondDrug  Whether we read arguments for a second drug.
      */
     void ReadInIC50HillAndSaturation(std::vector<double>& rIc50,
                                      std::vector<double>& rHill,
                                      std::vector<double>& rSaturation,
-                                     const unsigned channelIdx);
+                                     const unsigned channelIdx,
+                                     bool secondDrug=false);
 
     /**
      * Write a log message to the messages.txt file that should be displayed alongside the results
