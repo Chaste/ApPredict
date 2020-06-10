@@ -131,7 +131,7 @@ public:
             TS_ASSERT_DELTA(apd90s[1], 213.9762, 1e-3);
             TS_ASSERT_DELTA(apd90s[2], 229.7436, 1e-3);
 
-            std::vector<std::vector<double> > apd90_credible_regions = methods.GetApd90CredibleRegions();
+            std::vector<std::vector<double>> apd90_credible_regions = methods.GetApd90CredibleRegions();
             TS_ASSERT_EQUALS(apd90_credible_regions.size(), 3u);
             TS_ASSERT_DELTA(apd90_credible_regions[0][0], 211.9333, 1e-3);
             TS_ASSERT_DELTA(apd90_credible_regions[0][1], 211.9333, 1e-3);
@@ -160,7 +160,7 @@ public:
             TS_ASSERT_DELTA(apd90s[1], 213.9730, 1e-3);
             TS_ASSERT_DELTA(apd90s[2], 229.7191, 1e-3);
 
-            std::vector<std::vector<double> > apd90_credible_regions = methods.GetApd90CredibleRegions();
+            std::vector<std::vector<double>> apd90_credible_regions = methods.GetApd90CredibleRegions();
             TS_ASSERT_EQUALS(apd90_credible_regions.size(), 3u);
             TS_ASSERT_DELTA(apd90_credible_regions[0][0], 211.9333, 1e-3);
             TS_ASSERT_DELTA(apd90_credible_regions[0][1], 211.9333, 1e-3);
@@ -291,7 +291,8 @@ public:
     void TestTwoDrugs()
     {
         // Check single drug version
-        std::cout << "\nSingle drug:\n" << std::endl;
+        std::cout << "\nSingle drug:\n"
+                  << std::endl;
         {
             CommandLineArgumentsMocker wrapper("--model 2 --plasma-concs 0 10 --pic50-herg 7 --pacing-max-time 0.2 --credible-intervals --pic50-spread-herg 0.15");
 
@@ -299,18 +300,20 @@ public:
             methods.SetOutputDirectory("ApPredict_only_one_drug/");
             methods.Run();
         }
-        std::cout << "\nFirst drug potent:\n" << std::endl;
+        std::cout << "\nFirst drug potent:\n"
+                  << std::endl;
         // Check for symmetry in the responses
         {
-            CommandLineArgumentsMocker wrapper("--model 2 --plasma-concs 0 10 --pic50-herg 7 --drug-two-concentration-factor 1 --pic50-drug-two-herg -10 --pacing-max-time 0.2 --credible-intervals --pic50-spread-herg 0.15 --pic50-spread-drug-two-herg 0.15");
+            CommandLineArgumentsMocker wrapper("--model 2 --plasma-concs 0 10 --pic50-herg 7 --drug-two-conc-factor 1 --pic50-drug-two-herg -10 --pacing-max-time 0.2 --credible-intervals --pic50-spread-herg 0.15 --pic50-spread-drug-two-herg 0.15");
 
             ApPredictMethods methods;
             methods.SetOutputDirectory("ApPredict_drug_1_potent/");
             methods.Run();
         }
-        std::cout << "\nSecond drug potent:\n" << std::endl;
+        std::cout << "\nSecond drug potent:\n"
+                  << std::endl;
         {
-            CommandLineArgumentsMocker wrapper("--model 2 --plasma-concs 0 10 --pic50-herg -10 --drug-two-concentration-factor 1 --pic50-drug-two-herg 7 --pacing-max-time 0.2 --credible-intervals --pic50-spread-herg 0.15 --pic50-spread-drug-two-herg 0.15");
+            CommandLineArgumentsMocker wrapper("--model 2 --plasma-concs 0 10 --pic50-herg -10 --drug-two-conc-factor 1 --pic50-drug-two-herg 7 --pacing-max-time 0.2 --credible-intervals --pic50-spread-herg 0.15 --pic50-spread-drug-two-herg 0.15");
 
             ApPredictMethods methods;
             methods.SetOutputDirectory("ApPredict_drug_2_potent/");
