@@ -811,7 +811,6 @@ void ApPredictMethods::InterpolateFromLookupTableForThisConcentration(
         std::vector<std::vector<double>> predictions = mpLookupTable->Interpolate(sampling_points);
     }
 
-    // Expecting this line to fail when we try to use ORdCiPA 0.5Hz table, needs refining...
     assert(predictions.size() == mSampledIc50s[0].size());
 
     /*
