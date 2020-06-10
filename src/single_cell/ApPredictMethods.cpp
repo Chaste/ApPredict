@@ -538,7 +538,6 @@ void ApPredictMethods::CalculateDoseResponseParameterSamples(
         ic50_inferer.SetObservedData(pIC50s);
         ic50_inferer.SetSpreadOfUnderlyingDistribution(mPic50Spreads[channel_idx]);
         ic50_inferer.PerformInference();
-        std::cout << "Inferred a pIC50 logistic spread sigma of " << ic50_inferer.GetSpreadOfUnderlyingDistribution() << "." << std::endl;
 
         std::vector<double> inferred_pic50s = ic50_inferer.GetSampleMedianValue(num_samples); // Get 1000 inferred pIC50s
         for (unsigned i = 0; i < num_samples; i++)
@@ -601,8 +600,6 @@ void ApPredictMethods::CalculateDoseResponseParameterSamples(
                 // get Beta back!
                 hill_inferer.SetSpreadOfUnderlyingDistribution(1.0 / mHillSpreads[channel_idx]);
                 hill_inferer.PerformInference();
-                std::cout << "Inferred a Hill 1/Beta spread parameter of " << hill_inferer.GetSpreadOfUnderlyingDistribution() << "." << std::endl;
-
 
                 mSampledHills[channel_idx] = hill_inferer.GetSampleMedianValue(num_samples); // Get 1000 inferred Hills
             }
