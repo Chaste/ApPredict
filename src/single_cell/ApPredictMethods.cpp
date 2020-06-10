@@ -1327,31 +1327,20 @@ void ApPredictMethods::CommonRunMethod()
                               << delta_percentiles[mPercentiles.size() - 1u]
                               << std::endl; // << std::flush;
 
-                    if (mCalculateQNet)
-                    {
-                        std::cout << "QNet at " << mConcs[conc_index] << "uM: for lower, median and upper percentiles: "
-                                  << mQNetCredibleRegions[conc_index][0] << "," << mQNets[conc_index] << ","
-                                  << mQNetCredibleRegions[conc_index][mPercentiles.size() - 1u] << std::endl; // << std::flush;
-                    }
                 }
                 else
                 {
                     std::cout << delta_apd90 << std::endl; // << std::flush;
-                    if (mCalculateQNet)
-                    {
-                        std::cout << "qNet at " << mConcs[conc_index] << "uM = " << mQNets[conc_index] << " C/F" << std::endl;
-                    }
+
                 }
             }
             *steady_voltage_results_file_html
                 << "<tr><td>" << mConcs[conc_index] << "</td><td>" << upstroke
                 << "</td><td>" << peak << "</td><td>" << apd50 << "</td><td>" << apd90
                 << "</td><td>" << delta_apd90 << "</td></tr>\n";
-            *steady_voltage_results_file << mConcs[conc_index] << "\t" << mDrugTwoConcentrationFactor * mConcs[conc_index] << "\t" << upstroke << "\t" << peak << "\t" << apd50 << "\t" << apd90 << "\t";
-            if (mCalculateQNet)
-            {
-                *q_net_results_file << mConcs[conc_index] << "\t";
-            }
+            *steady_voltage_results_file << mConcs[conc_index] << "\t" << upstroke
+                                         << "\t" << peak << "\t" << apd50 << "\t"
+                                         << apd90 << "\t";
 
             if (mLookupTableAvailable)
             {
@@ -1374,35 +1363,12 @@ void ApPredictMethods::CommonRunMethod()
                     {
                         reliable_credible_intervals = false;
                     }
-
-                    if (mCalculateQNet)
-                    {
-                        if (mPercentiles[i] > 50 && mPercentiles[i - 1] < 50)
-                        {
-                            *q_net_results_file << mQNets[conc_index] << ",";
-                        }
-                        *q_net_results_file << mQNetCredibleRegions[conc_index][i];
-                        if (i < mPercentiles.size() - 1u)
-                        {
-                            *q_net_results_file << ",";
-                        }
-                        // No extra check on calculated QNet being in lookup table intervals, relying
-                        // on the APD calculation to do this for us.
-                    }
                 }
                 *steady_voltage_results_file << std::endl; // << std::flush;
-                if (mCalculateQNet)
-                {
-                    *q_net_results_file << std::endl;
-                }
             }
             else
             {
                 *steady_voltage_results_file << delta_apd90 << std::endl; // << std::flush;
-                if (mCalculateQNet)
-                {
-                    *q_net_results_file << mQNets[conc_index] << std::endl;
-                }
             }
         }
         else // error occurred in postprocessing APD
@@ -1422,6 +1388,7 @@ void ApPredictMethods::CommonRunMethod()
             *steady_voltage_results_file << mConcs[conc_index] << "\t" << error_code
                                          << "\t" << error_code << "\t" << error_code
                                          << "\t" << error_code << "\t";
+
             if (mLookupTableAvailable)
             {
                 *steady_voltage_results_file << error_code;
@@ -1439,6 +1406,49 @@ void ApPredictMethods::CommonRunMethod()
             else
             {
                 *steady_voltage_results_file << error_code << std::endl;
+            }
+        }
+
+        // Output qNet if applicable, same with or without error code
+        if (mCalculateQNet)
+        {
+            if (!mSuppressOutput)
+            {
+                if (mLookupTableAvailable)
+                {
+                    std::cout << "QNet at " << mConcs[conc_index] << "uM: for lower, median and upper percentiles: " 
+                                << mQNetCredibleRegions[conc_index][0] << "," << mQNets[conc_index] << ","
+                                << mQNetCredibleRegions[conc_index][mPercentiles.size() - 1u] << std::endl; // << std::flush;
+                }
+                else
+                {
+                    std::cout << "qNet at " << mConcs[conc_index] << "uM = " << mQNets[conc_index] << " C/F" << std::endl;
+                }
+            }
+
+            *q_net_results_file <<  mConcs[conc_index] << "\t";
+
+            if (mLookupTableAvailable)
+            {
+                for (unsigned i = 0; i < mPercentiles.size(); i++)
+                {
+                    if (mPercentiles[i] > 50 && mPercentiles[i - 1] < 50)
+                    {
+                        *q_net_results_file << mQNets[conc_index] << ",";
+                    }                    
+                    *q_net_results_file << mQNetCredibleRegions[conc_index][i];
+                    if (i < mPercentiles.size() - 1u)
+                    {
+                        *q_net_results_file << ",";
+                    }
+                    // No extra check on calculated QNet being in lookup table intervals, relying
+                    // on the APD calculation to do this for us.
+                }
+                *q_net_results_file <<  std::endl;
+            }
+            else
+            {
+                *q_net_results_file << mQNets[conc_index] << std::endl;
             }
         }
 
