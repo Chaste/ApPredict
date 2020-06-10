@@ -539,8 +539,7 @@ void ApPredictMethods::CalculateDoseResponseParameterSamples(
         ic50_inferer.SetSpreadOfUnderlyingDistribution(mPic50Spreads[channel_idx]);
         ic50_inferer.PerformInference();
 
-        std::vector<double> inferred_pic50s = ic50_inferer.GetSampleMedianValue(
-            num_samples); // Get 1000 inferred pIC50s
+        std::vector<double> inferred_pic50s = ic50_inferer.GetSampleMedianValue(num_samples); // Get 1000 inferred pIC50s
         for (unsigned i = 0; i < num_samples; i++)
         {
             // Convert pIC50 back to IC50 and store it.
@@ -1149,12 +1148,10 @@ void ApPredictMethods::CommonRunMethod()
                     std::cout << delta_percentiles[0] << "," << delta_apd90 << ","
                               << delta_percentiles[mPercentiles.size() - 1u]
                               << std::endl; // << std::flush;
-
                 }
                 else
                 {
                     std::cout << delta_apd90 << std::endl; // << std::flush;
-
                 }
             }
             *steady_voltage_results_file_html
@@ -1239,9 +1236,9 @@ void ApPredictMethods::CommonRunMethod()
             {
                 if (mLookupTableAvailable)
                 {
-                    std::cout << "QNet at " << mConcs[conc_index] << "uM: for lower, median and upper percentiles: " 
-                                << mQNetCredibleRegions[conc_index][0] << "," << mQNets[conc_index] << ","
-                                << mQNetCredibleRegions[conc_index][mPercentiles.size() - 1u] << std::endl; // << std::flush;
+                    std::cout << "QNet at " << mConcs[conc_index] << "uM: for lower, median and upper percentiles: "
+                              << mQNetCredibleRegions[conc_index][0] << "," << mQNets[conc_index] << ","
+                              << mQNetCredibleRegions[conc_index][mPercentiles.size() - 1u] << std::endl; // << std::flush;
                 }
                 else
                 {
@@ -1249,7 +1246,7 @@ void ApPredictMethods::CommonRunMethod()
                 }
             }
 
-            *q_net_results_file <<  mConcs[conc_index] << "\t";
+            *q_net_results_file << mConcs[conc_index] << "\t";
 
             if (mLookupTableAvailable)
             {
@@ -1258,7 +1255,7 @@ void ApPredictMethods::CommonRunMethod()
                     if (mPercentiles[i] > 50 && mPercentiles[i - 1] < 50)
                     {
                         *q_net_results_file << mQNets[conc_index] << ",";
-                    }                    
+                    }
                     *q_net_results_file << mQNetCredibleRegions[conc_index][i];
                     if (i < mPercentiles.size() - 1u)
                     {
@@ -1267,7 +1264,7 @@ void ApPredictMethods::CommonRunMethod()
                     // No extra check on calculated QNet being in lookup table intervals, relying
                     // on the APD calculation to do this for us.
                 }
-                *q_net_results_file <<  std::endl;
+                *q_net_results_file << std::endl;
             }
             else
             {
