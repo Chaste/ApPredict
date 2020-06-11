@@ -567,8 +567,7 @@ void ApPredictMethods::CalculateDoseResponseParameterSamples(
 
     // Work out vectors of inferred IC50 and Hills
     // Apply drug block on each channel
-    for (unsigned channel_idx = 0; channel_idx < mMetadataNames.size();
-         channel_idx++)
+    for (unsigned channel_idx = 0; channel_idx < mMetadataNames.size(); channel_idx++)
     {
         // First just decide whether there is 'no effect here'.
         assert(rIC50s[channel_idx].size() >= 1u);
@@ -588,8 +587,7 @@ void ApPredictMethods::CalculateDoseResponseParameterSamples(
         std::vector<double> pIC50s;
         for (unsigned i = 0; i < rIC50s[channel_idx].size(); i++)
         {
-            pIC50s.push_back(
-                AbstractDataStructure::ConvertIc50ToPic50(rIC50s[channel_idx][i]));
+            pIC50s.push_back(AbstractDataStructure::ConvertIc50ToPic50(rIC50s[channel_idx][i]));
         }
 
         // Retrieve the Pic50 spread from the command line arguments.
@@ -597,8 +595,7 @@ void ApPredictMethods::CalculateDoseResponseParameterSamples(
         {
             std::stringstream message;
             message << "No argument --pic50-spread-";
-            if (secondDrug)
-                message << "drug-two-";
+            if (secondDrug) message << "drug-two-";
             message << mShortNames[channel_idx]
                     << " has been provided. Cannot calculate credible intervals "
                        "without this.";
@@ -718,6 +715,8 @@ void ApPredictMethods::InterpolateFromLookupTableForThisConcentration(
     {
         return;
     }
+    bool brute_force = CommandLineArguments::Instance()->OptionExists("--brute-force");
+
 
     std::vector<double> apd90_credible_intervals(mPercentiles.size());
     std::vector<double> qnet_credible_intervals(mPercentiles.size());
@@ -745,60 +744,63 @@ void ApPredictMethods::InterpolateFromLookupTableForThisConcentration(
 
     // The first channel entry in mSampledIc50s will give us the number of random samples.
     const unsigned num_samples = mSampledIc50s[0].size();
-
-    // This slightly complicated loop is just seeing which entry in
-    // mSampledIC50/Hills corresponds to the ones that we want,
-    // so we've listed the ones we want above and search for them in mShortNames here.
-    std::map<unsigned, unsigned> map_to_metadata_idx;
-    std::vector<std::string> parameters_in_table = mpLookupTable->GetParameterNames();
-    const unsigned table_dim = mpLookupTable->GetDimension();
-    for (unsigned channel_idx = 0; channel_idx < table_dim; channel_idx++)
-    {
-        for (unsigned i = 0; i < mMetadataNames.size(); i++)
-        {
-            if (mMetadataNames[i] == parameters_in_table[channel_idx])
-            {
-                map_to_metadata_idx[channel_idx] = i;
-                break;
-            }
-        }
-    }
-    assert(map_to_metadata_idx.size() == table_dim);
-
-    std::vector<std::vector<double>> sampling_points;
-    for (unsigned rand_idx = 0; rand_idx < num_samples; rand_idx++)
-    {
-        std::vector<double> sample_required_at(table_dim);
-        for (unsigned i = 0; i < table_dim; i++)
-        {
-            sample_required_at[i] = AbstractDataStructure::CalculateConductanceFactor(
-                mConcs[concIndex], mSampledIc50s[map_to_metadata_idx[i]][rand_idx],
-                mSampledHills[map_to_metadata_idx[i]][rand_idx],
-                rMedianSaturationLevels[map_to_metadata_idx[i]]);
-
-            if (mTwoDrugs) // for when there's a lookup table rather than brute force...
-            {
-                const double second_conductance_factor = AbstractDataStructure::CalculateConductanceFactor(
-                    mConcs[concIndex] * mDrugTwoConcentrationFactor, mSampledIc50sDrugTwo[map_to_metadata_idx[i]][rand_idx],
-                    mSampledHillsDrugTwo[map_to_metadata_idx[i]][rand_idx],
-                    rMedianSaturationLevelsDrugTwo[map_to_metadata_idx[i]]);
-                // A second implementation
-                sample_required_at[i] *= second_conductance_factor;
-            }
-        }
-        sampling_points.push_back(sample_required_at);
-    }
-
     std::vector<std::vector<double>> predictions;
 
+    if (!brute_force)
+    {
+        // This slightly complicated loop is just seeing which entry in
+        // mSampledIC50/Hills corresponds to the ones that we want,
+        // so we've listed the ones we want above and search for them in mShortNames here.
+        std::map<unsigned, unsigned> map_to_metadata_idx;
+        std::vector<std::string> parameters_in_table = mpLookupTable->GetParameterNames();
+        const unsigned table_dim = mpLookupTable->GetDimension();
+        for (unsigned channel_idx = 0; channel_idx < table_dim; channel_idx++)
+        {
+            for (unsigned i = 0; i < mMetadataNames.size(); i++)
+            {
+                if (mMetadataNames[i] == parameters_in_table[channel_idx])
+                {
+                    map_to_metadata_idx[channel_idx] = i;
+                    break;
+                }
+            }
+        }
+        assert(map_to_metadata_idx.size() == table_dim);
+
+        std::vector<std::vector<double>> sampling_points;
+        for (unsigned rand_idx = 0; rand_idx < num_samples; rand_idx++)
+        {
+            std::vector<double> sample_required_at(table_dim);
+            for (unsigned i = 0; i < table_dim; i++)
+            {
+                sample_required_at[i] = AbstractDataStructure::CalculateConductanceFactor(
+                    mConcs[concIndex], mSampledIc50s[map_to_metadata_idx[i]][rand_idx],
+                    mSampledHills[map_to_metadata_idx[i]][rand_idx],
+                    rMedianSaturationLevels[map_to_metadata_idx[i]]);
+
+                if (mTwoDrugs) // for when there's a lookup table rather than brute force...
+                {
+                    const double second_conductance_factor = AbstractDataStructure::CalculateConductanceFactor(
+                        mConcs[concIndex] * mDrugTwoConcentrationFactor, mSampledIc50sDrugTwo[map_to_metadata_idx[i]][rand_idx],
+                        mSampledHillsDrugTwo[map_to_metadata_idx[i]][rand_idx],
+                        rMedianSaturationLevelsDrugTwo[map_to_metadata_idx[i]]);
+                    // A second implementation
+                    sample_required_at[i] *= second_conductance_factor;
+                }
+            }
+            sampling_points.push_back(sample_required_at);
+        }
+        std::cout << "Calculating confidence intervals from Lookup Table...";
+        predictions = mpLookupTable->Interpolate(sampling_points);
+    }
     // A section to deal with brute force sampling instead of lookup table interpolation.
-    if (CommandLineArguments::Instance()->OptionExists("--brute-force"))
+    else
     {
         std::cout << "Calculating confidence intervals using brute force sampling" << std::endl;
 
-        for (unsigned sample = 0; sample < num_samples; sample++)
+        for (unsigned rand_idx = 0; rand_idx < num_samples; rand_idx++)
         {
-            std::cout << "Sample " << sample + 1 << "/" << num_samples << std::endl;
+            std::cout << "Sample " << rand_idx + 1 << "/" << num_samples << std::endl;
 
             // Apply drug block on each channel
             for (unsigned channel_idx = 0; channel_idx < mMetadataNames.size(); channel_idx++)
@@ -806,14 +808,14 @@ void ApPredictMethods::InterpolateFromLookupTableForThisConcentration(
                 if (mTwoDrugs)
                 {
                     ApplyDrugBlock(mpModel, channel_idx, mDefaultConductances[channel_idx],
-                                   mConcs[conc_index],
+                                   mConcs[concIndex],
                                    mSampledIc50s[channel_idx][rand_idx], mSampledHills[channel_idx][rand_idx], rMedianSaturationLevels[channel_idx],
                                    mSampledIc50sDrugTwo[channel_idx][rand_idx], mSampledHillsDrugTwo[channel_idx][rand_idx], rMedianSaturationLevelsDrugTwo[channel_idx]);
                 }
                 else
                 {
                     ApplyDrugBlock(mpModel, channel_idx, mDefaultConductances[channel_idx],
-                                   mConcs[conc_index],
+                                   mConcs[concIndex],
                                    mSampledIc50s[channel_idx][rand_idx],
                                    mSampledHills[channel_idx][rand_idx],
                                    rMedianSaturationLevels[channel_idx]);
@@ -823,7 +825,7 @@ void ApPredictMethods::InterpolateFromLookupTableForThisConcentration(
             double apd90, apd50, upstroke, peak, peak_time, ca_max, ca_min;
             OdeSolution solution = SteadyStatePacingExperiment(
                 mpModel, apd90, apd50, upstroke, peak, peak_time, ca_max, ca_min,
-                0.1 /*ms printing timestep*/, mConcs[conc_index]);
+                0.1 /*ms printing timestep*/, mConcs[concIndex]);
 
             std::vector<double> qois;
             qois.push_back(apd90);
@@ -836,11 +838,6 @@ void ApPredictMethods::InterpolateFromLookupTableForThisConcentration(
             predictions.push_back(qois);
         }
         std::cout << "Brute force sampling done.";
-    }
-    else
-    {
-        std::cout << "Calculating confidence intervals from Lookup Table...";
-        predictions = mpLookupTable->Interpolate(sampling_points);
     }
 
     assert(predictions.size() == mSampledIc50s[0].size());
