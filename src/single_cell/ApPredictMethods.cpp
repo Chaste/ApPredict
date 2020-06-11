@@ -776,7 +776,7 @@ void ApPredictMethods::InterpolateFromLookupTableForThisConcentration(
                 mSampledHills[map_to_metadata_idx[i]][rand_idx],
                 rMedianSaturationLevels[map_to_metadata_idx[i]]);
 
-            if (mTwoDrugs)
+            if (mTwoDrugs) // for when there's a lookup table rather than brute force...
             {
                 const double second_conductance_factor = AbstractDataStructure::CalculateConductanceFactor(
                     mConcs[concIndex] * mDrugTwoConcentrationFactor, mSampledIc50sDrugTwo[map_to_metadata_idx[i]][rand_idx],
@@ -805,16 +805,18 @@ void ApPredictMethods::InterpolateFromLookupTableForThisConcentration(
             {
                 if (mTwoDrugs)
                 {
-                    ApplyDrugBlock(mpModel, channel_idx, default_conductances[channel_idx],
+                    ApplyDrugBlock(mpModel, channel_idx, mDefaultConductances[channel_idx],
                                    mConcs[conc_index],
-                                   median_ic50[channel_idx], median_hill[channel_idx], median_saturation[channel_idx],
-                                   median_ic50_drug_two[channel_idx], median_hill_drug_two[channel_idx], median_saturation_drug_two[channel_idx]);
+                                   mSampledIc50s[channel_idx][rand_idx], mSampledHills[channel_idx][rand_idx], rMedianSaturationLevels[channel_idx],
+                                   mSampledIc50sDrugTwo[channel_idx][rand_idx], mSampledHillsDrugTwo[channel_idx][rand_idx], rMedianSaturationLevelsDrugTwo[channel_idx]);
                 }
                 else
                 {
-                    ApplyDrugBlock(mpModel, channel_idx, default_conductances[channel_idx],
-                                   mConcs[conc_index], median_ic50[channel_idx],
-                                   median_hill[channel_idx], median_saturation[channel_idx]);
+                    ApplyDrugBlock(mpModel, channel_idx, mDefaultConductances[channel_idx],
+                                   mConcs[conc_index],
+                                   mSampledIc50s[channel_idx][rand_idx],
+                                   mSampledHills[channel_idx][rand_idx],
+                                   rMedianSaturationLevels[channel_idx]);
                 }
             }
 
@@ -1018,9 +1020,8 @@ void ApPredictMethods::CommonRunMethod()
     // We record the default parameter values that the model uses.
     // All the drug block models should include these parameter labels
     // But you only get a warning if not, so check the warnings...
-    std::vector<double> default_conductances;
-    for (unsigned channel_idx = 0; channel_idx < mMetadataNames.size();
-         channel_idx++)
+    mDefaultConductances.reserve(mMetadataNames.size());
+    for (unsigned channel_idx = 0; channel_idx < mMetadataNames.size(); channel_idx++)
     {
         double default_value = 1.0;
         if (mpModel->HasParameter(mMetadataNames[channel_idx]))
@@ -1031,7 +1032,7 @@ void ApPredictMethods::CommonRunMethod()
         {
             default_value = mpModel->GetParameter(mMetadataNames[channel_idx] + "_scaling_factor");
         }
-        default_conductances.push_back(default_value);
+        mDefaultConductances.push_back(default_value);
     }
 
     // Work out the best voltage threshold to use for this model
@@ -1272,14 +1273,14 @@ void ApPredictMethods::CommonRunMethod()
         {
             if (mTwoDrugs)
             {
-                ApplyDrugBlock(mpModel, channel_idx, default_conductances[channel_idx],
+                ApplyDrugBlock(mpModel, channel_idx, mDefaultConductances[channel_idx],
                                mConcs[conc_index],
                                median_ic50[channel_idx], median_hill[channel_idx], median_saturation[channel_idx],
                                median_ic50_drug_two[channel_idx], median_hill_drug_two[channel_idx], median_saturation_drug_two[channel_idx]);
             }
             else
             {
-                ApplyDrugBlock(mpModel, channel_idx, default_conductances[channel_idx],
+                ApplyDrugBlock(mpModel, channel_idx, mDefaultConductances[channel_idx],
                                mConcs[conc_index], median_ic50[channel_idx],
                                median_hill[channel_idx], median_saturation[channel_idx]);
             }
