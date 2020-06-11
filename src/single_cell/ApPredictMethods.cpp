@@ -192,8 +192,8 @@ std::string ApPredictMethods::PrintCommonArguments()
                           "*   (for details of what these spread parameters are see 'sigma' and '1/beta' in Table 1 of:\n"
                           "*    Elkins et al. 2013  Journal of Pharmacological and Toxicological \n"
                           "*    Methods, 68(1), 112-122. doi: 10.1016/j.vascn.2013.04.007 )\n"
-                          "* --brute-force      Whether to make credible intervals with brute force forward simulations,\n"
-                          "*                    rather than using lookup tables.\n"
+                          "* --brute-force <N>  Make credible intervals with brute force forward simulations,\n"
+                          "*                    rather than using lookup tables, and do N samples each time.\n"
                           "*\n"
                           "*\n"
                           "* OTHER OPTIONS:\n"
@@ -302,9 +302,7 @@ void ApPredictMethods::ReadInIC50HillAndSaturation(
     }
     if (p_args->OptionExists("--saturation-spread-" + channel))
     {
-        EXCEPTION(
-            "Haven't yet coded up a method to deal with the spread of values on "
-            "saturation levels.");
+        EXCEPTION("Haven't yet coded up a method to deal with the spread of values on saturation levels.");
     }
 
     if (mSuppressOutput)
@@ -557,7 +555,15 @@ void ApPredictMethods::CalculateDoseResponseParameterSamples(
         hill_spreads = mHillSpreadsDrugTwo;
     }
 
-    const unsigned num_samples = 1000u;
+    unsigned num_samples;
+    if (CommandLineArguments::Instance()->OptionExists("--brute-force"))
+    {
+        num_samples = CommandLineArguments::Instance()->GetUnsignedCorrespondingToOption("--brute-force");
+    }
+    else
+    {
+        num_samples = 1000u;
+    }
 
     // Work out vectors of inferred IC50 and Hills
     // Apply drug block on each channel
@@ -783,6 +789,9 @@ void ApPredictMethods::InterpolateFromLookupTableForThisConcentration(
         sampling_points.push_back(sample_required_at);
     }
 
+    std::vector<std::vector<double>> predictions;
+
+    // A section to deal with brute force sampling instead of lookup table interpolation.
     if (CommandLineArguments::Instance()->OptionExists("--brute-force"))
     {
         std::cout << "Calculating confidence intervals using brute force sampling" << std::endl;
@@ -794,21 +803,42 @@ void ApPredictMethods::InterpolateFromLookupTableForThisConcentration(
             // Apply drug block on each channel
             for (unsigned channel_idx = 0; channel_idx < mMetadataNames.size(); channel_idx++)
             {
-                ApplyDrugBlock(mpModel, channel_idx, default_conductances[channel_idx],
-                               mConcs[conc_index], median_ic50[channel_idx],
-                               median_hill[channel_idx], median_saturation[channel_idx]);
+                if (mTwoDrugs)
+                {
+                    ApplyDrugBlock(mpModel, channel_idx, default_conductances[channel_idx],
+                                   mConcs[conc_index],
+                                   median_ic50[channel_idx], median_hill[channel_idx], median_saturation[channel_idx],
+                                   median_ic50_drug_two[channel_idx], median_hill_drug_two[channel_idx], median_saturation_drug_two[channel_idx]);
+                }
+                else
+                {
+                    ApplyDrugBlock(mpModel, channel_idx, default_conductances[channel_idx],
+                                   mConcs[conc_index], median_ic50[channel_idx],
+                                   median_hill[channel_idx], median_saturation[channel_idx]);
+                }
             }
 
             double apd90, apd50, upstroke, peak, peak_time, ca_max, ca_min;
             OdeSolution solution = SteadyStatePacingExperiment(
                 mpModel, apd90, apd50, upstroke, peak, peak_time, ca_max, ca_min,
                 0.1 /*ms printing timestep*/, mConcs[conc_index]);
+
+            std::vector<double> qois;
+            qois.push_back(apd90);
+            if (mCalculateQNet)
+            {
+                CipaQNetCalculator calculator(mpModel);
+                qois.push_back(calculator.ComputeQNet());
+            }
+
+            predictions.push_back(qois);
         }
+        std::cout << "Brute force sampling done.";
     }
     else
     {
         std::cout << "Calculating confidence intervals from Lookup Table...";
-        std::vector<std::vector<double>> predictions = mpLookupTable->Interpolate(sampling_points);
+        predictions = mpLookupTable->Interpolate(sampling_points);
     }
 
     assert(predictions.size() == mSampledIc50s[0].size());
@@ -1326,12 +1356,10 @@ void ApPredictMethods::CommonRunMethod()
                     std::cout << delta_percentiles[0] << "," << delta_apd90 << ","
                               << delta_percentiles[mPercentiles.size() - 1u]
                               << std::endl; // << std::flush;
-
                 }
                 else
                 {
                     std::cout << delta_apd90 << std::endl; // << std::flush;
-
                 }
             }
             *steady_voltage_results_file_html
@@ -1416,9 +1444,9 @@ void ApPredictMethods::CommonRunMethod()
             {
                 if (mLookupTableAvailable)
                 {
-                    std::cout << "QNet at " << mConcs[conc_index] << "uM: for lower, median and upper percentiles: " 
-                                << mQNetCredibleRegions[conc_index][0] << "," << mQNets[conc_index] << ","
-                                << mQNetCredibleRegions[conc_index][mPercentiles.size() - 1u] << std::endl; // << std::flush;
+                    std::cout << "QNet at " << mConcs[conc_index] << "uM: for lower, median and upper percentiles: "
+                              << mQNetCredibleRegions[conc_index][0] << "," << mQNets[conc_index] << ","
+                              << mQNetCredibleRegions[conc_index][mPercentiles.size() - 1u] << std::endl; // << std::flush;
                 }
                 else
                 {
@@ -1426,7 +1454,7 @@ void ApPredictMethods::CommonRunMethod()
                 }
             }
 
-            *q_net_results_file <<  mConcs[conc_index] << "\t";
+            *q_net_results_file << mConcs[conc_index] << "\t";
 
             if (mLookupTableAvailable)
             {
@@ -1435,7 +1463,7 @@ void ApPredictMethods::CommonRunMethod()
                     if (mPercentiles[i] > 50 && mPercentiles[i - 1] < 50)
                     {
                         *q_net_results_file << mQNets[conc_index] << ",";
-                    }                    
+                    }
                     *q_net_results_file << mQNetCredibleRegions[conc_index][i];
                     if (i < mPercentiles.size() - 1u)
                     {
@@ -1444,7 +1472,7 @@ void ApPredictMethods::CommonRunMethod()
                     // No extra check on calculated QNet being in lookup table intervals, relying
                     // on the APD calculation to do this for us.
                 }
-                *q_net_results_file <<  std::endl;
+                *q_net_results_file << std::endl;
             }
             else
             {
