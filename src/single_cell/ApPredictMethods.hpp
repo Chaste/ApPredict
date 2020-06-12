@@ -107,24 +107,26 @@ private:
                                              bool secondDrug = false);
 
   /**
-     * Uses the lookup table and entries in mSampledIc50s and mSampledHills
-     * to generate a probability distribution of APD90 predictions. This is then
-     * stored in mAllApd90s, and mApd90CredibleRegions is populated.
-     *
-     * @param concIndex  The index of the concentration (in mConcs).
-     * @param rMedianSaturationLevels  The saturation levels for each channel to assume in all samples.
-     * @param rMedianSaturationLevelsDrugTwo  The saturation levels for each channel for drug two to assume in all samples (can be an empty vector if one drug only being used).
-     */
-  void InterpolateFromLookupTableForThisConcentration(const unsigned concIndex,
+    * In usual mode this uses the lookup table and entries in mSampledIc50s and mSampledHills
+    * to generate a probability distribution of APD90 predictions. 
+    * If the flag --brute-force is used then this method runs lots of simulations to make credible intervals.
+    * 
+    * Results are populated into mApd90CredibleRegions (and mQNetCredibleRegions if applicable).
+    *
+    * @param concIndex  The index of the concentration (in mConcs).
+    * @param rMedianSaturationLevels  The saturation levels for each channel to assume in all samples.
+    * @param rMedianSaturationLevelsDrugTwo  The saturation levels for each channel for drug two to assume in all samples (can be an empty vector if one drug only being used).
+    */
+   void GetCredibleIntervalSamplesForThisConcentration(const unsigned concIndex,
                                                       const std::vector<double> &rMedianSaturationLevels,
                                                       const std::vector<double> &rMedianSaturationLevelsDrugTwo);
 
   /**
-      * Perform linear interpolation to get an estimate of y_star at x_star
-      * @param x_star The independent variable at which to get an interpolated value
-      * @param rX  The vector of independent variables.
-      * @param rY  The vector of dependent variables to interpolate between.
-      */
+   * Perform linear interpolation to get an estimate of y_star at x_star
+   * @param x_star The independent variable at which to get an interpolated value
+   * @param rX  The vector of independent variables.
+   * @param rY  The vector of dependent variables to interpolate between.
+   */
   double DoLinearInterpolation(double x_star, const std::vector<double> &rX, const std::vector<double> &rY) const;
 
   /** The Oxford metadata names of the conductances we may modify with this class */

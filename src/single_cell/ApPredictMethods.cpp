@@ -703,7 +703,7 @@ void ApPredictMethods::CalculateDoseResponseParameterSamples(
     }
 }
 
-void ApPredictMethods::InterpolateFromLookupTableForThisConcentration(
+void ApPredictMethods::GetCredibleIntervalSamplesForThisConcentration(
     const unsigned concIndex,
     const std::vector<double> &rMedianSaturationLevels,
     const std::vector<double> &rMedianSaturationLevelsDrugTwo)
@@ -743,11 +743,6 @@ void ApPredictMethods::InterpolateFromLookupTableForThisConcentration(
     // The first channel entry in mSampledIc50s will give us the number of random samples.
     const unsigned num_samples = mSampledIc50s[0].size();
     assert(mMetadataNames.size()==mSampledIc50s.size());
-    for (unsigned i = 0; i < mMetadataNames.size(); i++)
-    {
-        std::cout << "Using samples, size of " << mShortNames[i] << " samples = " << mSampledIc50s[i].size() <<std::endl;
-    }
-
 
     std::vector<std::vector<double>> predictions;
 
@@ -770,8 +765,6 @@ void ApPredictMethods::InterpolateFromLookupTableForThisConcentration(
                 }
             }
         }
-        std::cout << "Table Dim = " << table_dim << std::endl;
-        assert(map_to_metadata_idx.size() == table_dim);
 
         std::vector<std::vector<double> > sampling_points;
         for (unsigned rand_idx = 0; rand_idx < num_samples; rand_idx++)
@@ -779,14 +772,6 @@ void ApPredictMethods::InterpolateFromLookupTableForThisConcentration(
             std::vector<double> sample_required_at(table_dim);
             for (unsigned i = 0; i < table_dim; i++)
             {
-                std::cout << "Loop i = " <<i << std::endl;
-std::cout << "map_to_metadata_idx[i] = " << map_to_metadata_idx[i]  << std::endl;
-std::cout << "conc = " << mConcs[concIndex]  << std::endl;
-std::cout << "Number of samples should be = " << num_samples << ", size of IC50 vec = " << mSampledIc50s[map_to_metadata_idx[i]].size() << std::endl;
-std::cout << "ic50 samples = " << mSampledIc50s[map_to_metadata_idx[i]][rand_idx] << std::endl;
-std::cout << "hill samples = " << mSampledHills[map_to_metadata_idx[i]][rand_idx] << std::endl;
-std::cout << "sat levels = " << rMedianSaturationLevels[map_to_metadata_idx[i]] << std::endl;
-
                 sample_required_at[i] = AbstractDataStructure::CalculateConductanceFactor(
                     mConcs[concIndex], mSampledIc50s[map_to_metadata_idx[i]][rand_idx],
                     mSampledHills[map_to_metadata_idx[i]][rand_idx],
@@ -810,10 +795,15 @@ std::cout << "sat levels = " << rMedianSaturationLevels[map_to_metadata_idx[i]] 
     // A section to deal with brute force sampling instead of lookup table interpolation.
     else
     {
-        std::cout << "Calculating confidence intervals using brute force sampling" << std::endl;
+        std::cout << "Calculating confidence intervals using brute force sampling..." << std::endl;
+        bool suppressing_output = mSuppressOutput;
+        mSuppressOutput = true;
+        std::vector<double> state_vars = mpModel->GetStdVecStateVariables();
+
 
         for (unsigned rand_idx = 0; rand_idx < num_samples; rand_idx++)
         {
+            
             std::cout << "Sample " << rand_idx + 1 << "/" << num_samples << std::endl;
 
             // Apply drug block on each channel
@@ -837,9 +827,8 @@ std::cout << "sat levels = " << rMedianSaturationLevels[map_to_metadata_idx[i]] 
             }
 
             double apd90, apd50, upstroke, peak, peak_time, ca_max, ca_min;
-            OdeSolution solution = SteadyStatePacingExperiment(
-                mpModel, apd90, apd50, upstroke, peak, peak_time, ca_max, ca_min,
-                0.1 /*ms printing timestep*/, mConcs[concIndex]);
+            OdeSolution solution = SteadyStatePacingExperiment(mpModel, apd90, apd50, upstroke, peak, peak_time, ca_max, ca_min,
+                                                               0.1 /*ms printing timestep*/, mConcs[concIndex]);
 
             std::vector<double> qois;
             qois.push_back(apd90);
@@ -850,8 +839,11 @@ std::cout << "sat levels = " << rMedianSaturationLevels[map_to_metadata_idx[i]] 
             }
 
             predictions.push_back(qois);
+
+            // Reset state variables (would be closer to steady state if we didn't but here at least eqi-distant each sample)
+            mpModel->SetStateVariables(state_vars);
         }
-        std::cout << "Brute force sampling done.";
+        mSuppressOutput = suppressing_output;
     }
 
     assert(predictions.size() == mSampledIc50s[0].size());
@@ -889,6 +881,12 @@ std::cout << "sat levels = " << rMedianSaturationLevels[map_to_metadata_idx[i]] 
         else
         {
             index_in_sorted_prediction_vector = ceil(mPercentiles[i] / 100.0 * (double)(num_samples));
+            // If we have a low number of samples or very high percentile requested, 
+            // then the formula above could 'hit the end' in which case we have to take the sample below.
+            if (index_in_sorted_prediction_vector == num_samples)
+            {
+                index_in_sorted_prediction_vector--;
+            }
         }
         apd90_credible_intervals[i] = apd_90_predictions[index_in_sorted_prediction_vector];
         if (mCalculateQNet)
@@ -1334,7 +1332,7 @@ void ApPredictMethods::CommonRunMethod()
         }
 
         // Populates mApd90CredibleRegions and mQNetCredibleRegions, relies on mApd90s and mQNets.
-        InterpolateFromLookupTableForThisConcentration(conc_index, median_saturation, median_saturation_drug_two);
+        GetCredibleIntervalSamplesForThisConcentration(conc_index, median_saturation, median_saturation_drug_two);
 
         if (!DidErrorOccur())
         {
