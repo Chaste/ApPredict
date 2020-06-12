@@ -703,7 +703,7 @@ void ApPredictMethods::CalculateDoseResponseParameterSamples(
         assert(mMetadataNames.size()==sampled_ic50s.size());
         for (unsigned i = 0; i < mMetadataNames.size(); i++)
         {
-            std::cout << "Taking samples, size of " << mShortNames[i] << " samples = " << sampled_ic50s[i].size() <<std::endl;
+            std::cout << "\nTaking samples, size of " << mShortNames[i] << " samples = " << sampled_ic50s[i].size() ;
         }
 
         std::cout << "done!" << std::endl;
@@ -1008,11 +1008,9 @@ void ApPredictMethods::CommonRunMethod()
     // and warns if it does this.
     ParameterWrapper(mpModel, mMetadataNames);
 
-    // Use a helper method to read in IC50 from either --ic50 or --pic50
-    // arguments.
-    // Note this is now in micro Molar (1x10^-6 Molar) as per most Pharma use.
-    for (unsigned channel_idx = 0; channel_idx < mMetadataNames.size();
-         channel_idx++)
+    // Use a helper method to read in IC50 from either --ic50 or --pic50 arguments.
+    // Note IC50 is now in micro Molar (1x10^-6 Molar) as per most Pharma use.
+    for (unsigned channel_idx = 0; channel_idx < mMetadataNames.size(); channel_idx++)
     {
         ReadInIC50HillAndSaturation(IC50s[channel_idx], hills[channel_idx],
                                     saturations[channel_idx], channel_idx);
