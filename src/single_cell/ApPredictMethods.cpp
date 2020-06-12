@@ -700,6 +700,12 @@ void ApPredictMethods::CalculateDoseResponseParameterSamples(
             mSampledHills = sampled_hills;
         }
 
+        assert(mMetadataNames.size()==sampled_ic50s.size());
+        for (unsigned i = 0; i < mMetadataNames.size(); i++)
+        {
+            std::cout << "Taking samples, size of " << mShortNames[i] << " samples = " << sampled_ic50s[i].size() <<std::endl;
+        }
+
         std::cout << "done!" << std::endl;
     }
 }
@@ -716,7 +722,6 @@ void ApPredictMethods::InterpolateFromLookupTableForThisConcentration(
         return;
     }
     bool brute_force = CommandLineArguments::Instance()->OptionExists("--brute-force");
-
 
     std::vector<double> apd90_credible_intervals(mPercentiles.size());
     std::vector<double> qnet_credible_intervals(mPercentiles.size());
@@ -744,6 +749,13 @@ void ApPredictMethods::InterpolateFromLookupTableForThisConcentration(
 
     // The first channel entry in mSampledIc50s will give us the number of random samples.
     const unsigned num_samples = mSampledIc50s[0].size();
+    assert(mMetadataNames.size()==mSampledIc50s.size());
+    for (unsigned i = 0; i < mMetadataNames.size(); i++)
+    {
+        std::cout << "Using samples, size of " << mShortNames[i] << " samples = " << mSampledIc50s[i].size() <<std::endl;
+    }
+
+
     std::vector<std::vector<double>> predictions;
 
     if (!brute_force)
@@ -765,14 +777,23 @@ void ApPredictMethods::InterpolateFromLookupTableForThisConcentration(
                 }
             }
         }
+        std::cout << "Table Dim = " << table_dim << std::endl;
         assert(map_to_metadata_idx.size() == table_dim);
 
-        std::vector<std::vector<double>> sampling_points;
+        std::vector<std::vector<double> > sampling_points;
         for (unsigned rand_idx = 0; rand_idx < num_samples; rand_idx++)
         {
             std::vector<double> sample_required_at(table_dim);
             for (unsigned i = 0; i < table_dim; i++)
             {
+                std::cout << "Loop i = " <<i << std::endl;
+std::cout << "map_to_metadata_idx[i] = " << map_to_metadata_idx[i]  << std::endl;
+std::cout << "conc = " << mConcs[concIndex]  << std::endl;
+std::cout << "Number of samples should be = " << num_samples << ", size of IC50 vec = " << mSampledIc50s[map_to_metadata_idx[i]].size() << std::endl;
+std::cout << "ic50 samples = " << mSampledIc50s[map_to_metadata_idx[i]][rand_idx] << std::endl;
+std::cout << "hill samples = " << mSampledHills[map_to_metadata_idx[i]][rand_idx] << std::endl;
+std::cout << "sat levels = " << rMedianSaturationLevels[map_to_metadata_idx[i]] << std::endl;
+
                 sample_required_at[i] = AbstractDataStructure::CalculateConductanceFactor(
                     mConcs[concIndex], mSampledIc50s[map_to_metadata_idx[i]][rand_idx],
                     mSampledHills[map_to_metadata_idx[i]][rand_idx],
@@ -784,7 +805,7 @@ void ApPredictMethods::InterpolateFromLookupTableForThisConcentration(
                         mConcs[concIndex] * mDrugTwoConcentrationFactor, mSampledIc50sDrugTwo[map_to_metadata_idx[i]][rand_idx],
                         mSampledHillsDrugTwo[map_to_metadata_idx[i]][rand_idx],
                         rMedianSaturationLevelsDrugTwo[map_to_metadata_idx[i]]);
-                    // A second implementation
+                    // A second implementation of this, which isn't ideal - see also the ApplyDrugBlock method.
                     sample_required_at[i] *= second_conductance_factor;
                 }
             }
@@ -1165,8 +1186,7 @@ void ApPredictMethods::CommonRunMethod()
     std::vector<double> median_hill_drug_two;       //               ""
     std::vector<double> median_saturation_drug_two; //               ""
 
-    for (unsigned channel_idx = 0; channel_idx < mMetadataNames.size();
-         channel_idx++)
+    for (unsigned channel_idx = 0; channel_idx < mMetadataNames.size(); channel_idx++)
     {
         // If we only have one IC50 and Hill value specified, then just use them and
         // move on.
