@@ -681,19 +681,18 @@ void ApPredictMethods::CalculateDoseResponseParameterSamples(
                 sampled_hills[channel_idx].push_back(-1.0);
             }
         }
-
-        if (secondDrug)
-        {
-            mSampledIc50sDrugTwo = sampled_ic50s;
-            mSampledHillsDrugTwo = sampled_hills;
-        }
-        else
-        {
-            mSampledIc50s = sampled_ic50s;
-            mSampledHills = sampled_hills;
-        }
-
         std::cout << "done!" << std::endl;
+    }
+    
+    if (secondDrug)
+    {
+        mSampledIc50sDrugTwo = sampled_ic50s;
+        mSampledHillsDrugTwo = sampled_hills;
+    }
+    else
+    {
+        mSampledIc50s = sampled_ic50s;
+        mSampledHills = sampled_hills;
     }
 }
 
