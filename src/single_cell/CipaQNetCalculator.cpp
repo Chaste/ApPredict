@@ -113,8 +113,5 @@ double CipaQNetCalculator::ComputeQNet()
         q_net += timestep_in_seconds * 0.5 * (i_net[i] + i_net[i - 1]); // Coulomb is Amps * seconds (rather than milliseconds), so integral in uC/uF.
     }
 
-    // Integrate to get qNet
-    //std::cout << "Total qNet = " << q_net << " C/F" << std::endl;
-
     return q_net;
 }
