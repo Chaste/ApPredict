@@ -1110,8 +1110,7 @@ void ApPredictMethods::CommonRunMethod()
             {
                 std::stringstream message;
                 message << "At a concentration of " << mConcs[conc_index]
-                        << "uM qNet was not calculated as the AP did not repolarise "
-                           "(this indicates very high risk).";
+                        << "uM qNet was not calculated as the AP did not fully de/re-polarise (this indicates very high risk).";
                 WriteMessageToFile(message.str());
             }
         }
