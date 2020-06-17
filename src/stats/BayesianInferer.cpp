@@ -33,7 +33,6 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 */
 
-
 #include <cmath>
 #include <vector>
 
@@ -47,24 +46,23 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "Citations.hpp"
 static PetscBool ElkinsCite = PETSC_FALSE;
 const char ElkinsCitation[] = "@article{elkins2013variability,\n"
-"  title={Variability in high-throughput ion-channel screening data and "
-"consequences for cardiac safety assessment},\n"
-"  author={Elkins, Ryan C and Davies, Mark R and Brough, Stephen J and "
-"Gavaghan, David J and Cui, Yi and Abi-Gerges, Najah and Mirams, Gary R},\n"
-"  journal={Journal of pharmacological and toxicological methods},\n"
-"  volume={68},\n"
-" number={1},\n"
-"  pages={112--122},\n"
-"  year={2013},\n"
-"  publisher={Elsevier}\n"
-"}";
-
+                              "  title={Variability in high-throughput ion-channel screening data and "
+                              "consequences for cardiac safety assessment},\n"
+                              "  author={Elkins, Ryan C and Davies, Mark R and Brough, Stephen J and "
+                              "Gavaghan, David J and Cui, Yi and Abi-Gerges, Najah and Mirams, Gary R},\n"
+                              "  journal={Journal of pharmacological and toxicological methods},\n"
+                              "  volume={68},\n"
+                              " number={1},\n"
+                              "  pages={112--122},\n"
+                              "  year={2013},\n"
+                              "  publisher={Elsevier}\n"
+                              "}";
 
 BayesianInferer::BayesianInferer(DoseResponseParameter parameter)
-  : mParameter(parameter),
-    mSigma(DOUBLE_UNSET),
-    mInferenceReady(false),
-    mpData(NULL)
+    : mParameter(parameter),
+      mSigma(DOUBLE_UNSET),
+      mInferenceReady(false),
+      mpData(NULL)
 {
     // Record a reference for the calculations performed here, can be extracted with the '-citations' flag.
     Citations::Register(ElkinsCitation, &ElkinsCite);
@@ -106,7 +104,7 @@ BayesianInferer::~BayesianInferer()
     }
 };
 
-void BayesianInferer::SetObservedData(const std::vector<double>& rData)
+void BayesianInferer::SetObservedData(const std::vector<double> &rData)
 {
     // Point directly to the 'const' data.
     mpData = &rData;
@@ -244,4 +242,13 @@ std::vector<double> BayesianInferer::GetPosteriorPdf()
         EXCEPTION("Posterior has not yet been computed, call PerformInference() first.");
     }
     return mPosteriorPdf;
+}
+
+double BayesianInferer::GetSpreadOfUnderlyingDistribution()
+{
+    if (!mInferenceReady)
+    {
+        EXCEPTION("Posterior has not yet been computed, call PerformInference() first.");
+    }
+    return mSigma;
 }
