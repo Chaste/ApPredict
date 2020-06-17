@@ -39,7 +39,6 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "AbstractDistribution.hpp"
 #include "DoseResponseParameterTypes.hpp"
 
-
 /**
  * This class works with logistic and log-logistic distributions.
  * It assumes that we have an underlying distribution with known spread (beta or sigma)
@@ -53,7 +52,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 class BayesianInferer
 {
 public:
-    /**
+  /**
      * Constructor
      *
      * This sets up the possible range of mu (logistic) or alpha (log-logistic) values
@@ -62,14 +61,14 @@ public:
      * @param parameter  Which dose-response curve parameter (dictates
      *                   what underlying distribution) this inferer is going to work with.
      */
-    BayesianInferer(DoseResponseParameter parameter);
+  BayesianInferer(DoseResponseParameter parameter);
 
-    /**
+  /**
      * Destructor - just cleans up memory
      */
-    ~BayesianInferer();
+  ~BayesianInferer();
 
-    /**
+  /**
      * Set the observed data that we are going to use for inference.
      *
      * These data should stay alive in memory externally,
@@ -77,75 +76,80 @@ public:
      *
      * @param rData the data points
      */
-    void SetObservedData(const std::vector<double>& rData);
+  void SetObservedData(const std::vector<double> &rData);
 
-    /**
+  /**
      * Set the spread parameter ('sigma' for logistic or 'beta' for log-logistic)
      * @param spread  the spread parameter to assume the underlying distributions have.
      */
-    void SetSpreadOfUnderlyingDistribution(double spread);
+  void SetSpreadOfUnderlyingDistribution(double spread);
 
-    /**
+  /**
+     * Get the spread parameter ('sigma' for logistic or 'beta' for log-logistic)
+     * @return  the spread parameter to assume the underlying distributions have.
+     */
+  double GetSpreadOfUnderlyingDistribution();
+
+  /**
      * Perform the inference calculations
      */
-    void PerformInference();
+  void PerformInference();
 
-    /**
+  /**
      * Take a sample from the inferred probability distribution.
      *
      * @return a sample of a possible median value from the inferred underlying distribution (of distributions!).
      */
-    double GetSampleMedianValue();
+  double GetSampleMedianValue();
 
-    /**
+  /**
      * This method simply calls GetSampleMedianValue() a number of times and returns you all the values in a vector
      * (to minimise re-calculation), it has nothing to do with repeated data points!
      *
      * @param numValues  the number of samples to take.
      * @return a vector of a possible median values from the inferred underlying distribution (of distributions!).
      */
-    std::vector<double> GetSampleMedianValue(const unsigned numValues);
+  std::vector<double> GetSampleMedianValue(const unsigned numValues);
 
-    /**
+  /**
      * @return The possible Median values (useful for plotting)
      */
-    std::vector<double> GetPossibleMedianValues();
+  std::vector<double> GetPossibleMedianValues();
 
-    /**
+  /**
      * @return the posterior CDF (corresponding to the possible median values, useful for plotting).
      */
-    std::vector<double> GetPosteriorCdf();
+  std::vector<double> GetPosteriorCdf();
 
-    /**
+  /**
      * @return the posterior PDF (corresponding to the possible median values, useful for plotting).
      */
-    std::vector<double> GetPosteriorPdf();
+  std::vector<double> GetPosteriorPdf();
 
 private:
+  /** The parameter we are doing inference on, just an enumeration defined in DoseResponseParameterTypes.hpp*/
+  DoseResponseParameter mParameter;
 
-    /** The parameter we are doing inference on, just an enumeration defined in DoseResponseParameterTypes.hpp*/
-    DoseResponseParameter mParameter;
+  /** The spread of the underlying distributions */
+  double mSigma;
 
-    /** The spread of the underlying distributions */
-    double mSigma;
+  /** The distribution we are using */
+  AbstractDistribution *mpDistribution;
 
-    /** The distribution we are using */
-    AbstractDistribution* mpDistribution;
+  /** Whether we are ready to perform inference */
+  bool mInferenceReady;
 
-    /** Whether we are ready to perform inference */
-    bool mInferenceReady;
+  /** The observed data we're working with */
+  const std::vector<double> *mpData;
 
-    /** The observed data we're working with */
-    const std::vector<double>* mpData;
+  /** The range of possible median values that we are considering (set in constructor) */
+  std::vector<double> mPossibleMuValues;
 
-    /** The range of possible median values that we are considering (set in constructor) */
-    std::vector<double> mPossibleMuValues;
+  /** The posterior PDF */
+  std::vector<double> mPosteriorPdf;
 
-    /** The posterior PDF */
-    std::vector<double> mPosteriorPdf;
-
-    /** The posterior CDF (this is used to take samples)*/
-    std::vector<double> mPosteriorCdf;
+  /** The posterior CDF (this is used to take samples)*/
+  std::vector<double> mPosteriorCdf;
 };
 
 #endif // BAYESIANINFERER_HPP_

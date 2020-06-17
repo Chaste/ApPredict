@@ -78,7 +78,7 @@ double CipaQNetCalculator::ComputeQNet()
         if (e.GetShortMessage() == "AP did not occur, never descended past threshold voltage."
             || e.GetShortMessage() == "No full action potential was recorded")
         {
-            std::cout << "Repolarisation Failure, logging -DBL_MAX for the qNet calculation" << std::endl;
+            std::cout << "Action potential de/repolarisation failure, logging -DBL_MAX for the qNet calculation" << std::endl;
             return -DBL_MAX;
         }
         else
