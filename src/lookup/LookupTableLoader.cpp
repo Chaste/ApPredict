@@ -50,7 +50,9 @@ const std::string LookupTableLoader::mRemoteURL = "https://cardiac.nottingham.ac
 
 LookupTableLoader::LookupTableLoader(const std::string& rModelName, const double& rHertz)
         : mModelName(rModelName),
-          mHertz(rHertz)
+          mHertz(rHertz),
+          mIdealLookupTable(""),
+          mBestAvailableLookupTable("")
 {
     // Here we will attempt to use any lookup table associated with this model and
     // pacing rate.
@@ -73,16 +75,14 @@ LookupTableLoader::LookupTableLoader(const std::string& rModelName, const double
     };
 
     // This modifies #mIdealChannelsInvolved to match command line args.
-    std::string ideal_lookup_table = GetIdealTable();
-    std::cout << "My ideal lookup table would be " << ideal_lookup_table << std::endl;
+    DecideIdealTable();
+    std::cout << "My ideal lookup table would be " << mIdealLookupTable << std::endl;
 
-    LoadTableFromLocalBoostArchive(ideal_lookup_table);
+    LoadTableFromLocalBoostArchive(mIdealLookupTable);
 
     // Only continue with the logic if the local ideal table wasn't loaded.
     if (mpLookupTable == nullptr)
     {
-        std::string best_lookup_table = "";
-
         // Get lists of available files
         std::vector<std::string> website_list = GetManifestOfTablesOnGarysWebsite();
         std::vector<std::string> local_list = GetManifestOfLocalTablesInCwd();
@@ -97,7 +97,7 @@ LookupTableLoader::LookupTableLoader(const std::string& rModelName, const double
             if (std::find(local_list.begin(), local_list.end(), possible_list[i]) != local_list.end())
             {
                 std::cout << "Local lookup table found for " << possible_list[i] << std::endl;
-                best_lookup_table = possible_list[i];
+                mBestAvailableLookupTable = possible_list[i];
                 break;
             }
 
@@ -105,16 +105,16 @@ LookupTableLoader::LookupTableLoader(const std::string& rModelName, const double
             if (std::find(website_list.begin(), website_list.end(), possible_list[i]) != website_list.end())
             {
                 std::cout << "Web lookup table found for " << possible_list[i] << std::endl;
-                best_lookup_table = possible_list[i];
+                mBestAvailableLookupTable = possible_list[i];
                 // Download and unpack it
-                DownloadAndUnpack(best_lookup_table);
+                DownloadAndUnpack(mBestAvailableLookupTable);
                 break;
             }
         }
 
-        if (best_lookup_table != "")
+        if (mBestAvailableLookupTable != "")
         {
-            LoadTableFromLocalBoostArchive(best_lookup_table);
+            LoadTableFromLocalBoostArchive(mBestAvailableLookupTable);
         }
         else
         {
@@ -123,7 +123,7 @@ LookupTableLoader::LookupTableLoader(const std::string& rModelName, const double
     }
 }
 
-std::string LookupTableLoader::GetIdealTable()
+void LookupTableLoader::DecideIdealTable()
 {
     // Parse the inputs
     CommandLineArguments* p_args = CommandLineArguments::Instance();
@@ -151,9 +151,7 @@ std::string LookupTableLoader::GetIdealTable()
     // Add suffix
     std::stringstream hertz;
     hertz << mHertz;
-    ideal_lookup_table = mModelName + "_" + std::to_string(ideal_dimension) + "d" + ideal_lookup_table + "_" + hertz.str() + "Hz_generator";
-
-    return ideal_lookup_table;
+    mIdealLookupTable = mModelName + "_" + std::to_string(ideal_dimension) + "d" + ideal_lookup_table + "_" + hertz.str() + "Hz_generator";
 }
 
 void LookupTableLoader::LoadTableFromLocalBoostArchive(const std::string& rLookupTableBaseName)
@@ -508,4 +506,15 @@ boost::shared_ptr<AbstractUntemplatedLookupTableGenerator> LookupTableLoader::Ge
     }
 
     return mpLookupTable;
+}
+
+
+std::string LookupTableLoader::GetIdealTable()
+{
+    return mIdealLookupTable;
+}
+
+std::string LookupTableLoader::GetBestAvailableTable()
+{
+    return mBestAvailableLookupTable;
 }

@@ -508,6 +508,9 @@ void ApPredictMethods::SetUpLookupTables()
     }
 
     LookupTableLoader lookup_loader(mpModel->GetSystemName(), this->mHertz);
+    std::string ideal_table = lookup_loader.GetIdealTable();
+    std::string best_table = lookup_loader.GetBestAvailableTable();
+
     if (p_args->OptionExists("--brute-force"))
     {
         mpLookupTable = nullptr;
@@ -515,12 +518,17 @@ void ApPredictMethods::SetUpLookupTables()
     }
     else if (lookup_loader.IsLookupTableAvailable())
     {
+        if (best_table != "")
+        {
+            WriteMessageToFile("CredibleIntervals: Your simulation used the lookup table " + best_table + " to create credible intervals, it would be good to generate " + ideal_table + " for this scenario (logged for developers, you don't need to do anything!).");
+        }
         mpLookupTable = lookup_loader.GetLookupTable();
         mLookupTableAvailable = true;
     }
     else
     {
-        WARNING("You asked for '--credible-intervals' but no lookup table is available. Continuing without... if you really want to you can run with the option '--brute-force'");
+        WARNING("You asked for '--credible-intervals' but " << ideal_table << " is not available. Continuing without...");
+        WriteMessageToFile("CredibleIntervals: Your simulation required the lookup table " + ideal_table + " to create credible intervals, but it was not available so continued without them.");
         mLookupTableAvailable = false;
     }
 }
@@ -595,7 +603,8 @@ void ApPredictMethods::CalculateDoseResponseParameterSamples(
         {
             std::stringstream message;
             message << "No argument --pic50-spread-";
-            if (secondDrug) message << "drug-two-";
+            if (secondDrug)
+                message << "drug-two-";
             message << mShortNames[channel_idx]
                     << " has been provided. Cannot calculate credible intervals "
                        "without this.";
@@ -690,7 +699,7 @@ void ApPredictMethods::CalculateDoseResponseParameterSamples(
         }
         std::cout << "done!" << std::endl;
     }
-    
+
     if (secondDrug)
     {
         mSampledIc50sDrugTwo = sampled_ic50s;
@@ -742,7 +751,7 @@ void ApPredictMethods::GetCredibleIntervalSamplesForThisConcentration(
 
     // The first channel entry in mSampledIc50s will give us the number of random samples.
     const unsigned num_samples = mSampledIc50s[0].size();
-    assert(mMetadataNames.size()==mSampledIc50s.size());
+    assert(mMetadataNames.size() == mSampledIc50s.size());
 
     std::vector<std::vector<double>> predictions;
 
@@ -766,7 +775,7 @@ void ApPredictMethods::GetCredibleIntervalSamplesForThisConcentration(
             }
         }
 
-        std::vector<std::vector<double> > sampling_points;
+        std::vector<std::vector<double>> sampling_points;
         for (unsigned rand_idx = 0; rand_idx < num_samples; rand_idx++)
         {
             std::vector<double> sample_required_at(table_dim);
@@ -800,10 +809,9 @@ void ApPredictMethods::GetCredibleIntervalSamplesForThisConcentration(
         mSuppressOutput = true;
         std::vector<double> state_vars = mpModel->GetStdVecStateVariables();
 
-
         for (unsigned rand_idx = 0; rand_idx < num_samples; rand_idx++)
         {
-            
+
             std::cout << "Sample " << rand_idx + 1 << "/" << num_samples << std::endl;
 
             // Apply drug block on each channel
@@ -881,7 +889,7 @@ void ApPredictMethods::GetCredibleIntervalSamplesForThisConcentration(
         else
         {
             index_in_sorted_prediction_vector = ceil(mPercentiles[i] / 100.0 * (double)(num_samples));
-            // If we have a low number of samples or very high percentile requested, 
+            // If we have a low number of samples or very high percentile requested,
             // then the formula above could 'hit the end' in which case we have to take the sample below.
             if (index_in_sorted_prediction_vector == num_samples)
             {
