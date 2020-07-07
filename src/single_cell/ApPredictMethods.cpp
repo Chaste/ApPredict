@@ -463,16 +463,21 @@ void ApPredictMethods::SetUpLookupTables()
     }
 
     LookupTableLoader lookup_loader(mpModel->GetSystemName(), this->mHertz);
+    std::string ideal_table = lookup_loader.GetIdealTable();
+    std::string best_table = lookup_loader.GetBestAvailableTable();
     if (lookup_loader.IsLookupTableAvailable())
     {
+        if (best_table != "")
+        {
+            WriteMessageToFile("CredibleIntervals: Your simulation used the lookup table " + best_table + " to create credible intervals, it would be good to generate " + ideal_table + " for this scenario (logged for developers, you don't need to do anything!).");
+        }
         mpLookupTable = lookup_loader.GetLookupTable();
         mLookupTableAvailable = true;
     }
     else
     {
-        WARNING(
-            "You asked for '--credible-intervals' but no lookup table is "
-            "available. Continuing without...");
+        WARNING("You asked for '--credible-intervals' but " << ideal_table << " is not available. Continuing without...");
+        WriteMessageToFile("CredibleIntervals: Your simulation required the lookup table " + ideal_table + " to create credible intervals, but it was not available so continued without them.");
         mLookupTableAvailable = false;
     }
 }
