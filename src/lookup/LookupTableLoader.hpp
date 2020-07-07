@@ -74,11 +74,19 @@ private:
     double mHertz;
 
     /**
-     * Sets up #mIdealChannelsInvolved to match input arguments
-     *
-     * @return the base filename for the ideal lookup table.
+     * The ideal lookup table.
      */
-    std::string GetIdealTable();
+    std::string mIdealLookupTable;
+
+    /**
+     * The best available lookup table since mIdealLookupTable isn't available.
+     */
+    std::string mBestAvailableLookupTable;
+
+    /**
+     * Sets up #mIdealChannelsInvolved to match input arguments and sets #mIdealLookupTable string.
+     */
+    void DecideIdealTable();
 
     /**
      * A list of tables that could provide the information we need, in order of
@@ -137,6 +145,16 @@ public:
      * @return whether we have found and loaded a lookup table.
      */
     bool IsLookupTableAvailable();
+
+    /**
+     * @return the base filename for the ideal lookup table.
+     */
+    std::string GetIdealTable();
+
+    /**
+     * @return the base filename for the best lookup table if Ideal isn't available.
+     */
+    std::string GetBestAvailableTable();
 
     /**
 	   * @return  a pointer to the lowest dimension LookupTable that is available.
