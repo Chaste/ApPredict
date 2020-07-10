@@ -446,10 +446,15 @@ OdeSolution AbstractActionPotentialMethod::PerformAnalysisOfTwoPaces(
             message << "depolarise.";
         }
         // std::cout << message.str() << std::endl << std::flush;
-        if (!mSuppressOutput)
+
+        // We're going to repeat, we don't want this message twice, so don't output first time.
+        if (!mSuppressOutput && mRepeatNumber > 0u)
             std::cout << message.str() << std::endl
                       << std::flush;
-        WriteMessageToFile(message.str());
+        if (mRepeatNumber > 0u) 
+        {
+            WriteMessageToFile(message.str());
+        }
         mSuccessful = false;
         mPeriodTwoBehaviour = true;
         // Redo the analysis in case being 'in sync' on period 2 orbit allows us
@@ -471,7 +476,8 @@ OdeSolution AbstractActionPotentialMethod::PerformAnalysisOfTwoPaces(
                 mRepeat = true;
             }
             else
-            { // If we're going to repeat, we don't want this message twice.
+            {   
+                // If we're going to repeat, we don't want this message twice.
                 if (mAlternansIsError)
                 {
                     // These conditions check (if we are looking for repolarisation caused
