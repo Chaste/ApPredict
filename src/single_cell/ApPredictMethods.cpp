@@ -1076,7 +1076,14 @@ void ApPredictMethods::CommonRunMethod()
     {
         mCalculateQNet = true;
         q_net_results_file = mpFileHandler->OpenOutputFile("q_net.txt");
-        *q_net_results_file << "Concentration(uM)\t";
+        if (mTwoDrugs) 
+        {
+            *q_net_results_file << "ConcentrationDrug1(uM)\tConcentrationDrug2(uM)\t";
+        }
+        else
+        {
+            *q_net_results_file << "Concentration(uM)\t";
+        }
     }
 
     // Print out a progress file for monitoring purposes.
@@ -1087,7 +1094,6 @@ void ApPredictMethods::CommonRunMethod()
     out_stream steady_voltage_results_file_html = mpFileHandler->OpenOutputFile("voltage_results.html");
 
     out_stream steady_voltage_results_file = mpFileHandler->OpenOutputFile("voltage_results.dat");
-    *steady_voltage_results_file << "Concentration(uM)\t";
     if (mTwoDrugs)
     {
         *steady_voltage_results_file << "Concentration_Drug_1(uM)\tConcentration_Drug_2(uM)\t";
@@ -1164,8 +1170,9 @@ void ApPredictMethods::CommonRunMethod()
     *steady_voltage_results_file_html
         << "<table width=\"60%\" style=\"background-color:white\" border=\"1\" "
            "cellpadding=\"2\" cellspacing=\"0\">\n";
-    *steady_voltage_results_file_html << "<tr><td>Concentration "
-                                         "(uM)</td><td>Upstroke Velocity "
+    *steady_voltage_results_file_html << "<tr><td>Concentration";
+    if (mTwoDrugs) *steady_voltage_results_file_html << "Drug 1 (uM)</td><td>Concentration Drug 2 ";
+    *steady_voltage_results_file_html << " (uM)</td><td>Upstroke Velocity "
                                          "(mV/ms)</td><td>Peak membrane voltage "
                                          "(mV)</td><td>APD50 (ms)</td><td>APD90 "
                                          "(ms)</td><td>Change in APD90 "
@@ -1377,13 +1384,14 @@ void ApPredictMethods::CommonRunMethod()
                     std::cout << delta_apd90 << std::endl; // << std::flush;
                 }
             }
-            *steady_voltage_results_file_html
-                << "<tr><td>" << mConcs[conc_index] << "</td><td>" << upstroke
+            *steady_voltage_results_file_html << "<tr><td>" << mConcs[conc_index];
+            if (mTwoDrugs) *steady_voltage_results_file_html << "</td><td>" << mConcs[conc_index]* mDrugTwoConcentrationFactor;
+            *steady_voltage_results_file_html << "</td><td>" << upstroke
                 << "</td><td>" << peak << "</td><td>" << apd50 << "</td><td>" << apd90
                 << "</td><td>" << delta_apd90 << "</td></tr>\n";
-            *steady_voltage_results_file << mConcs[conc_index] << "\t" << upstroke
-                                         << "\t" << peak << "\t" << apd50 << "\t"
-                                         << apd90 << "\t";
+            *steady_voltage_results_file << mConcs[conc_index] << "\t";
+            if (mTwoDrugs) *steady_voltage_results_file << mConcs[conc_index]*mDrugTwoConcentrationFactor << "\t";
+            *steady_voltage_results_file << upstroke << "\t" << peak << "\t" << apd50 << "\t" << apd90 << "\t";
 
             if (mLookupTableAvailable)
             {
@@ -1423,14 +1431,15 @@ void ApPredictMethods::CommonRunMethod()
                           << ", APD90 = " << error_code
                           << ", percent change APD90 = " << error_code
                           << "\n"; // << std::flush;
-            *steady_voltage_results_file_html
-                << "<tr><td>" << mConcs[conc_index] << "</td><td>" << error_code
+            *steady_voltage_results_file_html << "<tr><td>" << mConcs[conc_index];
+            if (mTwoDrugs) *steady_voltage_results_file_html << "</td><td>" << mConcs[conc_index]* mDrugTwoConcentrationFactor;
+            *steady_voltage_results_file_html << "</td><td>" << error_code
                 << "</td><td>" << error_code << "</td><td>" << error_code
                 << "</td><td>" << error_code << "</td><td>" << error_code
                 << "</td></tr>\n";
-            *steady_voltage_results_file << mConcs[conc_index] << "\t" << error_code
-                                         << "\t" << error_code << "\t" << error_code
-                                         << "\t" << error_code << "\t";
+            *steady_voltage_results_file << mConcs[conc_index] << "\t";
+            if (mTwoDrugs) *steady_voltage_results_file << mConcs[conc_index]*mDrugTwoConcentrationFactor << "\t";
+            *steady_voltage_results_file << error_code << "\t" << error_code << "\t" << error_code << "\t" << error_code << "\t";
 
             if (mLookupTableAvailable)
             {
