@@ -1171,7 +1171,7 @@ void ApPredictMethods::CommonRunMethod()
         << "<table width=\"60%\" style=\"background-color:white\" border=\"1\" "
            "cellpadding=\"2\" cellspacing=\"0\">\n";
     *steady_voltage_results_file_html << "<tr><td>Concentration";
-    if (mTwoDrugs) *steady_voltage_results_file_html << "Drug 1 (uM)</td><td>Concentration Drug 2 ";
+    if (mTwoDrugs) *steady_voltage_results_file_html << " Drug 1 (uM)</td><td>Concentration Drug 2 ";
     *steady_voltage_results_file_html << " (uM)</td><td>Upstroke Velocity "
                                          "(mV/ms)</td><td>Peak membrane voltage "
                                          "(mV)</td><td>APD50 (ms)</td><td>APD90 "
@@ -1479,6 +1479,7 @@ void ApPredictMethods::CommonRunMethod()
             }
 
             *q_net_results_file << mConcs[conc_index] << "\t";
+            if (mTwoDrugs) *q_net_results_file << mConcs[conc_index]*mDrugTwoConcentrationFactor << "\t";
 
             if (mLookupTableAvailable)
             {
