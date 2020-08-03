@@ -518,7 +518,7 @@ void ApPredictMethods::SetUpLookupTables()
     }
     else if (lookup_loader.IsLookupTableAvailable())
     {
-        if (best_table != "")
+        if (best_table != "" && best_table != ideal_table)
         {
             WriteMessageToFile("CredibleIntervals: Your simulation used the lookup table " + best_table + " to create credible intervals, it would be good to generate " + ideal_table + " for this scenario (logged for developers, you don't need to do anything!).");
         }
