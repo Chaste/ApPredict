@@ -109,6 +109,8 @@ SetupModel::SetupModel(const double& rHertz,
                 break;
             case 4u:
                 mpModel.reset(new Cellhund_rudy_2004FromCellMLCvode(p_solver, p_stimulus));
+		// Hund Rudy doesn't play well with the use of an Analyic Jacobian, see Cooper, Spiteri, Mirams, 2015 paper
+		mpModel->ForceUseOfNumericalJacobian(true);
                 break;
             case 5u:
                 mpModel.reset(new Cellgrandi_pasqualini_bers_2010_ssFromCellMLCvode(p_solver, p_stimulus));
