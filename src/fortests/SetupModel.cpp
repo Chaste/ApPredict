@@ -57,9 +57,9 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "ten_tusscher_model_2006_epiCvode.hpp"
 
 SetupModel::SetupModel(const double& rHertz,
-                       unsigned modelIndex,
-                       boost::shared_ptr<OutputFileHandler> pHandler)
-        : mpHandler(pHandler)
+    unsigned modelIndex,
+    boost::shared_ptr<OutputFileHandler> pHandler)
+    : mpHandler(pHandler)
 {
     /// Cvode cells use a CVODE solver regardless of which standard solver is passed in.
     boost::shared_ptr<AbstractStimulusFunction> p_stimulus;
@@ -95,37 +95,37 @@ SetupModel::SetupModel(const double& rHertz,
         }
         switch (modelIndex)
         {
-            case 1u:
-                // This one is from the cellml project - more metadata.
-                mpModel.reset(new Cellshannon_wang_puglisi_weber_bers_2004FromCellMLCvode(p_solver, p_stimulus));
-                // This one is from the Chaste source
-                //mpModel.reset(new CellShannon2004FromCellMLCvode(p_solver, p_stimulus));
-                break;
-            case 2u:
-                mpModel.reset(new Cellten_tusscher_model_2006_epiFromCellMLCvode(p_solver, p_stimulus));
-                break;
-            case 3u:
-                mpModel.reset(new Cellmahajan_shiferaw_2008FromCellMLCvode(p_solver, p_stimulus));
-                break;
-            case 4u:
-                mpModel.reset(new Cellhund_rudy_2004FromCellMLCvode(p_solver, p_stimulus));
-		// Hund Rudy doesn't play well with the use of an Analyic Jacobian, see Cooper, Spiteri, Mirams, 2015 paper
-		mpModel->ForceUseOfNumericalJacobian(true);
-                break;
-            case 5u:
-                mpModel.reset(new Cellgrandi_pasqualini_bers_2010_ssFromCellMLCvode(p_solver, p_stimulus));
-                break;
-            case 6u:
-                mpModel.reset(new Cellohara_rudy_2011_endoFromCellMLCvode(p_solver, p_stimulus));
-                break;
-            case 7u:
-                mpModel.reset(new Cellpaci_hyttinen_aaltosetala_severi_ventricularVersionFromCellMLCvode(p_solver, p_stimulus));
-                break;
-            case 8u:
-                mpModel.reset(new Cellohara_rudy_cipa_v1_2017FromCellMLCvode(p_solver, p_stimulus));
-                break;
-            default:
-                EXCEPTION("No model matches this index");
+        case 1u:
+            // This one is from the cellml project - more metadata.
+            mpModel.reset(new Cellshannon_wang_puglisi_weber_bers_2004FromCellMLCvode(p_solver, p_stimulus));
+            // This one is from the Chaste source
+            //mpModel.reset(new CellShannon2004FromCellMLCvode(p_solver, p_stimulus));
+            break;
+        case 2u:
+            mpModel.reset(new Cellten_tusscher_model_2006_epiFromCellMLCvode(p_solver, p_stimulus));
+            break;
+        case 3u:
+            mpModel.reset(new Cellmahajan_shiferaw_2008FromCellMLCvode(p_solver, p_stimulus));
+            break;
+        case 4u:
+            mpModel.reset(new Cellhund_rudy_2004FromCellMLCvode(p_solver, p_stimulus));
+            // Hund Rudy doesn't play well with the use of an Analyic Jacobian, see Cooper, Spiteri, Mirams, 2015 paper
+            mpModel->ForceUseOfNumericalJacobian(true);
+            break;
+        case 5u:
+            mpModel.reset(new Cellgrandi_pasqualini_bers_2010_ssFromCellMLCvode(p_solver, p_stimulus));
+            break;
+        case 6u:
+            mpModel.reset(new Cellohara_rudy_2011_endoFromCellMLCvode(p_solver, p_stimulus));
+            break;
+        case 7u:
+            mpModel.reset(new Cellpaci_hyttinen_aaltosetala_severi_ventricularVersionFromCellMLCvode(p_solver, p_stimulus));
+            break;
+        case 8u:
+            mpModel.reset(new Cellohara_rudy_cipa_v1_2017FromCellMLCvode(p_solver, p_stimulus));
+            break;
+        default:
+            EXCEPTION("No model matches this index");
         }
     }
     //std::cout << "* model = " << mpModel->GetSystemName() << "\n";
