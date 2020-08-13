@@ -57,7 +57,8 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "paci_hyttinen_aaltosetala_severi_ventricularVersionCvode.hpp"
 #include "ten_tusscher_model_2006_epiCvode.hpp"
 
-SetupModel::SetupModel(const double& rHertz, unsigned modelIndex,
+SetupModel::SetupModel(const double& rHertz,
+    unsigned modelIndex,
     boost::shared_ptr<OutputFileHandler> pHandler)
     : mpHandler(pHandler)
 {
