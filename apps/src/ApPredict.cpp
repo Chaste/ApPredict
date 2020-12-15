@@ -48,6 +48,7 @@ int main(int argc, char* argv[])
 {
     // This sets up PETSc and prints out copyright information, etc.
     ExecutableSupport::StandardStartup(&argc, &argv);
+    ApPredictMethods::ShowVersion();
     ExecutableSupport::SetOutputDirectory("ApPredict_output");
 
     int exit_code = ExecutableSupport::EXIT_OK;

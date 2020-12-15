@@ -55,6 +55,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "SetupModel.hpp"
 #include "SteadyStateRunner.hpp"
 #include "Timer.hpp"
+#include "Version.hpp"
 #include "Warnings.hpp"
 #include "ZeroStimulus.hpp"
 
@@ -1493,4 +1494,18 @@ double ApPredictMethods::DoLinearInterpolation(
     double upper_y = rY[lower_idx];
 
     return lower_y + ((x_star - lower_x) / (upper_x - lower_x)) * (upper_y - lower_y);
+}
+
+
+void ApPredictMethods::ShowVersion()
+{
+    const std::map<std::string, std::string>& r_projects_modified = ChasteBuildInfo::rGetIfProjectsModified();
+    const std::map<std::string, std::string>& r_projects_versions = ChasteBuildInfo::rGetProjectVersions();
+
+    std::string temp;
+    if (r_projects_modified.at("ApPredict") == "True")
+    {
+        temp = ", but it HAS BEEN MODIFIED from that commit!";
+    }
+    std::cout << "ApPredict is based on commit " << r_projects_versions.at("ApPredict") << temp << std::endl;
 }

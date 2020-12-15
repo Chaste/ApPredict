@@ -316,6 +316,11 @@ public:
      * @return The credible regions at #mPercentiles for the QNet predictions
      */
     std::vector<std::vector<double> > GetQNetCredibleRegions(void);
+
+    /**
+     * Print commit of ApPredict to std:out.
+     */
+    static void ShowVersion();
 };
 
 #endif //_APPREDICTMETHODS_HPP_
