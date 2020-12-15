@@ -1505,7 +1505,7 @@ void ApPredictMethods::ShowVersion()
     std::string temp;
     if (r_projects_modified.at("ApPredict") == "True")
     {
-        temp = ", but it HAS BEEN MODIFIED from that commit!";
+        temp = " But it HAS BEEN MODIFIED from that commit!";
     }
-    std::cout << "ApPredict is based on commit " << r_projects_versions.at("ApPredict") << temp << std::endl;
+    std::cout << "ApPredict is based on commit " << r_projects_versions.at("ApPredict") << "." << temp << std::endl;
 }
