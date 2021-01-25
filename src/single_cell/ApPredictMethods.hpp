@@ -1,6 +1,6 @@
 /*
 
-Copyright (c) 2005-2020, University of Oxford.
+Copyright (c) 2005-2021, University of Oxford.
 All rights reserved.
 
 University of Oxford means the Chancellor, Masters and Scholars of the
@@ -360,7 +360,12 @@ public:
   /**
      * @return The credible regions at #mPercentiles for the QNet predictions
      */
-  std::vector<std::vector<double>> GetQNetCredibleRegions(void);
+    std::vector<std::vector<double> > GetQNetCredibleRegions(void);
+
+    /**
+     * Print commit of ApPredict to std:out.
+     */
+    static void ShowVersion();
 };
 
 #endif //_APPREDICTMETHODS_HPP_
