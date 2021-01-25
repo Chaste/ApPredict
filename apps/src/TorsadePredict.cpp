@@ -1,6 +1,6 @@
 /*
 
-Copyright (c) 2005-2020, University of Oxford.
+Copyright (c) 2005-2021, University of Oxford.
 All rights reserved.
 
 University of Oxford means the Chancellor, Masters and Scholars of the
@@ -53,6 +53,7 @@ int main(int argc, char *argv[])
 {
     // This sets up PETSc and prints out copyright information, etc.
     ExecutableSupport::StandardStartup(&argc, &argv);
+    ApPredictMethods::ShowVersion();
     ExecutableSupport::SetOutputDirectory("TorsadePredict_output");
 
     int exit_code = ExecutableSupport::EXIT_OK;
