@@ -42,6 +42,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/shared_ptr.hpp>
 #include "ApPredictMethods.hpp"
 #include "CommandLineArgumentsMocker.hpp"
+#include "NumericFileComparison.hpp"
 
 /*
  * Thorough and longer running tests of ApPredict.
@@ -130,7 +131,7 @@ public:
             TS_ASSERT_DELTA(apd90s[1], 213.9762, 1e-3);
             TS_ASSERT_DELTA(apd90s[2], 229.7436, 1e-3);
 
-            std::vector<std::vector<double> > apd90_credible_regions = methods.GetApd90CredibleRegions();
+            std::vector<std::vector<double>> apd90_credible_regions = methods.GetApd90CredibleRegions();
             TS_ASSERT_EQUALS(apd90_credible_regions.size(), 3u);
             TS_ASSERT_DELTA(apd90_credible_regions[0][0], 211.9333, 1e-3);
             TS_ASSERT_DELTA(apd90_credible_regions[0][1], 211.9333, 1e-3);
@@ -159,7 +160,7 @@ public:
             TS_ASSERT_DELTA(apd90s[1], 213.9730, 1e-3);
             TS_ASSERT_DELTA(apd90s[2], 229.7191, 1e-3);
 
-            std::vector<std::vector<double> > apd90_credible_regions = methods.GetApd90CredibleRegions();
+            std::vector<std::vector<double>> apd90_credible_regions = methods.GetApd90CredibleRegions();
             TS_ASSERT_EQUALS(apd90_credible_regions.size(), 3u);
             TS_ASSERT_DELTA(apd90_credible_regions[0][0], 211.9333, 1e-3);
             TS_ASSERT_DELTA(apd90_credible_regions[0][1], 211.9333, 1e-3);
@@ -285,6 +286,47 @@ public:
         TS_ASSERT_DELTA(apd90s[0], 219.60, 1e-1); // Very sensitive to compiler changes, so high tolerance.
         TS_ASSERT_DELTA(apd90s[1], 219.60, 1e-1);
         TS_ASSERT_EQUALS(std::isnan(apd90s[2]), true); // Top concentration has a NoAP1 error.
+    }
+
+    void TestTwoDrugs()
+    {
+        // Check single drug version
+        std::cout << "\nSingle drug:\n"
+                  << std::endl;
+        {
+            CommandLineArgumentsMocker wrapper("--model 2 --plasma-concs 0 10 --pic50-herg 7 --pacing-max-time 0.2 --credible-intervals --pic50-spread-herg 0.15");
+
+            ApPredictMethods methods;
+            methods.SetOutputDirectory("ApPredict_only_one_drug/");
+            methods.Run();
+        }
+        std::cout << "\nFirst drug potent:\n"
+                  << std::endl;
+        // Check for symmetry in the responses
+        {
+            CommandLineArgumentsMocker wrapper("--model 2 --plasma-concs 0 10 --pic50-herg 7 --drug-two-conc-factor 1 --pic50-drug-two-herg -10 --pacing-max-time 0.2 --credible-intervals --pic50-spread-herg 0.15 --pic50-spread-drug-two-herg 0.15");
+
+            ApPredictMethods methods;
+            methods.SetOutputDirectory("ApPredict_drug_1_potent/");
+            methods.Run();
+        }
+        std::cout << "\nSecond drug potent:\n"
+                  << std::endl;
+        {
+            CommandLineArgumentsMocker wrapper("--model 2 --plasma-concs 0 10 --pic50-herg -10 --drug-two-conc-factor 1 --pic50-drug-two-herg 7 --pacing-max-time 0.2 --credible-intervals --pic50-spread-herg 0.15 --pic50-spread-drug-two-herg 0.15");
+
+            ApPredictMethods methods;
+            methods.SetOutputDirectory("ApPredict_drug_2_potent/");
+            methods.Run();
+        }
+
+        FileFinder drug_1_active_file("ApPredict_drug_1_potent/voltage_results.dat", RelativeTo::ChasteTestOutput);
+        FileFinder drug_2_active_file("ApPredict_drug_2_potent/voltage_results.dat", RelativeTo::ChasteTestOutput);
+        TS_ASSERT(drug_1_active_file.IsFile());
+        TS_ASSERT(drug_2_active_file.IsFile());
+
+        NumericFileComparison comparer(drug_1_active_file, drug_2_active_file);
+        TS_ASSERT(comparer.CompareFiles(3e-2));
     }
 };
 

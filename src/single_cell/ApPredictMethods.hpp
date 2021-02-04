@@ -63,8 +63,8 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 class ApPredictMethods : public AbstractActionPotentialMethod
 {
 private:
-    friend class TestPkpdInterpolations; // To test linear interpolation private method.
-    /**
+  friend class TestPkpdInterpolations; // To test linear interpolation private method.
+  /**
      * A method to avoid lots of copying and pasting in the main drug block application method.
      *
      * @param pModel  The CVODE model.
@@ -74,16 +74,22 @@ private:
      * @param iC50  The IC50 for this channel.
      * @param hill  The Hill for this channel.
      * @param saturation  The saturation level for this channel and drug (e.g. 0% = full block, 150% = 50% activator).
+     * @param ic50DrugTwo  The IC50 for the second drug for this channel
+     * @param hillDrugTwo  The Hill for the second drug for this channel
+     * @param saturationDrugTwo  The saturation level for this channel and second drug.
      */
-    void ApplyDrugBlock(boost::shared_ptr<AbstractCvodeCell> pModel,
-                        unsigned channel_index,
-                        const double default_conductance,
-                        const double concentration,
-                        const double iC50,
-                        const double hill,
-                        const double saturation);
+  void ApplyDrugBlock(boost::shared_ptr<AbstractCvodeCell> pModel,
+                      unsigned channel_index,
+                      const double default_conductance,
+                      const double concentration,
+                      const double iC50,
+                      const double hill,
+                      const double saturation,
+                      double ic50DrugTwo = -1,
+                      double hillDrugTwo = -1,
+                      double saturationDrugTwo = -1);
 
-    /**
+  /**
      * Takes the inputted IC50 and Hill coefficients
      * and uses information on the spread of the particular assay
      * to infer a probability distribution for the 'true' underlying
@@ -94,122 +100,159 @@ private:
      *
      * @param rIC50s  The IC50 values for each channel, and any repeated measurements (inner vec).
      * @param rHills  The Hill coefficients for each channel, and any repeated measurements (inner vec).
+     * @param secondDrug  Whether this is for the second drug, defaults to false.
      */
-    void CalculateDoseResponseParameterSamples(const std::vector<std::vector<double> >& rIC50s,
-                                               const std::vector<std::vector<double> >& rHills);
+  void CalculateDoseResponseParameterSamples(const std::vector<std::vector<double>> &rIC50s,
+                                             const std::vector<std::vector<double>> &rHills,
+                                             bool secondDrug = false);
 
-    /**
-     * Uses the lookup table and entries in mSampledIc50s and mSampledHills
-     * to generate a probability distribution of APD90 predictions. This is then
-     * stored in mAllApd90s, and mApd90CredibleRegions is populated.
-     *
-     * @param concIndex  The index of the concentration (in mConcs).
-     * @param rMedianSaturationLevels  The saturation levels for each channel to assume in all samples.
-     */
-    void InterpolateFromLookupTableForThisConcentration(const unsigned concIndex,
-                                                        const std::vector<double>& rMedianSaturationLevels);
+  /**
+    * In usual mode this uses the lookup table and entries in mSampledIc50s and mSampledHills
+    * to generate a probability distribution of APD90 predictions. 
+    * If the flag --brute-force is used then this method runs lots of simulations to make credible intervals.
+    * 
+    * Results are populated into mApd90CredibleRegions (and mQNetCredibleRegions if applicable).
+    *
+    * @param concIndex  The index of the concentration (in mConcs).
+    * @param rMedianSaturationLevels  The saturation levels for each channel to assume in all samples.
+    * @param rMedianSaturationLevelsDrugTwo  The saturation levels for each channel for drug two to assume in all samples (can be an empty vector if one drug only being used).
+    */
+   void GetCredibleIntervalSamplesForThisConcentration(const unsigned concIndex,
+                                                      const std::vector<double> &rMedianSaturationLevels,
+                                                      const std::vector<double> &rMedianSaturationLevelsDrugTwo);
 
-    /**
-      * Perform linear interpolation to get an estimate of y_star at x_star
-      * @param x_star The independent variable at which to get an interpolated value
-      * @param rX  The vector of independent variables.
-      * @param rY  The vector of dependent variables to interpolate between.
-      */
-    double DoLinearInterpolation(double x_star, const std::vector<double>& rX, const std::vector<double>& rY) const;
+  /**
+   * Perform linear interpolation to get an estimate of y_star at x_star
+   * @param x_star The independent variable at which to get an interpolated value
+   * @param rX  The vector of independent variables.
+   * @param rY  The vector of dependent variables to interpolate between.
+   */
+  double DoLinearInterpolation(double x_star, const std::vector<double> &rX, const std::vector<double> &rY) const;
 
-    /** The Oxford metadata names of the conductances we may modify with this class */
-    std::vector<std::string> mMetadataNames;
+  /** The Oxford metadata names of the conductances we may modify with this class */
+  std::vector<std::string> mMetadataNames;
 
-    /** Shortened versions of the names, corresponding to the input argument names */
-    std::vector<std::string> mShortNames;
+  /** Shortened versions of the names, corresponding to the input argument names */
+  std::vector<std::string> mShortNames;
 
-    /**
+  /**
      * The IC50 samples for credible interval calculations.
      * The first index is for channel (corresponding to mMetadataNames)
      * The second (inner) vector is for each random sample.
      */
-    std::vector<std::vector<double> > mSampledIc50s;
+  std::vector<std::vector<double>> mSampledIc50s;
 
-    /**
+  /**
      * The Hill coefficient samples for credible interval calculations.
      * The first index is for channel (corresponding to mMetadataNames)
      * The second (inner) vector is for each random sample.
      */
-    std::vector<std::vector<double> > mSampledHills;
+  std::vector<std::vector<double>> mSampledHills;
 
-    /** The inputted spread parameters - for pIC50 Logistic Distbn this is 'sigma' */
-    std::vector<double> mPic50Spreads;
+  /**
+     * The IC50 samples for credible interval calculations for drug two.
+     * The first index is for channel (corresponding to mMetadataNames)
+     * The second (inner) vector is for each random sample.
+     */
+  std::vector<std::vector<double>> mSampledIc50sDrugTwo;
 
-    /** The inputted spread parameters - for Hill Log-Logisitic this is '1/Beta' */
-    std::vector<double> mHillSpreads;
+  /**
+     * The Hill coefficient samples for credible interval calculations for drug two.
+     * The first index is for channel (corresponding to mMetadataNames)
+     * The second (inner) vector is for each random sample.
+     */
+  std::vector<std::vector<double>> mSampledHillsDrugTwo;
 
-    /** Whether there is a lookup table we can use for credible interval calculations */
-    bool mLookupTableAvailable;
+  /** The inputted spread parameters - for pIC50 Logistic Distbn this is 'sigma' */
+  std::vector<double> mPic50Spreads;
 
-    /** A pointer to a lookup table */
-    boost::shared_ptr<AbstractUntemplatedLookupTableGenerator> mpLookupTable;
+  /** The inputted spread parameters - for Hill Log-Logisitic this is '1/Beta' */
+  std::vector<double> mHillSpreads;
 
-    /**
+  /** The inputted spread parameters for second drug - for pIC50 Logistic Distbn this is 'sigma' */
+  std::vector<double> mPic50SpreadsDrugTwo;
+
+  /** The inputted spread parameters for second drug - for Hill Log-Logisitic this is '1/Beta' */
+  std::vector<double> mHillSpreadsDrugTwo;
+
+  /** A factor that specifies all the concentrations for drug two, by multiplying those of drug one.*/
+  double mDrugTwoConcentrationFactor;
+
+  /** Whether there is a lookup table we can use for credible interval calculations */
+  bool mLookupTableAvailable;
+
+  /** Whether there are two drugs being analysed */
+  bool mTwoDrugs;
+
+  /** A pointer to a lookup table */
+  boost::shared_ptr<AbstractUntemplatedLookupTableGenerator> mpLookupTable;
+
+  /**
      * A vector of pairs used to store the credible regions for APD90s,
      * calculated in the main method if a suitable Lookup Table is present.
      *
      * The outer vector loops over concentrations.
      * At each concentration we have a vector of values for the percentiles in #mPercentiles.
      */
-    std::vector<std::vector<double> > mApd90CredibleRegions;
+  std::vector<std::vector<double>> mApd90CredibleRegions;
 
-    /**
+  /**
      * A vector of pairs used to store the credible regions for QNet,
      * calculated in the main method if a suitable Lookup Table is present.
      *
      * The outer vector loops over concentrations.
      * At each concentration we have a vector of values for the percentiles in #mPercentiles.
      */
-    std::vector<std::vector<double> > mQNetCredibleRegions;
-    
-    /**
+  std::vector<std::vector<double>> mQNetCredibleRegions;
+
+  /**
      * The percentiles that the credible region APD90 values in #mApd90CredibleRegions
      * and #mQNetCredibleRegions correspond to.
      */
-    std::vector<double> mPercentiles;
+  std::vector<double> mPercentiles;
 
-    /**
+  /**
      * Whether we are running a Pharmacokinetics simulation with concentrations read from file.
      */
-    bool mConcentrationsFromFile;
+  bool mConcentrationsFromFile;
 
-    /** A data reader class to hold information read from the PKPD file */
-    boost::shared_ptr<PkpdDataStructure> mpPkpdReader;
+  /** A data reader class to hold information read from the PKPD file */
+  boost::shared_ptr<PkpdDataStructure> mpPkpdReader;
+
+  /**
+     * The default conductances for this model.
+     */
+  std::vector<double> mDefaultConductances;
 
 protected:
-    /** Whether the simulation completed successfully */
-    bool mComplete;
+  /** Whether the simulation completed successfully */
+  bool mComplete;
 
-    /** A vector used to store the APD90s calculated in the main method */
-    std::vector<double> mApd90s;
+  /** A vector used to store the APD90s calculated in the main method */
+  std::vector<double> mApd90s;
 
-    /** Whether we are running ORd-CiPA at 0.5Hz and are going to calculate QNet */
-    bool mCalculateQNet;
+  /** Whether we are running ORd-CiPA at 0.5Hz and are going to calculate QNet */
+  bool mCalculateQNet;
 
-    /** A vector used to store the QNets calculated in the main method */
-    std::vector<double> mQNets;
+  /** A vector used to store the QNets calculated in the main method */
+  std::vector<double> mQNets;
 
-    /** A vector used to store the Drug Concentrations at which APDs are calculated*/
-    std::vector<double> mConcs;
+  /** A vector used to store the Drug Concentrations at which APDs are calculated*/
+  std::vector<double> mConcs;
 
-    /** A file handler that points to the output directory */
-    boost::shared_ptr<OutputFileHandler> mpFileHandler;
+  /** A file handler that points to the output directory */
+  boost::shared_ptr<OutputFileHandler> mpFileHandler;
 
-    /** The program name, for messages, refreshed on each Run call. */
-    std::string mProgramName;
+  /** The program name, for messages, refreshed on each Run call. */
+  std::string mProgramName;
 
-    /** The output folder, refreshed on each Run call. */
-    std::string mOutputFolder;
+  /** The output folder, refreshed on each Run call. */
+  std::string mOutputFolder;
 
-    /** The model we're working with, refreshed on each Run call.*/
-    boost::shared_ptr<AbstractCvodeCell> mpModel;
+  /** The model we're working with, refreshed on each Run call.*/
+  boost::shared_ptr<AbstractCvodeCell> mpModel;
 
-    /**
+  /**
      * Read any input arguments corresponding to a particular channel and calculate the IC50 value (in uM)
      * from either raw IC50 (in uM) or pIC50 (in M).
      *
@@ -221,20 +264,22 @@ protected:
      * @param rHill  default Hill coefficients (usually -1), overwritten if argument is present.
      * @param rSaturation  default saturation levels (usually -1), overwritten if argument is present.
      * @param channelIdx  The index of the channel in mMetadataNames.
+     * @param secondDrug  Whether we read arguments for a second drug.
      */
-    void ReadInIC50HillAndSaturation(std::vector<double>& rIc50,
-                                     std::vector<double>& rHill,
-                                     std::vector<double>& rSaturation,
-                                     const unsigned channelIdx);
+  void ReadInIC50HillAndSaturation(std::vector<double> &rIc50,
+                                   std::vector<double> &rHill,
+                                   std::vector<double> &rSaturation,
+                                   const unsigned channelIdx,
+                                   bool secondDrug = false);
 
-    /**
+  /**
      * Write a log message to the messages.txt file that should be displayed alongside the results
      * (for example a warning that the cell failed to de/re-polarise at a certain concentration.)
      * @param rMessage  The message to write to file.
      */
-    void WriteMessageToFile(const std::string& rMessage);
+  void WriteMessageToFile(const std::string &rMessage);
 
-    /**
+  /**
      * Converts a set of intended metadata names into the ones we should use...
      *
      * e.g. if the model doesn't have a particular variant of a current, but does have a similar one.
@@ -243,23 +288,23 @@ protected:
      * @param pModel  the model
      * @param rMetadataNames  The metadata names we want to use, these may be changed.
      */
-    void ParameterWrapper(boost::shared_ptr<AbstractCvodeCell> pModel, std::vector<std::string>& rMetadataNames);
+  void ParameterWrapper(boost::shared_ptr<AbstractCvodeCell> pModel, std::vector<std::string> &rMetadataNames);
 
-    /**
+  /**
      * This is a helper method to print out the available arguments.
      *
      * @return the arguments ApPredict, TorsadePredict, PkpdInterpolator all take.
      */
-    static std::string PrintCommonArguments();
+  static std::string PrintCommonArguments();
 
-    /**
+  /**
      * A run method common to both ApPredict, TorsadePredict and PkpdInterpolator.
      *
      * Does the majority of the work!
      */
-    void CommonRunMethod();
+  void CommonRunMethod();
 
-    /**
+  /**
      * A method to look for / download and unarchive any lookup tables.
      *
      * This method contains the following logic:
@@ -269,50 +314,50 @@ protected:
      *     http://www.cs.ox.ac.uk/people/gary.mirams/files/<model and pacing specific table>.tgz
      *     is downloaded, unpacked, loaded and converted to binary for next time.
      */
-    void SetUpLookupTables();
+  void SetUpLookupTables();
 
 public:
-    /**
+  /**
      * This constructor just sets some defaults.
      */
-    ApPredictMethods();
+  ApPredictMethods();
 
-    /**
+  /**
      * Main running command.
      */
-    virtual void Run();
+  virtual void Run();
 
-    /**
+  /**
      * Set the output directory
      *
      * @param rOuputDirectory  The directory to write results to - WILL BE WIPED!
      */
-    void SetOutputDirectory(const std::string& rOuputDirectory);
+  void SetOutputDirectory(const std::string &rOuputDirectory);
 
-    /**
+  /**
      * This is a helper method to print out the available arguments.
      *
      * @return the arguments this class takes
      */
-    static std::string PrintArguments();
+  static std::string PrintArguments();
 
-    /**
+  /**
      * @return The concentrations at which an action potential was evaluated.
      */
-    std::vector<double> GetConcentrations(void);
+  std::vector<double> GetConcentrations(void);
 
-    /**
+  /**
      * @return The APD90s that were evaluated at the concentrations given by GetConcentrations().
      */
-    std::vector<double> GetApd90s(void);
+  std::vector<double> GetApd90s(void);
 
-    /**
+  /**
      * @return The credible regions at #mPercentiles for the APD90 predictions given by
      * #GetApd90s()
      */
-    std::vector<std::vector<double> > GetApd90CredibleRegions(void);
+  std::vector<std::vector<double>> GetApd90CredibleRegions(void);
 
-    /**
+  /**
      * @return The credible regions at #mPercentiles for the QNet predictions
      */
     std::vector<std::vector<double> > GetQNetCredibleRegions(void);
