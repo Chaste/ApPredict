@@ -138,7 +138,9 @@ void LookupTableLoader::DecideIdealTable()
     for (unsigned i = 0; i < command_line_names.size(); i++)
     {
         if (p_args->OptionExists("--ic50-" + command_line_names[i])
-            || p_args->OptionExists("--pic50-" + command_line_names[i]))
+            || p_args->OptionExists("--pic50-" + command_line_names[i])
+            || p_args->OptionExists("--ic50-drug-two-" + command_line_names[i])
+            || p_args->OptionExists("--pic50-drug-two-" + command_line_names[i]))
         {
             mIdealChannelsInvolved[i].second = true;
             ideal_lookup_table += "_" + mIdealChannelsInvolved[i].first;

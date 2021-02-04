@@ -64,7 +64,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * @param rVec  The vector to return the median of.
  */
-double MedianOfStdVectorDouble(const std::vector<double>& rVec)
+double MedianOfStdVectorDouble(const std::vector<double> &rVec)
 {
     assert(!rVec.empty());
 
@@ -115,8 +115,8 @@ std::string ApPredictMethods::PrintArguments()
 {
     std::string message = "\n**********************************************************************"
                           "*************************\n"
-                          "* ApPredict::Please provide some of these inputs:\n*\n"
-        + SetupModel::PrintArguments();
+                          "* ApPredict::Please provide some of these inputs:\n*\n" +
+                          SetupModel::PrintArguments();
     message += PrintCommonArguments();
     return message;
 }
@@ -174,6 +174,15 @@ std::string ApPredictMethods::PrintCommonArguments()
                           "*   Time(any units)<tab>Conc_trace_1(uM)<tab>Conc_trace_2(uM)<tab>...Conc_trace_N(uM)\n"
                           "*   on each row.\n"
                           "*\n"
+                          "* SECOND DRUG:\n"
+                          "* To run a second compound, with independent binding model\n"
+                          "* That is, total_block = block_drug_1 + block_drug_2 - block_drug_1*block_drug_2\n"
+                          "* Supply the following argument:\n"
+                          "* --drug-two-conc-factor  Factor to multiply the concentrations of drug 1 (specified as above)\n"
+                          "*                            to use when evaluating the block due to drug 2. \n"
+                          "* To specify drug properties (and UQ below) use the same format, but just before the channel name\n"
+                          "* insert 'drug-two-' into the option names, for instance:  --pic50-drug-two-herg \n"
+                          "*\n"
                           "* UNCERTAINTY QUANTIFICATION:\n"
                           "* --credible-intervals [x y z...] This flag must be present to do uncertainty calculations.\n"
                           "*                      It can optionally be followed by a specific list of percentiles that are required\n"
@@ -184,6 +193,9 @@ std::string ApPredictMethods::PrintCommonArguments()
                           "*   (for details of what these spread parameters are see 'sigma' and '1/beta' in Table 1 of:\n"
                           "*    Elkins et al. 2013  Journal of Pharmacological and Toxicological \n"
                           "*    Methods, 68(1), 112-122. doi: 10.1016/j.vascn.2013.04.007 )\n"
+                          "* --brute-force <N>  Make credible intervals with brute force forward simulations,\n"
+                          "*                    rather than using lookup tables, and do N samples each time.\n"
+                          "*\n"
                           "*\n"
                           "* OTHER OPTIONS:\n"
                           "* --no-downsampling  By default, we print downsampled output to create small action potential\n"
@@ -196,11 +208,17 @@ std::string ApPredictMethods::PrintCommonArguments()
 }
 
 void ApPredictMethods::ReadInIC50HillAndSaturation(
-    std::vector<double>& rIc50s, std::vector<double>& rHills,
-    std::vector<double>& rSaturations, const unsigned channelIdx)
+    std::vector<double> &rIc50s, std::vector<double> &rHills,
+    std::vector<double> &rSaturations,
+    const unsigned channelIdx,
+    bool secondDrug)
 {
-    const std::string channel = mShortNames[channelIdx];
-    CommandLineArguments* p_args = CommandLineArguments::Instance();
+    std::string channel = mShortNames[channelIdx];
+    if (secondDrug)
+    {
+        channel = "drug-two-" + channel;
+    }
+    CommandLineArguments *p_args = CommandLineArguments::Instance();
     bool read_ic50s = false;
     bool read_hills = false;
     bool read_saturations = false;
@@ -250,16 +268,12 @@ void ApPredictMethods::ReadInIC50HillAndSaturation(
         // But these must correspond to IC50s.
         if (!(rSaturations.size() == rIc50s.size()))
         {
-            EXCEPTION(
-                "If you enter Saturation levels, there must be one corresponding to "
-                "each [p]IC50 measurement.");
+            EXCEPTION("If you enter Saturation levels, there must be one corresponding to each [p]IC50 measurement.");
         }
 
         if (rSaturations.size() > 1u)
         {
-            WARNING(
-                "We haven't yet coded up inference with multiple saturation levels, "
-                "just going to use the median value.");
+            WARNING("We haven't yet coded up inference with multiple saturation levels, just going to use the median value.");
         }
         read_saturations = true;
     }
@@ -267,17 +281,29 @@ void ApPredictMethods::ReadInIC50HillAndSaturation(
     // Collect any spread parameter information that has been inputted.
     if (p_args->OptionExists("--pic50-spread-" + channel))
     {
-        mPic50Spreads[channelIdx] = p_args->GetDoubleCorrespondingToOption("--pic50-spread-" + channel);
+        if (secondDrug)
+        {
+            mPic50SpreadsDrugTwo[channelIdx] = p_args->GetDoubleCorrespondingToOption("--pic50-spread-" + channel);
+        }
+        else
+        {
+            mPic50Spreads[channelIdx] = p_args->GetDoubleCorrespondingToOption("--pic50-spread-" + channel);
+        }
     }
     if (p_args->OptionExists("--hill-spread-" + channel))
     {
-        mHillSpreads[channelIdx] = p_args->GetDoubleCorrespondingToOption("--hill-spread-" + channel);
+        if (secondDrug)
+        {
+            mHillSpreadsDrugTwo[channelIdx] = p_args->GetDoubleCorrespondingToOption("--hill-spread-" + channel);
+        }
+        else
+        {
+            mHillSpreads[channelIdx] = p_args->GetDoubleCorrespondingToOption("--hill-spread-" + channel);
+        }
     }
     if (p_args->OptionExists("--saturation-spread-" + channel))
     {
-        EXCEPTION(
-            "Haven't yet coded up a method to deal with the spread of values on "
-            "saturation levels.");
+        EXCEPTION("Haven't yet coded up a method to deal with the spread of values on saturation levels.");
     }
 
     if (mSuppressOutput)
@@ -330,13 +356,24 @@ void ApPredictMethods::ReadInIC50HillAndSaturation(
 void ApPredictMethods::ApplyDrugBlock(
     boost::shared_ptr<AbstractCvodeCell> pModel, unsigned channel_index,
     const double default_conductance, const double concentration,
-    const double iC50, const double hill, const double saturation)
+    const double iC50, const double hill, const double saturation,
+    double iC50DrugTwo, double hillDrugTwo, double saturationDrugTwo)
 {
     // Here we calculate the proportion of the different channels which are still
     // active
     // (at this concentration of this drug)
-    const double conductance_factor = AbstractDataStructure::CalculateConductanceFactor(concentration, iC50,
-                                                                                        hill, saturation);
+    double conductance_factor = AbstractDataStructure::CalculateConductanceFactor(concentration, iC50,
+                                                                                  hill, saturation);
+
+    if (mTwoDrugs)
+    {
+        double conductance_factor_2 = AbstractDataStructure::CalculateConductanceFactor(concentration * mDrugTwoConcentrationFactor, iC50DrugTwo, hillDrugTwo, saturationDrugTwo);
+        // This is the important line for combining two drug blocks.
+        // Uses a completely independent binding model
+        // unblocked = unblocked_by_drug_1 AND unblocked_by_drug_2
+        // N.B. if this is changed, then also change it in the InterpolateFromLookupTableForThisConcentration() method.
+        conductance_factor *= conductance_factor_2;
+    }
 
     // Some screen output for info.
     if (!mSuppressOutput)
@@ -373,12 +410,14 @@ void ApPredictMethods::ApplyDrugBlock(
 }
 
 ApPredictMethods::ApPredictMethods()
-        : AbstractActionPotentialMethod(),
-          mLookupTableAvailable(false),
-          mPercentiles(std::vector<double>{ 2.5, 97.5 }),
-          mConcentrationsFromFile(false),
-          mComplete(false),
-          mCalculateQNet(false)
+    : AbstractActionPotentialMethod(),
+      mDrugTwoConcentrationFactor(DOUBLE_UNSET),
+      mLookupTableAvailable(false),
+      mTwoDrugs(false),
+      mPercentiles(std::vector<double>{2.5, 97.5}),
+      mConcentrationsFromFile(false),
+      mComplete(false),
+      mCalculateQNet(false)
 {
     // Here we list the possible drug blocks that can be applied with ApPredict
     mMetadataNames.push_back("membrane_fast_sodium_current_conductance");
@@ -407,6 +446,8 @@ ApPredictMethods::ApPredictMethods()
     {
         mPic50Spreads.push_back(DOUBLE_UNSET);
         mHillSpreads.push_back(DOUBLE_UNSET);
+        mPic50SpreadsDrugTwo.push_back(DOUBLE_UNSET);
+        mHillSpreadsDrugTwo.push_back(DOUBLE_UNSET);
     }
 
     // There must be a 1:1 mapping between these...
@@ -425,48 +466,58 @@ ApPredictMethods::ApPredictMethods()
     {
         mOutputFolder = "ApPredict_output/";
     }
+
+    if (CommandLineArguments::Instance()->OptionExists("--drug-two-conc-factor"))
+    {
+        mTwoDrugs = true;
+        mDrugTwoConcentrationFactor = CommandLineArguments::Instance()->GetDoubleCorrespondingToOption("--drug-two-conc-factor");
+    }
 }
 
 void ApPredictMethods::SetUpLookupTables()
 {
-    CommandLineArguments* p_args = CommandLineArguments::Instance();
+    CommandLineArguments *p_args = CommandLineArguments::Instance();
 
     if (!p_args->OptionExists("--credible-intervals"))
     {
         // The flag mLookupTableAvailable remains false, and we carry on as normal.
         return;
     }
-    else
+
+    if (p_args->GetNumberOfArgumentsForOption("--credible-intervals") > 0)
     {
-        if (p_args->GetNumberOfArgumentsForOption("--credible-intervals") > 0)
+        // Get list of percentiles to use.
+        std::vector<double> percentile_ranges = p_args->GetDoublesCorrespondingToOption("--credible-intervals");
+        mPercentiles.clear();
+        for (unsigned i = 0; i < percentile_ranges.size(); i++)
         {
-            // Get list of percentiles to use.
-            std::vector<double> percentile_ranges = p_args->GetDoublesCorrespondingToOption("--credible-intervals");
-            mPercentiles.clear();
-            for (unsigned i = 0; i < percentile_ranges.size(); i++)
+            if (percentile_ranges[i] <= 0 || percentile_ranges[i] >= 100)
             {
-                if (percentile_ranges[i] <= 0 || percentile_ranges[i] >= 100)
-                {
-                    EXCEPTION(
-                        "'--credible-intervals' arguments should be given as widths of "
-                        "credible interval in percentages. For instance an argument of "
-                        "'--credible-intervals 90' will result in 5th and 95th "
-                        "percentiles being reported. You specified '"
-                        << percentile_ranges[i] << "%' but this number should be more "
-                                                   "than zero and less than 100.");
-                }
-                double remainder_in_tails = 100 - percentile_ranges[i];
-                mPercentiles.push_back(0.5 * remainder_in_tails);
-                mPercentiles.push_back(100 - 0.5 * remainder_in_tails);
+                EXCEPTION(
+                    "'--credible-intervals' arguments should be given as widths of "
+                    "credible interval in percentages. For instance an argument of "
+                    "'--credible-intervals 90' will result in 5th and 95th "
+                    "percentiles being reported. You specified '"
+                    << percentile_ranges[i] << "%' but this number should be more "
+                                               "than zero and less than 100.");
             }
-            std::sort(mPercentiles.begin(), mPercentiles.end());
+            double remainder_in_tails = 100 - percentile_ranges[i];
+            mPercentiles.push_back(0.5 * remainder_in_tails);
+            mPercentiles.push_back(100 - 0.5 * remainder_in_tails);
         }
+        std::sort(mPercentiles.begin(), mPercentiles.end());
     }
 
     LookupTableLoader lookup_loader(mpModel->GetSystemName(), this->mHertz);
     std::string ideal_table = lookup_loader.GetIdealTable();
     std::string best_table = lookup_loader.GetBestAvailableTable();
-    if (lookup_loader.IsLookupTableAvailable())
+
+    if (p_args->OptionExists("--brute-force"))
+    {
+        mpLookupTable = nullptr;
+        mLookupTableAvailable = true;
+    }
+    else if (lookup_loader.IsLookupTableAvailable())
     {
         if (best_table != "" && best_table != ideal_table)
         {
@@ -484,8 +535,9 @@ void ApPredictMethods::SetUpLookupTables()
 }
 
 void ApPredictMethods::CalculateDoseResponseParameterSamples(
-    const std::vector<std::vector<double> >& rIC50s,
-    const std::vector<std::vector<double> >& rHills)
+    const std::vector<std::vector<double>> &rIC50s,
+    const std::vector<std::vector<double>> &rHills,
+    bool secondDrug)
 {
     if (!mLookupTableAvailable)
     {
@@ -493,18 +545,38 @@ void ApPredictMethods::CalculateDoseResponseParameterSamples(
     }
 
     /*
-     *Prepare an inferred set of IC50s and Hill coefficients
-     *for use with the Lookup Table and credible interval calculations.
+     * Prepare an inferred set of IC50s and Hill coefficients
+     * for use with the Lookup Table and credible interval calculations.
      */
-    mSampledIc50s.resize(mMetadataNames.size());
-    mSampledHills.resize(mMetadataNames.size());
+    std::vector<std::vector<double>> sampled_ic50s(mMetadataNames.size());
+    std::vector<std::vector<double>> sampled_hills(mMetadataNames.size());
+    std::vector<double> pic50_spreads;
+    std::vector<double> hill_spreads;
 
-    const unsigned num_samples = 1000u;
+    if (!secondDrug)
+    {
+        pic50_spreads = mPic50Spreads;
+        hill_spreads = mHillSpreads;
+    }
+    else
+    {
+        pic50_spreads = mPic50SpreadsDrugTwo;
+        hill_spreads = mHillSpreadsDrugTwo;
+    }
+
+    unsigned num_samples;
+    if (CommandLineArguments::Instance()->OptionExists("--brute-force"))
+    {
+        num_samples = CommandLineArguments::Instance()->GetUnsignedCorrespondingToOption("--brute-force");
+    }
+    else
+    {
+        num_samples = 1000u;
+    }
 
     // Work out vectors of inferred IC50 and Hills
     // Apply drug block on each channel
-    for (unsigned channel_idx = 0; channel_idx < mMetadataNames.size();
-         channel_idx++)
+    for (unsigned channel_idx = 0; channel_idx < mMetadataNames.size(); channel_idx++)
     {
         // First just decide whether there is 'no effect here'.
         assert(rIC50s[channel_idx].size() >= 1u);
@@ -513,8 +585,8 @@ void ApPredictMethods::CalculateDoseResponseParameterSamples(
             // No effect here, so just map that out to all random runs
             for (unsigned i = 0; i < num_samples; i++)
             {
-                mSampledIc50s[channel_idx].push_back(-1.0);
-                mSampledHills[channel_idx].push_back(-1.0);
+                sampled_ic50s[channel_idx].push_back(-1.0);
+                sampled_hills[channel_idx].push_back(-1.0);
             }
             // To next channel
             continue;
@@ -524,17 +596,20 @@ void ApPredictMethods::CalculateDoseResponseParameterSamples(
         std::vector<double> pIC50s;
         for (unsigned i = 0; i < rIC50s[channel_idx].size(); i++)
         {
-            pIC50s.push_back(
-                AbstractDataStructure::ConvertIc50ToPic50(rIC50s[channel_idx][i]));
+            pIC50s.push_back(AbstractDataStructure::ConvertIc50ToPic50(rIC50s[channel_idx][i]));
         }
 
         // Retrieve the Pic50 spread from the command line arguments.
-        if (mPic50Spreads[channel_idx] == DOUBLE_UNSET)
+        if (pic50_spreads[channel_idx] == DOUBLE_UNSET)
         {
-            EXCEPTION("No argument --pic50-spread-"
-                      << mShortNames[channel_idx]
-                      << " has been provided. Cannot calculate credible intervals "
-                         "without this.");
+            std::stringstream message;
+            message << "No argument --pic50-spread-";
+            if (secondDrug)
+                message << "drug-two-";
+            message << mShortNames[channel_idx]
+                    << " has been provided. Cannot calculate credible intervals "
+                       "without this.";
+            EXCEPTION(message.str());
         }
 
         std::cout << "Inferring the spread of dose-response parameters from your '" << mShortNames[channel_idx]
@@ -542,21 +617,18 @@ void ApPredictMethods::CalculateDoseResponseParameterSamples(
         // Infer pIC50 spread.
         BayesianInferer ic50_inferer(PIC50);
         ic50_inferer.SetObservedData(pIC50s);
-        ic50_inferer.SetSpreadOfUnderlyingDistribution(mPic50Spreads[channel_idx]);
+        ic50_inferer.SetSpreadOfUnderlyingDistribution(pic50_spreads[channel_idx]);
         ic50_inferer.PerformInference();
 
         std::vector<double> inferred_pic50s = ic50_inferer.GetSampleMedianValue(num_samples); // Get 1000 inferred pIC50s
         for (unsigned i = 0; i < num_samples; i++)
         {
             // Convert pIC50 back to IC50 and store it.
-            mSampledIc50s[channel_idx].push_back(
-                AbstractDataStructure::ConvertPic50ToIc50(inferred_pic50s[i]));
+            sampled_ic50s[channel_idx].push_back(AbstractDataStructure::ConvertPic50ToIc50(inferred_pic50s[i]));
         }
 
-        // If all Hill coefficient entries are positive, then we will use those for
-        // samples too.
-        // This long-winded bit of code is just counting how many are positive (must
-        // be a better way!).
+        // If all Hill coefficient entries are positive, then we will use those for samples too.
+        // This long-winded bit of code is just counting how many are positive (must be a better way!).
         bool all_hills_positive = false;
         unsigned temp_counter = 0u;
         for (unsigned i = 0; i < rHills[channel_idx].size(); i++)
@@ -576,25 +648,29 @@ void ApPredictMethods::CalculateDoseResponseParameterSamples(
             // Retrieve Hill spread parameters from stored Command line args.
             if (mHillSpreads[channel_idx] == DOUBLE_UNSET)
             {
-                WARN_ONCE_ONLY("No argument --hill-spread-"
-                               << mShortNames[channel_idx]
-                               << " has been provided. "
-                                  "Approximating credible intervals without Hill "
-                                  "spread info, but you will get better answers with "
-                                  "it.");
+                std::stringstream message;
+                message << "No argument --hill-spread-";
+                if (secondDrug)
+                    message << "drug-two-";
+                message << mShortNames[channel_idx]
+                        << " has been provided. "
+                           "Approximating credible intervals without Hill "
+                           "spread info, but you will get better answers with "
+                           "it.";
+                WARN_ONCE_ONLY(message.str());
 
                 // If we can't guess the hill spread, then just use mean Hill that we
                 // have.
                 std::vector<double> hills_this_channel = rHills[channel_idx];
                 double mean_hill = std::accumulate(hills_this_channel.begin(),
-                                                   hills_this_channel.end(), 0.0)
-                    / hills_this_channel.size();
+                                                   hills_this_channel.end(), 0.0) /
+                                   hills_this_channel.size();
 
                 for (unsigned i = 0; i < num_samples; i++)
                 {
                     // We aren't going to attempt to do inference on Hills, just IC50s,
                     // push back mean Hill.
-                    mSampledHills[channel_idx].push_back(mean_hill);
+                    sampled_hills[channel_idx].push_back(mean_hill);
                 }
             }
             else
@@ -604,10 +680,10 @@ void ApPredictMethods::CalculateDoseResponseParameterSamples(
                 hill_inferer.SetObservedData(rHills[channel_idx]);
                 // This works with the Beta parameter, not the 1/Beta. So do 1/1/Beta to
                 // get Beta back!
-                hill_inferer.SetSpreadOfUnderlyingDistribution(1.0 / mHillSpreads[channel_idx]);
+                hill_inferer.SetSpreadOfUnderlyingDistribution(1.0 / hill_spreads[channel_idx]);
                 hill_inferer.PerformInference();
 
-                mSampledHills[channel_idx] = hill_inferer.GetSampleMedianValue(num_samples); // Get 1000 inferred Hills
+                sampled_hills[channel_idx] = hill_inferer.GetSampleMedianValue(num_samples); // Get 1000 inferred Hills
             }
         }
         else
@@ -619,16 +695,28 @@ void ApPredictMethods::CalculateDoseResponseParameterSamples(
             {
                 // We aren't going to attempt to do inference on Hills,
                 // just push back 'no measurement' for now.
-                mSampledHills[channel_idx].push_back(-1.0);
+                sampled_hills[channel_idx].push_back(-1.0);
             }
         }
         std::cout << "done!" << std::endl;
     }
+
+    if (secondDrug)
+    {
+        mSampledIc50sDrugTwo = sampled_ic50s;
+        mSampledHillsDrugTwo = sampled_hills;
+    }
+    else
+    {
+        mSampledIc50s = sampled_ic50s;
+        mSampledHills = sampled_hills;
+    }
 }
 
-void ApPredictMethods::InterpolateFromLookupTableForThisConcentration(
+void ApPredictMethods::GetCredibleIntervalSamplesForThisConcentration(
     const unsigned concIndex,
-    const std::vector<double>& rMedianSaturationLevels)
+    const std::vector<double> &rMedianSaturationLevels,
+    const std::vector<double> &rMedianSaturationLevelsDrugTwo)
 {
     // If we don't have a lookup table, we aren't going to do confidence
     // intervals.
@@ -636,17 +724,14 @@ void ApPredictMethods::InterpolateFromLookupTableForThisConcentration(
     {
         return;
     }
-
-    const unsigned table_dim = mpLookupTable->GetDimension();
+    bool brute_force = CommandLineArguments::Instance()->OptionExists("--brute-force");
 
     std::vector<double> apd90_credible_intervals(mPercentiles.size());
     std::vector<double> qnet_credible_intervals(mPercentiles.size());
 
     // If this is the first concentration (control) say the percent change must be
-    // zero
-    // or otherwise a small interpolation error will result
-    // (from potentially running to different steady state with --pacing-max-time
-    // <x> ).
+    // zero or otherwise a small interpolation error will result
+    // (from potentially running to different steady state with --pacing-max-time <x> ).
     if (concIndex == 0u)
     {
         for (unsigned i = 0; i < mPercentiles.size(); i++)
@@ -665,46 +750,111 @@ void ApPredictMethods::InterpolateFromLookupTableForThisConcentration(
         return;
     }
 
-    // The first channel entry in mSampledIc50s will give us the number of random
-    // samples.
+    // The first channel entry in mSampledIc50s will give us the number of random samples.
     const unsigned num_samples = mSampledIc50s[0].size();
+    assert(mMetadataNames.size() == mSampledIc50s.size());
 
-    // This slightly complicated loop is just seeing which entry in
-    // mSampledIC50/Hills corresponds to the ones that we want,
-    // so we've listed the ones we want above and search for them in mShortNames here.
-    std::map<unsigned, unsigned> map_to_metadata_idx;
-    std::vector<std::string> parameters_in_table = mpLookupTable->GetParameterNames();
-    for (unsigned channel_idx = 0; channel_idx < table_dim; channel_idx++)
+    std::vector<std::vector<double>> predictions;
+
+    if (!brute_force)
     {
-        for (unsigned i = 0; i < mMetadataNames.size(); i++)
+        // This slightly complicated loop is just seeing which entry in
+        // mSampledIC50/Hills corresponds to the ones that we want,
+        // so we've listed the ones we want above and search for them in mShortNames here.
+        std::map<unsigned, unsigned> map_to_metadata_idx;
+        std::vector<std::string> parameters_in_table = mpLookupTable->GetParameterNames();
+        const unsigned table_dim = mpLookupTable->GetDimension();
+        for (unsigned channel_idx = 0; channel_idx < table_dim; channel_idx++)
         {
-            if (mMetadataNames[i] == parameters_in_table[channel_idx])
+            for (unsigned i = 0; i < mMetadataNames.size(); i++)
             {
-                map_to_metadata_idx[channel_idx] = i;
-                break;
+                if (mMetadataNames[i] == parameters_in_table[channel_idx])
+                {
+                    map_to_metadata_idx[channel_idx] = i;
+                    break;
+                }
             }
         }
-    }
-    assert(map_to_metadata_idx.size() == table_dim);
 
-    std::cout << "Calculating confidence intervals from Lookup Table...";
-    std::vector<std::vector<double> > sampling_points;
-    for (unsigned rand_idx = 0; rand_idx < num_samples; rand_idx++)
-    {
-        std::vector<double> sample_required_at(table_dim);
-        for (unsigned i = 0; i < table_dim; i++)
+        std::vector<std::vector<double>> sampling_points;
+        for (unsigned rand_idx = 0; rand_idx < num_samples; rand_idx++)
         {
-            sample_required_at[i] = AbstractDataStructure::CalculateConductanceFactor(
-                mConcs[concIndex], mSampledIc50s[map_to_metadata_idx[i]][rand_idx],
-                mSampledHills[map_to_metadata_idx[i]][rand_idx],
-                rMedianSaturationLevels[map_to_metadata_idx[i]]);
+            std::vector<double> sample_required_at(table_dim);
+            for (unsigned i = 0; i < table_dim; i++)
+            {
+                sample_required_at[i] = AbstractDataStructure::CalculateConductanceFactor(
+                    mConcs[concIndex], mSampledIc50s[map_to_metadata_idx[i]][rand_idx],
+                    mSampledHills[map_to_metadata_idx[i]][rand_idx],
+                    rMedianSaturationLevels[map_to_metadata_idx[i]]);
+
+                if (mTwoDrugs) // for when there's a lookup table rather than brute force...
+                {
+                    const double second_conductance_factor = AbstractDataStructure::CalculateConductanceFactor(
+                        mConcs[concIndex] * mDrugTwoConcentrationFactor, mSampledIc50sDrugTwo[map_to_metadata_idx[i]][rand_idx],
+                        mSampledHillsDrugTwo[map_to_metadata_idx[i]][rand_idx],
+                        rMedianSaturationLevelsDrugTwo[map_to_metadata_idx[i]]);
+                    // A second implementation of this, which isn't ideal - see also the ApplyDrugBlock method.
+                    sample_required_at[i] *= second_conductance_factor;
+                }
+            }
+            sampling_points.push_back(sample_required_at);
         }
-        sampling_points.push_back(sample_required_at);
+        std::cout << "Calculating confidence intervals from Lookup Table...";
+        predictions = mpLookupTable->Interpolate(sampling_points);
+    }
+    // A section to deal with brute force sampling instead of lookup table interpolation.
+    else
+    {
+        std::cout << "Calculating confidence intervals using brute force sampling..." << std::endl;
+        bool suppressing_output = mSuppressOutput;
+        mSuppressOutput = true;
+        std::vector<double> state_vars = mpModel->GetStdVecStateVariables();
+
+        for (unsigned rand_idx = 0; rand_idx < num_samples; rand_idx++)
+        {
+
+            std::cout << "Sample " << rand_idx + 1 << "/" << num_samples << std::endl;
+
+            // Apply drug block on each channel
+            for (unsigned channel_idx = 0; channel_idx < mMetadataNames.size(); channel_idx++)
+            {
+                if (mTwoDrugs)
+                {
+                    ApplyDrugBlock(mpModel, channel_idx, mDefaultConductances[channel_idx],
+                                   mConcs[concIndex],
+                                   mSampledIc50s[channel_idx][rand_idx], mSampledHills[channel_idx][rand_idx], rMedianSaturationLevels[channel_idx],
+                                   mSampledIc50sDrugTwo[channel_idx][rand_idx], mSampledHillsDrugTwo[channel_idx][rand_idx], rMedianSaturationLevelsDrugTwo[channel_idx]);
+                }
+                else
+                {
+                    ApplyDrugBlock(mpModel, channel_idx, mDefaultConductances[channel_idx],
+                                   mConcs[concIndex],
+                                   mSampledIc50s[channel_idx][rand_idx],
+                                   mSampledHills[channel_idx][rand_idx],
+                                   rMedianSaturationLevels[channel_idx]);
+                }
+            }
+
+            double apd90, apd50, upstroke, peak, peak_time, ca_max, ca_min;
+            OdeSolution solution = SteadyStatePacingExperiment(mpModel, apd90, apd50, upstroke, peak, peak_time, ca_max, ca_min,
+                                                               0.1 /*ms printing timestep*/, mConcs[concIndex]);
+
+            std::vector<double> qois;
+            qois.push_back(apd90);
+            if (mCalculateQNet)
+            {
+                CipaQNetCalculator calculator(mpModel);
+                qois.push_back(calculator.ComputeQNet());
+            }
+
+            predictions.push_back(qois);
+
+            // Reset state variables (would be closer to steady state if we didn't but here at least eqi-distant each sample)
+            mpModel->SetStateVariables(state_vars);
+        }
+        mSuppressOutput = suppressing_output;
     }
 
-    std::vector<std::vector<double> > predictions = mpLookupTable->Interpolate(sampling_points);
-
-    // Expecting this line to fail when we try to use ORdCiPA 0.5Hz table, needs refining...
     assert(predictions.size() == mSampledIc50s[0].size());
 
     /*
@@ -718,13 +868,13 @@ void ApPredictMethods::InterpolateFromLookupTableForThisConcentration(
     {
         // apd_50_predictions.push_back(predictions[rand_idx][1]);
         apd_90_predictions.push_back(predictions[rand_idx][0]);
-        if (mCalculateQNet) 
+        if (mCalculateQNet)
         {
             qnet_predictions.push_back(predictions[rand_idx][1]);
         }
     }
     std::sort(apd_90_predictions.begin(), apd_90_predictions.end());
-    if (mCalculateQNet) 
+    if (mCalculateQNet)
     {
         std::sort(qnet_predictions.begin(), qnet_predictions.end());
     }
@@ -740,6 +890,12 @@ void ApPredictMethods::InterpolateFromLookupTableForThisConcentration(
         else
         {
             index_in_sorted_prediction_vector = ceil(mPercentiles[i] / 100.0 * (double)(num_samples));
+            // If we have a low number of samples or very high percentile requested,
+            // then the formula above could 'hit the end' in which case we have to take the sample below.
+            if (index_in_sorted_prediction_vector == num_samples)
+            {
+                index_in_sorted_prediction_vector--;
+            }
         }
         apd90_credible_intervals[i] = apd_90_predictions[index_in_sorted_prediction_vector];
         if (mCalculateQNet)
@@ -773,9 +929,13 @@ void ApPredictMethods::Run()
 void ApPredictMethods::CommonRunMethod()
 {
     // Arguments that take default values
-    std::vector<std::vector<double> > IC50s;
-    std::vector<std::vector<double> > hills;
-    std::vector<std::vector<double> > saturations;
+    std::vector<std::vector<double>> IC50s;
+    std::vector<std::vector<double>> hills;
+    std::vector<std::vector<double>> saturations;
+
+    std::vector<std::vector<double>> IC50s_drug_two;
+    std::vector<std::vector<double>> hills_drug_two;
+    std::vector<std::vector<double>> saturations_drug_two;
 
     std::vector<double> unset;
     unset.push_back(-1); // -1 is our code for 'unset'.
@@ -786,6 +946,13 @@ void ApPredictMethods::CommonRunMethod()
         IC50s.push_back(unset);
         hills.push_back(unset);
         saturations.push_back(unset);
+
+        if (mTwoDrugs)
+        {
+            IC50s_drug_two.push_back(unset);
+            hills_drug_two.push_back(unset);
+            saturations_drug_two.push_back(unset);
+        }
     }
 
     if (CommandLineArguments::Instance()->OptionExists("--pkpd-file"))
@@ -841,14 +1008,18 @@ void ApPredictMethods::CommonRunMethod()
     // and warns if it does this.
     ParameterWrapper(mpModel, mMetadataNames);
 
-    // Use a helper method to read in IC50 from either --ic50 or --pic50
-    // arguments.
-    // Note this is now in micro Molar (1x10^-6 Molar) as per most Pharma use.
-    for (unsigned channel_idx = 0; channel_idx < mMetadataNames.size();
-         channel_idx++)
+    // Use a helper method to read in IC50 from either --ic50 or --pic50 arguments.
+    // Note IC50 is now in micro Molar (1x10^-6 Molar) as per most Pharma use.
+    for (unsigned channel_idx = 0; channel_idx < mMetadataNames.size(); channel_idx++)
     {
         ReadInIC50HillAndSaturation(IC50s[channel_idx], hills[channel_idx],
                                     saturations[channel_idx], channel_idx);
+
+        if (mTwoDrugs)
+        {
+            ReadInIC50HillAndSaturation(IC50s_drug_two[channel_idx], hills_drug_two[channel_idx],
+                                        saturations_drug_two[channel_idx], channel_idx, true);
+        }
     }
 
     if (!mSuppressOutput)
@@ -865,9 +1036,8 @@ void ApPredictMethods::CommonRunMethod()
     // We record the default parameter values that the model uses.
     // All the drug block models should include these parameter labels
     // But you only get a warning if not, so check the warnings...
-    std::vector<double> default_conductances;
-    for (unsigned channel_idx = 0; channel_idx < mMetadataNames.size();
-         channel_idx++)
+    mDefaultConductances.reserve(mMetadataNames.size());
+    for (unsigned channel_idx = 0; channel_idx < mMetadataNames.size(); channel_idx++)
     {
         double default_value = 1.0;
         if (mpModel->HasParameter(mMetadataNames[channel_idx]))
@@ -878,7 +1048,7 @@ void ApPredictMethods::CommonRunMethod()
         {
             default_value = mpModel->GetParameter(mMetadataNames[channel_idx] + "_scaling_factor");
         }
-        default_conductances.push_back(default_value);
+        mDefaultConductances.push_back(default_value);
     }
 
     // Work out the best voltage threshold to use for this model
@@ -891,6 +1061,10 @@ void ApPredictMethods::CommonRunMethod()
     }
 
     CalculateDoseResponseParameterSamples(IC50s, hills);
+    if (mTwoDrugs)
+    {
+        CalculateDoseResponseParameterSamples(IC50s_drug_two, hills_drug_two, true);
+    }
 
     boost::shared_ptr<const AbstractOdeSystemInformation> p_ode_info = mpModel->GetSystemInformation();
     std::string model_name = mpModel->GetSystemName();
@@ -903,7 +1077,14 @@ void ApPredictMethods::CommonRunMethod()
     {
         mCalculateQNet = true;
         q_net_results_file = mpFileHandler->OpenOutputFile("q_net.txt");
-        *q_net_results_file << "Concentration(uM)\t";
+        if (mTwoDrugs) 
+        {
+            *q_net_results_file << "ConcentrationDrug1(uM)\tConcentrationDrug2(uM)\t";
+        }
+        else
+        {
+            *q_net_results_file << "Concentration(uM)\t";
+        }
     }
 
     // Print out a progress file for monitoring purposes.
@@ -914,8 +1095,15 @@ void ApPredictMethods::CommonRunMethod()
     out_stream steady_voltage_results_file_html = mpFileHandler->OpenOutputFile("voltage_results.html");
 
     out_stream steady_voltage_results_file = mpFileHandler->OpenOutputFile("voltage_results.dat");
-    *steady_voltage_results_file << "Concentration(uM)\tUpstrokeVelocity(mV/"
-                                    "ms)\tPeakVm(mV)\tAPD50(ms)\tAPD90(ms)\t";
+    if (mTwoDrugs)
+    {
+        *steady_voltage_results_file << "Concentration_Drug_1(uM)\tConcentration_Drug_2(uM)\t";
+    }
+    else
+    {
+        *steady_voltage_results_file << "Concentration(uM)\t";
+    }
+    *steady_voltage_results_file << "UpstrokeVelocity(mV/ms)\tPeakVm(mV)\tAPD50(ms)\tAPD90(ms)\t";
 
     // All this is about writing out a nice header line.
     if (mLookupTableAvailable)
@@ -983,8 +1171,9 @@ void ApPredictMethods::CommonRunMethod()
     *steady_voltage_results_file_html
         << "<table width=\"60%\" style=\"background-color:white\" border=\"1\" "
            "cellpadding=\"2\" cellspacing=\"0\">\n";
-    *steady_voltage_results_file_html << "<tr><td>Concentration "
-                                         "(uM)</td><td>Upstroke Velocity "
+    *steady_voltage_results_file_html << "<tr><td>Concentration";
+    if (mTwoDrugs) *steady_voltage_results_file_html << " Drug 1 (uM)</td><td>Concentration Drug 2 ";
+    *steady_voltage_results_file_html << " (uM)</td><td>Upstroke Velocity "
                                          "(mV/ms)</td><td>Peak membrane voltage "
                                          "(mV)</td><td>APD50 (ms)</td><td>APD90 "
                                          "(ms)</td><td>Change in APD90 "
@@ -994,11 +1183,15 @@ void ApPredictMethods::CommonRunMethod()
      * Work out the median IC50, Hill and saturation to use if more than one were
      * provided
      */
-    std::vector<double> median_ic50; // vector is over channel indices
-    std::vector<double> median_hill; //               ""
+    std::vector<double> median_ic50;       // vector is over channel indices
+    std::vector<double> median_hill;       //               ""
     std::vector<double> median_saturation; //               ""
-    for (unsigned channel_idx = 0; channel_idx < mMetadataNames.size();
-         channel_idx++)
+
+    std::vector<double> median_ic50_drug_two;       // vector is over channel indices
+    std::vector<double> median_hill_drug_two;       //               ""
+    std::vector<double> median_saturation_drug_two; //               ""
+
+    for (unsigned channel_idx = 0; channel_idx < mMetadataNames.size(); channel_idx++)
     {
         // If we only have one IC50 and Hill value specified, then just use them and
         // move on.
@@ -1007,6 +1200,13 @@ void ApPredictMethods::CommonRunMethod()
             median_ic50.push_back(IC50s[channel_idx][0]);
             median_hill.push_back(hills[channel_idx][0]);
             median_saturation.push_back(saturations[channel_idx][0]);
+
+            if (mTwoDrugs && IC50s_drug_two[channel_idx].size() == 1u && hills_drug_two[channel_idx].size() == 1u)
+            {
+                median_ic50_drug_two.push_back(IC50s_drug_two[channel_idx][0]);
+                median_hill_drug_two.push_back(hills_drug_two[channel_idx][0]);
+                median_saturation_drug_two.push_back(saturations_drug_two[channel_idx][0]);
+            }
         }
         else
         {
@@ -1015,6 +1215,7 @@ void ApPredictMethods::CommonRunMethod()
             // inferred distribution samples
             //    This should ensure that the predicted line is at the 50th percentile
             //    of the credible interval predictions.
+            // else
             // 2. We know nothing about the spread, and should just take the median of
             // the multiple values.
             if (mLookupTableAvailable)
@@ -1024,11 +1225,14 @@ void ApPredictMethods::CommonRunMethod()
                 // and do the simulation with those. Note that the median will give the
                 // same value
                 // whether we use IC50s or pIC50s, whereas the mean is skewed...
-                median_ic50.push_back(
-                    MedianOfStdVectorDouble(mSampledIc50s[channel_idx]));
-                median_hill.push_back(
-                    MedianOfStdVectorDouble(mSampledHills[channel_idx]));
+                median_ic50.push_back(MedianOfStdVectorDouble(mSampledIc50s[channel_idx]));
+                median_hill.push_back(MedianOfStdVectorDouble(mSampledHills[channel_idx]));
 
+                if (mTwoDrugs)
+                {
+                    median_ic50_drug_two.push_back(MedianOfStdVectorDouble(mSampledIc50sDrugTwo[channel_idx]));
+                    median_hill_drug_two.push_back(MedianOfStdVectorDouble(mSampledHillsDrugTwo[channel_idx]));
+                }
                 // TODO: Clever way to do inference on saturation levels too. No data
                 // analysed to work out
                 // their distributions yet, so we'll just use the median for now as
@@ -1043,18 +1247,31 @@ void ApPredictMethods::CommonRunMethod()
                 std::vector<double> pIC50s;
                 for (unsigned i = 0; i < IC50s[channel_idx].size(); i++)
                 {
-                    pIC50s.push_back(
-                        AbstractDataStructure::ConvertIc50ToPic50(IC50s[channel_idx][i]));
+                    pIC50s.push_back(AbstractDataStructure::ConvertIc50ToPic50(IC50s[channel_idx][i]));
                 }
-                median_ic50.push_back(AbstractDataStructure::ConvertPic50ToIc50(
-                    MedianOfStdVectorDouble(pIC50s)));
+                median_ic50.push_back(AbstractDataStructure::ConvertPic50ToIc50(MedianOfStdVectorDouble(pIC50s)));
                 median_hill.push_back(MedianOfStdVectorDouble(hills[channel_idx]));
+
+                if (mTwoDrugs)
+                {
+                    std::vector<double> pIC50s;
+                    for (unsigned i = 0; i < IC50s_drug_two[channel_idx].size(); i++)
+                    {
+                        pIC50s.push_back(AbstractDataStructure::ConvertIc50ToPic50(IC50s_drug_two[channel_idx][i]));
+                    }
+                    median_ic50_drug_two.push_back(AbstractDataStructure::ConvertPic50ToIc50(MedianOfStdVectorDouble(pIC50s)));
+                    median_hill_drug_two.push_back(MedianOfStdVectorDouble(hills_drug_two[channel_idx]));
+                }
             }
 
             // We've no clever way of dealing with this yet, just take median of
             // saturation levels and use that all the time.
-            median_saturation.push_back(
-                MedianOfStdVectorDouble(saturations[channel_idx]));
+            median_saturation.push_back(MedianOfStdVectorDouble(saturations[channel_idx]));
+
+            if (mTwoDrugs)
+            {
+                median_saturation_drug_two.push_back(MedianOfStdVectorDouble(saturations_drug_two[channel_idx]));
+            }
         }
     }
 
@@ -1068,16 +1285,27 @@ void ApPredictMethods::CommonRunMethod()
     for (unsigned conc_index = 0u; conc_index < mConcs.size(); conc_index++)
     {
         progress_reporter.Update((double)(conc_index));
-        std::cout << "Drug Conc = " << mConcs[conc_index] << " uM"
-                  << std::endl; //<< std::flush;
+        std::cout << "Drug Conc = " << mConcs[conc_index] << " uM";
+        if (mTwoDrugs)
+            std::cout << ",\tDrug 2 Conc = " << mConcs[conc_index] * mDrugTwoConcentrationFactor << "uM";
+        std::cout << std::endl; //<< std::flush;
 
         // Apply drug block on each channel
-        for (unsigned channel_idx = 0; channel_idx < mMetadataNames.size();
-             channel_idx++)
+        for (unsigned channel_idx = 0; channel_idx < mMetadataNames.size(); channel_idx++)
         {
-            ApplyDrugBlock(mpModel, channel_idx, default_conductances[channel_idx],
-                           mConcs[conc_index], median_ic50[channel_idx],
-                           median_hill[channel_idx], median_saturation[channel_idx]);
+            if (mTwoDrugs)
+            {
+                ApplyDrugBlock(mpModel, channel_idx, mDefaultConductances[channel_idx],
+                               mConcs[conc_index],
+                               median_ic50[channel_idx], median_hill[channel_idx], median_saturation[channel_idx],
+                               median_ic50_drug_two[channel_idx], median_hill_drug_two[channel_idx], median_saturation_drug_two[channel_idx]);
+            }
+            else
+            {
+                ApplyDrugBlock(mpModel, channel_idx, mDefaultConductances[channel_idx],
+                               mConcs[conc_index], median_ic50[channel_idx],
+                               median_hill[channel_idx], median_saturation[channel_idx]);
+            }
         }
 
         double apd90, apd50, upstroke, peak, peak_time, ca_max, ca_min;
@@ -1100,15 +1328,13 @@ void ApPredictMethods::CommonRunMethod()
             CipaQNetCalculator calculator(mpModel);
             double q_net = calculator.ComputeQNet();
             mQNets.push_back(q_net);
-            
+
             if (conc_index == mConcs.size() - 1u && this->GetMaxNumPaces() < 750u)
             {
                 std::stringstream message;
-                message << "Warning: qNet is calculated after at least 750 paces in "
-                           "FDA publications. You are doing "
+                message << "Warning: qNet is calculated after at least 750 paces in FDA publications. You are doing "
                         << this->GetMaxNumPaces() << " paces at " << mConcs[conc_index]
-                        << "uM, increase maximum pacing time if using these "
-                           "simulation results for CiPA purposes.";
+                        << "uM, increase maximum pacing time if using these simulation results for CiPA purposes.";
                 WriteMessageToFile(message.str());
             }
 
@@ -1122,7 +1348,7 @@ void ApPredictMethods::CommonRunMethod()
         }
 
         // Populates mApd90CredibleRegions and mQNetCredibleRegions, relies on mApd90s and mQNets.
-        InterpolateFromLookupTableForThisConcentration(conc_index, median_saturation);
+        GetCredibleIntervalSamplesForThisConcentration(conc_index, median_saturation, median_saturation_drug_two);
 
         if (!DidErrorOccur())
         {
@@ -1159,13 +1385,14 @@ void ApPredictMethods::CommonRunMethod()
                     std::cout << delta_apd90 << std::endl; // << std::flush;
                 }
             }
-            *steady_voltage_results_file_html
-                << "<tr><td>" << mConcs[conc_index] << "</td><td>" << upstroke
+            *steady_voltage_results_file_html << "<tr><td>" << mConcs[conc_index];
+            if (mTwoDrugs) *steady_voltage_results_file_html << "</td><td>" << mConcs[conc_index]* mDrugTwoConcentrationFactor;
+            *steady_voltage_results_file_html << "</td><td>" << upstroke
                 << "</td><td>" << peak << "</td><td>" << apd50 << "</td><td>" << apd90
                 << "</td><td>" << delta_apd90 << "</td></tr>\n";
-            *steady_voltage_results_file << mConcs[conc_index] << "\t" << upstroke
-                                         << "\t" << peak << "\t" << apd50 << "\t"
-                                         << apd90 << "\t";
+            *steady_voltage_results_file << mConcs[conc_index] << "\t";
+            if (mTwoDrugs) *steady_voltage_results_file << mConcs[conc_index]*mDrugTwoConcentrationFactor << "\t";
+            *steady_voltage_results_file << upstroke << "\t" << peak << "\t" << apd50 << "\t" << apd90 << "\t";
 
             if (mLookupTableAvailable)
             {
@@ -1174,14 +1401,14 @@ void ApPredictMethods::CommonRunMethod()
                     if (mPercentiles[i] > 50 && mPercentiles[i - 1] < 50)
                     {
                         *steady_voltage_results_file << delta_apd90 << ",";
-                    }                    
+                    }
                     *steady_voltage_results_file << delta_percentiles[i];
                     if (i < mPercentiles.size() - 1u)
                     {
                         *steady_voltage_results_file << ",";
                     }
                     // Now add a check to see whether the middle 30% of our credible
-                    // interval contains the simulated 'median' answer. 
+                    // interval contains the simulated 'median' answer.
                     // If not, log it and report a warning later.
                     const double tolerance_on_percent_change = 1e-2;
                     if ((mPercentiles[i] < 35 && delta_percentiles[i] > delta_apd90 + tolerance_on_percent_change) || (mPercentiles[i] > 75 && delta_percentiles[i] < delta_apd90 - tolerance_on_percent_change))
@@ -1205,14 +1432,15 @@ void ApPredictMethods::CommonRunMethod()
                           << ", APD90 = " << error_code
                           << ", percent change APD90 = " << error_code
                           << "\n"; // << std::flush;
-            *steady_voltage_results_file_html
-                << "<tr><td>" << mConcs[conc_index] << "</td><td>" << error_code
+            *steady_voltage_results_file_html << "<tr><td>" << mConcs[conc_index];
+            if (mTwoDrugs) *steady_voltage_results_file_html << "</td><td>" << mConcs[conc_index]* mDrugTwoConcentrationFactor;
+            *steady_voltage_results_file_html << "</td><td>" << error_code
                 << "</td><td>" << error_code << "</td><td>" << error_code
                 << "</td><td>" << error_code << "</td><td>" << error_code
                 << "</td></tr>\n";
-            *steady_voltage_results_file << mConcs[conc_index] << "\t" << error_code
-                                         << "\t" << error_code << "\t" << error_code
-                                         << "\t" << error_code << "\t";
+            *steady_voltage_results_file << mConcs[conc_index] << "\t";
+            if (mTwoDrugs) *steady_voltage_results_file << mConcs[conc_index]*mDrugTwoConcentrationFactor << "\t";
+            *steady_voltage_results_file << error_code << "\t" << error_code << "\t" << error_code << "\t" << error_code << "\t";
 
             if (mLookupTableAvailable)
             {
@@ -1252,6 +1480,7 @@ void ApPredictMethods::CommonRunMethod()
             }
 
             *q_net_results_file << mConcs[conc_index] << "\t";
+            if (mTwoDrugs) *q_net_results_file << mConcs[conc_index]*mDrugTwoConcentrationFactor << "\t";
 
             if (mLookupTableAvailable)
             {
@@ -1331,7 +1560,7 @@ void ApPredictMethods::CommonRunMethod()
         {
             p_output_file = mpFileHandler->OpenOutputFile("pkpd_results.txt");
         }
-        catch (Exception& e)
+        catch (Exception &e)
         {
             EXCEPTION(
                 "ApPredict could not open a new output file called pkpd_results.txt. "
@@ -1349,7 +1578,7 @@ void ApPredictMethods::CommonRunMethod()
         for (unsigned i = 0; i < times.size(); i++)
         {
             *p_output_file << times[i];
-            const std::vector<double>& r_concs_at_this_time = mpPkpdReader->GetConcentrationsAtTimeIndex(i);
+            const std::vector<double> &r_concs_at_this_time = mpPkpdReader->GetConcentrationsAtTimeIndex(i);
             for (unsigned p = 0; p < r_concs_at_this_time.size(); p++)
             {
                 double interpolated_apd90 = DoLinearInterpolation(r_concs_at_this_time[p], mConcs, mApd90s);
@@ -1362,7 +1591,7 @@ void ApPredictMethods::CommonRunMethod()
     mComplete = true;
 }
 
-void ApPredictMethods::WriteMessageToFile(const std::string& rMessage)
+void ApPredictMethods::WriteMessageToFile(const std::string &rMessage)
 {
     AbstractActionPotentialMethod::WriteMessageToFile(rMessage);
     assert(mpFileHandler);
@@ -1403,7 +1632,7 @@ std::vector<double> ApPredictMethods::GetApd90s(void)
     return mApd90s;
 }
 
-std::vector<std::vector<double> > ApPredictMethods::GetApd90CredibleRegions(void)
+std::vector<std::vector<double>> ApPredictMethods::GetApd90CredibleRegions(void)
 {
     if (!mComplete)
     {
@@ -1420,7 +1649,7 @@ std::vector<std::vector<double> > ApPredictMethods::GetApd90CredibleRegions(void
     return mApd90CredibleRegions;
 }
 
-std::vector<std::vector<double> > ApPredictMethods::GetQNetCredibleRegions(void)
+std::vector<std::vector<double>> ApPredictMethods::GetQNetCredibleRegions(void)
 {
     if (!mComplete)
     {
@@ -1439,7 +1668,7 @@ std::vector<std::vector<double> > ApPredictMethods::GetQNetCredibleRegions(void)
 
 void ApPredictMethods::ParameterWrapper(
     boost::shared_ptr<AbstractCvodeCell> pModel,
-    std::vector<std::string>& rMetadataNames)
+    std::vector<std::string> &rMetadataNames)
 {
     for (unsigned channel_idx = 0; channel_idx < rMetadataNames.size();
          channel_idx++)
@@ -1465,15 +1694,15 @@ void ApPredictMethods::ParameterWrapper(
     }
 }
 
-void ApPredictMethods::SetOutputDirectory(const std::string& rOuputDirectory)
+void ApPredictMethods::SetOutputDirectory(const std::string &rOuputDirectory)
 {
     mOutputFolder = rOuputDirectory;
 }
 
 /* Perform linear interpolation to get an estimate of y_star at x_star */
 double ApPredictMethods::DoLinearInterpolation(
-    double x_star, const std::vector<double>& rX,
-    const std::vector<double>& rY) const
+    double x_star, const std::vector<double> &rX,
+    const std::vector<double> &rY) const
 {
     if (x_star <= rX[0])
     {

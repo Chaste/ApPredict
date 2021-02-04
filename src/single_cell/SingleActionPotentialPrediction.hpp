@@ -52,15 +52,15 @@ public:
      * Constructor
      */
     SingleActionPotentialPrediction(boost::shared_ptr<AbstractCvodeCell> pModel)
-        : AbstractActionPotentialMethod(),
-          mApd90(DOUBLE_UNSET),
-          mApd50(DOUBLE_UNSET),
-          mUpstroke(DOUBLE_UNSET),
-          mPeak(DOUBLE_UNSET),
-          mPeakTime(DOUBLE_UNSET),
-          mCaMin(DOUBLE_UNSET),
-          mCaMax(DOUBLE_UNSET),
-          mpModel(pModel){};
+            : AbstractActionPotentialMethod(),
+              mApd90(DOUBLE_UNSET),
+              mApd50(DOUBLE_UNSET),
+              mUpstroke(DOUBLE_UNSET),
+              mPeak(DOUBLE_UNSET),
+              mPeakTime(DOUBLE_UNSET),
+              mCaMin(DOUBLE_UNSET),
+              mCaMax(DOUBLE_UNSET),
+              mpModel(pModel){};
 
     /**
      * Run the steady state pacing and evaluate action potential markers (APD90, APD50, Peak and upstroke velocity).
@@ -206,7 +206,7 @@ public:
         {
             // Remember original conductances and set them to zero.
             const double original_na_conductance = mpModel->GetParameter(fast_sodium_name);
-            double original_ca_conductance;
+            double original_ca_conductance = 0;
             mpModel->SetParameter(fast_sodium_name, 0u);
             if (mpModel->HasParameter(l_type_cal_name))
             {
