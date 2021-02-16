@@ -56,7 +56,7 @@ public:
      *
      * The first test overwrites CommandLineArguments and checks exceptions are thrown correctly.
      */
-    void xTestSomeExceptions(void)
+    void TestSomeExceptions(void)
     {
         // Check some exceptions are thrown correctly...
         // N.B. the constructor does some of the argument reading, so that needs
@@ -87,7 +87,7 @@ public:
         }
     }
 
-    void xTestVoltageThresholdDetectionAlgorithm()
+    void TestVoltageThresholdDetectionAlgorithm()
     {
         std::vector<double> thresholds_for_each_model = boost::assign::list_of(-46.7750) /*Shannon etc.*/
             (-23.0772)(-34.6525)(-35.9230)(-28.4091)(-38.4384)(-40.6058);
@@ -109,7 +109,7 @@ public:
     /**
      * This test should emulate the standalone executable and read your command line arguments.
      */
-    void xTestDrugAffectByVaryingConductances(void)
+    void TestDrugAffectByVaryingConductances(void)
     {
         //////////// DEFINE PARAMETERS ///////////////
         CommandLineArguments *p_args = CommandLineArguments::Instance();
@@ -128,7 +128,7 @@ public:
         methods.Run();
     }
 
-    void xTestChangingSimulusDuration(void)
+    void TestChangingSimulusDuration(void)
     {
         {
             CommandLineArgumentsMocker wrapper("--model 4 --pacing-freq 1 --plasma-concs 0 --pacing-max-time 0.2 --no-downsampling");
