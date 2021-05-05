@@ -107,7 +107,7 @@ SetupModel::SetupModel(const double& rHertz,
         }
 
         // Create model using factory
-        AbstractCvodeCell* model = (AbstractCvodeCell*)ModelFactory::Create(modelName , "cvode", p_solver, p_stimulus);
+        AbstractCvodeCell* model = (AbstractCvodeCell*)ModelFactory::Create(modelName , "AnalyticCvode", p_solver, p_stimulus);
 
         if(model == nullptr){  // throw an error if the model isn't found
             EXCEPTION("No model matches this index: " + modelName);

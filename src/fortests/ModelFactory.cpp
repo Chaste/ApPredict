@@ -20,7 +20,6 @@ bool ModelFactory::Register(const std::string name, const std::string& type, Mod
     std::pair<std::string, std::string> nameType = std::make_pair(name, type);
     if (s_methods->count(nameType) == 0)
     {
-        std::cout << name << " " << funcCreate << std::endl;
         s_methods->insert(std::pair<std::pair<std::string, std::string>, ModelFactory::TCreateMethod>(nameType, funcCreate));
         return true;
     }
