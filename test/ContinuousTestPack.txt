@@ -15,3 +15,4 @@ TestMetadataCellmlModels.hpp
 TestParameterBox.hpp
 TestPkpdReader.hpp
 TestTorsadePredict.hpp
+TestModelFactory.hpp

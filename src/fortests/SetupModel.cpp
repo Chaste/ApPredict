@@ -107,13 +107,13 @@ SetupModel::SetupModel(const double& rHertz,
         }
 
         // Create model using factory
-        AbstractCvodeCell* model = (AbstractCvodeCell*)ModelFactory::Create(modelName , "AnalyticCvode", p_solver, p_stimulus);
+        mpModel.reset((AbstractCvodeCell*)ModelFactory::Create(modelName , "AnalyticCvode", p_solver, p_stimulus));
 
-        if(model == nullptr){  // throw an error if the model isn't found
+        if(mpModel == nullptr){  // throw an error if the model isn't found
             EXCEPTION("No model matches this index: " + modelName);
         }
 
-        mpModel.reset(model);
+        //set numerical Jacobean if needed
         mpModel->ForceUseOfNumericalJacobian(SetupModel::forceNumericalJModels.find(modelName) != SetupModel::forceNumericalJModels.end());
     }
     //std::cout << "* model = " << mpModel->GetSystemName() << "\n";
