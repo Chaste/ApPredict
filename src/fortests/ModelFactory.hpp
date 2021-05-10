@@ -46,7 +46,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 class ModelFactory{
 public:
     using TCreateMethod = void*(*)(boost::shared_ptr<AbstractIvpOdeSolver> p_solver, boost::shared_ptr<AbstractStimulusFunction> p_stimulus);
-    static void* Create(const std::string& name, const std::string& type, boost::shared_ptr<AbstractIvpOdeSolver> p_solver, boost::shared_ptr<AbstractStimulusFunction> p_stimulus);
-    static bool Register(const std::string name, const std::string& type, TCreateMethod funcCreate);
+    static void* Create(const std::string& name, const std::string& type, boost::shared_ptr<AbstractIvpOdeSolver> pSolver, boost::shared_ptr<AbstractStimulusFunction> pStimulus);
+    static bool Register(const std::string& name, const std::string& type, ModelFactory::TCreateMethod funcCreate);
 };
 #endif // MODELFACTORY_HPP_
