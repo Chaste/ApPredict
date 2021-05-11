@@ -54,7 +54,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "ohara_rudy_cipa_v1_2017Cvode.hpp"
 
 #include "ohara_rudy_cipa_v1_2017.hpp"
-#include "ohara_rudy_cipa_v1_2017BackwardEuler.hpp"
+#include "ohara_rudy_cipa_v1_2017BackwardEulerOpt.hpp"
 
 class TestModelFactory : public CxxTest::TestSuite
 {
@@ -188,7 +188,7 @@ public:
         // Set up Normal, Cvode and BE models, compute 1 ms and compare
         Cellohara_rudy_cipa_v1_2017FromCellML normal(p_solver, p_stimulus);
         Cellohara_rudy_cipa_v1_2017FromCellMLCvode cvode(p_solver, p_stimulus);
-        Cellohara_rudy_cipa_v1_2017FromCellMLBackwardEuler be(p_solver, p_stimulus);
+        Cellohara_rudy_cipa_v1_2017FromCellMLBackwardEulerOpt be(p_solver, p_stimulus);
 
         // Create Normal, Cvode and BE models via factory
         boost::shared_ptr<AbstractCardiacCell> factoryNormal((AbstractCardiacCell*)ModelFactory::Create("ohara_rudy_cipa_v1_2017" , "Normal", p_solver, p_stimulus));
