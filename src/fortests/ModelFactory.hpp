@@ -43,10 +43,22 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "RegularStimulus.hpp"
 
 
+/**
+ * Class to provide a way to create models indirectly using the name of the cellml file and the model type.
+ * This elliminated the need to hardcode which models are available.
+ * Following the Factory design pattern, this class provides methods for generated cells to register their existance 
+ * and methods for creating new instances of cells.
+ */
 class ModelFactory{
 public:
+
+    /** Map of model index to model name*/
     using TCreateMethod = void*(*)(boost::shared_ptr<AbstractIvpOdeSolver> p_solver, boost::shared_ptr<AbstractStimulusFunction> p_stimulus);
+
+    /** Method to create an given type instance of a model. The result needs to be type cast to the desired cell type (see TestModelFactory.hpp for examples)*/
     static void* Create(const std::string& name, const std::string& type, boost::shared_ptr<AbstractIvpOdeSolver> pSolver, boost::shared_ptr<AbstractStimulusFunction> pStimulus);
+
+    /** Registration method for generated cells to register themselves with the model factory*/
     static bool Register(const std::string& name, const std::string& type, ModelFactory::TCreateMethod funcCreate);
 };
 #endif // MODELFACTORY_HPP_

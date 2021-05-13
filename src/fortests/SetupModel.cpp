@@ -46,6 +46,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "FileFinder.hpp"
 #include "RegularStimulus.hpp"
 
+/* Mapping to implemnt backward compatibility with old hard coded model numbers */
 const std::map<std::string, std::string> SetupModel::modelMapping = {{"1", "shannon_wang_puglisi_weber_bers_2004"},
                                                                      {"2", "ten_tusscher_model_2006_epi"},
                                                                      {"3", "mahajan_shiferaw_2008"},

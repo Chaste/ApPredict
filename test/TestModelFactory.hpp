@@ -32,6 +32,7 @@ LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
 OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 */
+
 #ifdef CHASTE_CVODE
 
 #ifndef _TESTMODELFACTORY_HPP_
@@ -181,6 +182,14 @@ public:
         TS_ASSERT_THROWS_THIS(SetupModel setup1(1.0, UNSIGNED_UNSET),
                               "No model matches this index: unknownmodel");
     }
+
+    void TestReRegisterExistingModel()
+    {
+        ModelFactory::Register("TestModel", "TestType", nullptr);
+        TS_ASSERT_THROWS_THIS(ModelFactory::Register("TestModel", "TestType", nullptr),
+                              "Duplicate model: TestModel registration with the ModelFactory for type: TestType. If you are using your own version of this model please rename the cellml file.");
+    }
+
 
     void TestOtherModelTypes()
     {
