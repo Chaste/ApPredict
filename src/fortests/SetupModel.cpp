@@ -38,6 +38,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "CheckpointArchiveTypes.hpp"
 
 #include "Exception.hpp"
+#include "Warnings.hpp"
 #include "SetupModel.hpp"
 
 #include "AbstractIvpOdeSolver.hpp"
@@ -68,39 +69,43 @@ SetupModel::SetupModel(const double& rHertz,
     boost::shared_ptr<AbstractStimulusFunction> p_stimulus;
     boost::shared_ptr<AbstractIvpOdeSolver> p_solver;
 
-    // If modelIndex is specified, then we have to use that, and ignore command line.
-    if (modelIndex == UNSIGNED_UNSET && CommandLineArguments::Instance()->OptionExists("--cellml"))
+    // Exceptions for wrong argument combinations
+    if (modelIndex == UNSIGNED_UNSET && !CommandLineArguments::Instance()->OptionExists("--cellml") && !CommandLineArguments::Instance()->OptionExists("--model"))
     {
-        // Try to use a dynamically loaded model
-        if (CommandLineArguments::Instance()->OptionExists("--model"))
-        {
-            EXCEPTION("You can only call ApPredict with the option '--model' OR '--cellml <file>'.");
-        }
-        std::string cellml_file_path = CommandLineArguments::Instance()->GetStringCorrespondingToOption("--cellml");
-        FileFinder cellml_file(cellml_file_path, RelativeTo::CWD);
-        std::vector<std::string> options = boost::assign::list_of("--expose-annotated-variables");
+        EXCEPTION("Argument \"--model <index>\" is required");
+    }
+    if (modelIndex == UNSIGNED_UNSET && CommandLineArguments::Instance()->OptionExists("--cellml") && CommandLineArguments::Instance()->OptionExists("--model"))
+    {
+        EXCEPTION("You can only call ApPredict with the option '--model' OR '--cellml <file>'.");
+    }
+
+    //Figure out which cellml we need name
+    std::string modelName;
+    if (modelIndex != UNSIGNED_UNSET) //passed a number
+    {
+        modelName = std::to_string(modelIndex);
+    }else if(CommandLineArguments::Instance()->OptionExists("--cellml")){// passed a file name via --cellml
+        WARNING("Argument --cellml <file> is depricated use --model <file> instead.");
+        modelName = CommandLineArguments::Instance()->GetStringCorrespondingToOption("--cellml");
+    }else{ // passed a an index, model name or file name via --cellml
+        modelName = CommandLineArguments::Instance()->GetStringCorrespondingToOption("--model");
+    }
+
+    // check if we have been given a file name and if so use that
+    FileFinder cellml_file(modelName, RelativeTo::CWD);
+    if (cellml_file.Exists()){
         if (mpHandler == NULL)
         {
             EXCEPTION("Trying to set up a dynamically loaded model without a working directory in SetupModel constructor.");
         }
-        CellMLLoader loader(cellml_file, *mpHandler, options);
+        CellMLLoader loader(cellml_file, *mpHandler, {});
         mpModel = loader.LoadCvodeCell();
-    }
-    else // Using a precompiled model
-    {
-        std::string modelName;
-        if (modelIndex == UNSIGNED_UNSET)
-        {
-            if (!CommandLineArguments::Instance()->OptionExists("--model"))
-            {
-                EXCEPTION("Argument \"--model <index>\" is required");
-            }
-            modelName = CommandLineArguments::Instance()->GetStringCorrespondingToOption("--model");
-        }else // If modelIndex is specified, then we have to use that, and ignore command line.
-        {
-            modelName = std::to_string(modelIndex);
-        }
 
+    }else{ // we have been given a model name or number
+        if(CommandLineArguments::Instance()->OptionExists("--cellml")){
+            EXCEPTION("Invalid file given with --cellml argument: " + modelName);
+        }
+        
         // Check if we have been given an index that can be mapped to a model name
         auto mapIterator = SetupModel::modelMapping.find(modelName);
         if(mapIterator != SetupModel::modelMapping.end()){
@@ -117,7 +122,6 @@ SetupModel::SetupModel(const double& rHertz,
         //set numerical Jacobean if needed
         mpModel->ForceUseOfNumericalJacobian(SetupModel::forceNumericalJModels.find(modelName) != SetupModel::forceNumericalJModels.end());
     }
-    //std::cout << "* model = " << mpModel->GetSystemName() << "\n";
 
     double s_magnitude = -15; // We will attempt to overwrite these with model specific ones below
     double s_duration = 3.0; // We will attempt to overwrite these with model specific ones below

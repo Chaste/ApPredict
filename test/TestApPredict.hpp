@@ -85,6 +85,35 @@ public:
             TS_ASSERT_THROWS_THIS(ApPredictMethods methods,
                                   "The pacing frequency (0) set by '--pacing-freq' option must be a positive number.");
         }
+
+        {
+            CommandLineArgumentsMocker wrapper("--model 1 --cellml 1 --pacing-freq 1 --pacing-max-time 20 --plasma-concs 1 ");
+
+            TS_ASSERT_THROWS_THIS(SetupModel setup(1.0, UNSIGNED_UNSET),
+                                  "You can only call ApPredict with the option '--model' OR '--cellml <file>");
+        }
+
+        {
+            CommandLineArgumentsMocker wrapper("--cellml 1 --pacing-freq 1 --pacing-max-time 20 --plasma-concs 1 ");
+
+            TS_ASSERT_THROWS_THIS(SetupModel setup(1.0, UNSIGNED_UNSET),
+                                  "Invalid file given with --cellml argument: 1");
+        }
+        {
+            CommandLineArgumentsMocker wrapper("--model bla --pacing-freq 1 --pacing-max-time 20 --plasma-concs 1 ");
+
+            TS_ASSERT_THROWS_THIS(SetupModel setup(1.0, UNSIGNED_UNSET),
+                                  "No model matches this index: bla");
+        }
+        {
+        CommandLineArgumentsMocker wrapper("--model 99999");
+
+        TS_ASSERT_THROWS_THIS(SetupModel setup(1.0, UNSIGNED_UNSET),
+                              "No model matches this index: 99999");
+        }
+
+
+//WARNING("Argument --cellml <file> is depricated use --model <file> instead.");
     }
 
     void TestVoltageThresholdDetectionAlgorithm()
