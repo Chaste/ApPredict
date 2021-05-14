@@ -174,12 +174,12 @@ public:
 
     void TestSetupModelCommandLineWrongIndex()
     {
-        CommandLineArgumentsMocker wrapper2("--model 99999");
-        TS_ASSERT_THROWS_THIS(SetupModel setup1(1.0, UNSIGNED_UNSET),
+        CommandLineArgumentsMocker wrapper("--model 99999");
+        TS_ASSERT_THROWS_THIS(SetupModel setup(1.0, UNSIGNED_UNSET),
                               "No model matches this index: 99999");
 
-        CommandLineArgumentsMocker wrapper("--model unknownmodel");
-        TS_ASSERT_THROWS_THIS(SetupModel setup1(1.0, UNSIGNED_UNSET),
+        CommandLineArgumentsMocker wrapper2("--model unknownmodel");
+        TS_ASSERT_THROWS_THIS(SetupModel setup2(1.0, UNSIGNED_UNSET),
                               "No model matches this index: unknownmodel");
     }
 
