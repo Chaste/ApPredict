@@ -90,7 +90,7 @@ public:
             CommandLineArgumentsMocker wrapper("--model 1 --cellml 1 --pacing-freq 1 --pacing-max-time 20 --plasma-concs 1 ");
 
             TS_ASSERT_THROWS_THIS(SetupModel setup(1.0, UNSIGNED_UNSET),
-                                  "You can only call ApPredict with the option '--model' OR '--cellml <file>");
+                                  "You can only call ApPredict with the option '--model' OR '--cellml <file>'.");
         }
 
         {
