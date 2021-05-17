@@ -106,14 +106,24 @@ public:
                                   "No model matches this index: bla");
         }
         {
-        CommandLineArgumentsMocker wrapper("--model 99999");
+            CommandLineArgumentsMocker wrapper("--model 99999");
 
-        TS_ASSERT_THROWS_THIS(SetupModel setup(1.0, UNSIGNED_UNSET),
-                              "No model matches this index: 99999");
+            TS_ASSERT_THROWS_THIS(SetupModel setup(1.0, UNSIGNED_UNSET),
+                                  "No model matches this index: 99999");
+        }
+        {
+            CommandLineArgumentsMocker wrapper("--cellml projects/ApPredict/src/cellml/cellml/ten_tusscher_model_2006_epi.cellml --plasma-concs 1 10 --pic50-herg 4.5 --plasma-conc-logscale false --output-dir ApPredict_output_long");
+
+            ApPredictMethods methods;
+            TS_ASSERT_EQUALS(Warnings::Instance()->GetNextWarningMessage(),"Argument --cellml <file> is depricated use --model <file> instead.");
+        }
+        {
+            CommandLineArgumentsMocker wrapper("--cellml bla.cellml");
+
+            TS_ASSERT_THROWS_THIS(SetupModel setup(1.0, UNSIGNED_UNSET),
+                                  "Invalid file given with --cellml argument: bla.cellml");
         }
 
-
-//WARNING("Argument --cellml <file> is depricated use --model <file> instead.");
     }
 
     void TestVoltageThresholdDetectionAlgorithm()

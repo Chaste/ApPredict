@@ -72,6 +72,8 @@ public:
 
             ApPredictMethods methods;
             methods.Run();
+            TS_ASSERT_EQUALS(Warnings::Instance()->GetNumWarnings(), i == model_args.size()-1);
+
             std::vector<double> concs = methods.GetConcentrations();
 
             TS_ASSERT_EQUALS(concs.size(), 3u);
