@@ -62,9 +62,13 @@ public:
     {
         // Test a simple hERG block with TT06
         // loop over hardcoded and dynamically loaded.
+        // try both --model --cellml and --cellml and try both relative and absolute paths
+
+        FileFinder cellm_file("projects/ApPredict/src/cellml/cellml/ten_tusscher_model_2006_epi.cellml", RelativeTo::CWD);
         std::vector<std::string> model_args = { "--model 2",
                                                 "--model ten_tusscher_model_2006_epi",
                                                 "--model projects/ApPredict/src/cellml/cellml/ten_tusscher_model_2006_epi.cellml",
+                                                "--model " + cellm_file.GetAbsolutePath(),
                                                 "--cellml projects/ApPredict/src/cellml/cellml/ten_tusscher_model_2006_epi.cellml"};
         for (unsigned i = 0; i < model_args.size(); i++)
         {
@@ -72,7 +76,6 @@ public:
 
             ApPredictMethods methods;
             methods.Run();
-            TS_ASSERT_EQUALS(Warnings::Instance()->GetNumWarnings(), i == model_args.size()-1);
 
             std::vector<double> concs = methods.GetConcentrations();
 

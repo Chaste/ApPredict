@@ -82,7 +82,9 @@ public:
      * If this is not present it uses sensible defaults.
      *
      * @param model_index  1 = Shannon, 2=TenTusscher, 3 = Mahajan, 4 = Hund-Rudy, 5 = Grandi,
-     *        6 = O'Hara-Rudy, 7 = Paci ventricular, 8 = CiPA O'Hara-Rudy v1.0, or use name of cellml (without.cellml)
+     *        6 = O'Hara-Rudy, 7 = Paci ventricular, 8 = CiPA O'Hara-Rudy v1.0
+     *        UNSIGNED_UNSET = look at the --model command line parameter: this can be a number, 
+     *        name of cellml file (without .) or path to cellml file.
      * @param hertz  The frequency of the regular stimulus that this model should use.
      * @param pHandler  An optional pointer to use as a working directory when
      *                  generating code on the fly from CellML (defaults to empty pointer).
@@ -103,7 +105,7 @@ public:
                "*            4 = Hund-Rudy, 5 = Grandi, 6 = O'Hara-Rudy 2011 (endo),\n"
                "*            7 = Paci (ventricular), 8 = O'Hara-Rudy CiPA v1 2017 (endo)\n"
                "* OR --model <name of pre-compiled cellmlfile (without .cellml)>\n"
-               "* OR --cellml <file>\n";
+               "* OR --model <file>\n";
     }
 
     /**

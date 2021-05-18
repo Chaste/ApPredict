@@ -92,7 +92,7 @@ SetupModel::SetupModel(const double& rHertz,
     }
 
     // check if we have been given a file name and if so use that
-    FileFinder cellml_file(modelName, RelativeTo::CWD);
+    FileFinder cellml_file(modelName, RelativeTo::AbsoluteOrCwd);
     if (cellml_file.Exists()){
         if (mpHandler == NULL)
         {
