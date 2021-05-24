@@ -105,7 +105,7 @@ public:
                "*            4 = Hund-Rudy, 5 = Grandi, 6 = O'Hara-Rudy 2011 (endo),\n"
                "*            7 = Paci (ventricular), 8 = O'Hara-Rudy CiPA v1 2017 (endo)\n"
                "* OR --model <name of pre-compiled cellmlfile (without .cellml)>\n"
-               "* OR --model <file>\n";
+               "* OR --model <file> (a CellML file, relative to current working directory or an absolute path)\n";
     }
 
     /**
