@@ -85,7 +85,7 @@ SetupModel::SetupModel(const double& rHertz,
     {
         modelName = std::to_string(modelIndex);
     }else if(CommandLineArguments::Instance()->OptionExists("--cellml")){// passed a file name via --cellml
-        WARNING("Argument --cellml <file> is depricated use --model <file> instead.");
+        WARNING("Argument --cellml <file> is deprecated use --model <file> instead.");
         modelName = CommandLineArguments::Instance()->GetStringCorrespondingToOption("--cellml");
     }else{ // passed a an index, model name or file name via --cellml
         modelName = CommandLineArguments::Instance()->GetStringCorrespondingToOption("--model");
