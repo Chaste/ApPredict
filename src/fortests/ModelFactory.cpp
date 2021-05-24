@@ -37,6 +37,12 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 std::unique_ptr<std::map<std::pair<std::string, std::string>, ModelFactory::TCreateMethod>> modelRegistry = std::make_unique<std::map<std::pair<std::string, std::string>, ModelFactory::TCreateMethod>>();
 
+bool ModelFactory::Exists(const std::string& name, const std::string& type)
+{
+    std::pair<std::string, std::string> name_type = std::make_pair(name, type);
+    return modelRegistry->find(name_type) != modelRegistry->end();
+}
+
 void* ModelFactory::Create(const std::string& name, const std::string& type, boost::shared_ptr<AbstractIvpOdeSolver> pSolver, boost::shared_ptr<AbstractStimulusFunction> pStimulus)
 {
     std::pair<std::string, std::string> name_type = std::make_pair(name, type);
@@ -45,8 +51,7 @@ void* ModelFactory::Create(const std::string& name, const std::string& type, boo
     {
         return it->second(pSolver, pStimulus); // call the createFunc
     }
-
-    return nullptr;
+    EXCEPTION("Model type combination does not exist cannot create: " + name + ", " + type);
 }
 
 bool ModelFactory::Register(const std::string& name, const std::string& type, ModelFactory::TCreateMethod funcCreate)

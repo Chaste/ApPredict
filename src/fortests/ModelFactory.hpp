@@ -55,6 +55,9 @@ public:
     /** Map of model index to model name*/
     using TCreateMethod = void*(*)(boost::shared_ptr<AbstractIvpOdeSolver> p_solver, boost::shared_ptr<AbstractStimulusFunction> p_stimulus);
 
+    /** Method to check whether a given model, type combination has been registered and can be created */
+    static bool Exists(const std::string& name, const std::string& type);
+
     /** Method to create an given type instance of a model. The result needs to be type cast to the desired cell type (see TestModelFactory.hpp for examples)*/
     static void* Create(const std::string& name, const std::string& type, boost::shared_ptr<AbstractIvpOdeSolver> pSolver, boost::shared_ptr<AbstractStimulusFunction> pStimulus);
 

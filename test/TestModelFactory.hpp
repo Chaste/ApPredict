@@ -65,7 +65,6 @@ class TestModelFactory : public CxxTest::TestSuite
 
     void checkModels(std::vector<boost::shared_ptr<AbstractCvodeCell>> models) {
 	for(unsigned int i=0; i < models.size(); i++){
-	    TS_ASSERT(models[i] != nullptr);
 	    TS_ASSERT(models[i]->GetNumberOfStateVariables() == referenceModels[i]->GetNumberOfStateVariables());
 	    TS_ASSERT(models[i]->GetVoltage() == referenceModels[i]->GetVoltage());
 	    TS_ASSERT(models[i]->GetNumberOfParameters() == referenceModels[i]->GetNumberOfParameters());
@@ -107,12 +106,17 @@ public:
 	boost::shared_ptr<AbstractStimulusFunction> p_stimulus;
 	boost::shared_ptr<AbstractIvpOdeSolver> p_solver;
 
-        std::unique_ptr<AbstractCvodeCell> model1((AbstractCvodeCell*)ModelFactory::Create("wrong_model_name" , "AnalyticCvode", p_solver, p_stimulus));
-        std::unique_ptr<AbstractCvodeCell> model2((AbstractCvodeCell*)ModelFactory::Create("shannon_wang_puglisi_weber_bers_2004" , "Wrong model type", p_solver, p_stimulus));
+        TS_ASSERT(ModelFactory::Exists("shannon_wang_puglisi_weber_bers_2004" , "AnalyticCvode"));
+        TS_ASSERT(! ModelFactory::Exists("wrong_model_name" , "AnalyticCvode"));
+        TS_ASSERT(! ModelFactory::Exists("shannon_wang_puglisi_weber_bers_2004" , "Wrong model type"));
 
-        TS_ASSERT(model1 == nullptr);
-        TS_ASSERT(model2 == nullptr);
-    }
+        std::unique_ptr<AbstractCvodeCell> model2((AbstractCvodeCell*)ModelFactory::Create("shannon_wang_puglisi_weber_bers_2004" , "AnalyticCvode", p_solver, p_stimulus));
+
+        TS_ASSERT_THROWS_THIS(ModelFactory::Create("wrong_model_name" , "AnalyticCvode", p_solver, p_stimulus),
+                              "Model type combination does not exist cannot create: wrong_model_name, AnalyticCvode");
+
+        TS_ASSERT_THROWS_THIS((AbstractCvodeCell*)ModelFactory::Create("shannon_wang_puglisi_weber_bers_2004" , "Wrong model type", p_solver, p_stimulus),
+                              "Model type combination does not exist cannot create: shannon_wang_puglisi_weber_bers_2004, Wrong model type");    }
 
     void TestModelFactorySetupModel()
     {

@@ -113,9 +113,10 @@ SetupModel::SetupModel(const double& rHertz,
         }
 
         // Create model using factory
-        mpModel.reset((AbstractCvodeCell*)ModelFactory::Create(modelName , "AnalyticCvode", p_solver, p_stimulus));
+        if(ModelFactory::Exists(modelName , "AnalyticCvode")){
+            mpModel.reset((AbstractCvodeCell*)ModelFactory::Create(modelName , "AnalyticCvode", p_solver, p_stimulus));
 
-        if(mpModel == nullptr){  // throw an error if the model isn't found
+        }else{  // throw an error if the model isn't found
             EXCEPTION("No model matches this index: " + modelName);
         }
 
