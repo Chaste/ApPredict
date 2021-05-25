@@ -63,5 +63,9 @@ public:
 
     /** Registration method for generated cells to register themselves with the model factory*/
     static bool Register(const std::string& name, const std::string& type, ModelFactory::TCreateMethod funcCreate);
+
+private:
+    /** Mapping of model name & type to create method */
+    static std::unique_ptr<std::map<std::pair<std::string, std::string>, TCreateMethod>> modelRegistry;
 };
 #endif // MODELFACTORY_HPP_

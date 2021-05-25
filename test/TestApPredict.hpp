@@ -143,7 +143,7 @@ public:
 
             TS_ASSERT_DELTA(threshold_voltage, thresholds_for_each_model[model_index - 1u], 1e-2);
         }
-    }
+   }
 
     /**
      * This test should emulate the standalone executable and read your command line arguments.
