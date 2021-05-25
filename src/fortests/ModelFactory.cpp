@@ -40,12 +40,18 @@ std::unique_ptr<std::map<std::pair<std::string, std::string>, ModelFactory::TCre
 
 bool ModelFactory::Exists(const std::string& name, const std::string& type)
 {
+    if(ModelFactory::modelRegistry == nullptr){
+        ModelFactory::modelRegistry = std::make_unique<std::map<std::pair<std::string, std::string>, ModelFactory::TCreateMethod>>();
+    }
     std::pair<std::string, std::string> name_type = std::make_pair(name, type);
     return ModelFactory::modelRegistry->find(name_type) != ModelFactory::modelRegistry->end();
 }
 
 void* ModelFactory::Create(const std::string& name, const std::string& type, boost::shared_ptr<AbstractIvpOdeSolver> pSolver, boost::shared_ptr<AbstractStimulusFunction> pStimulus)
 {
+    if(ModelFactory::modelRegistry == nullptr){
+        ModelFactory::modelRegistry = std::make_unique<std::map<std::pair<std::string, std::string>, ModelFactory::TCreateMethod>>();
+    }
     std::pair<std::string, std::string> name_type = std::make_pair(name, type);
     auto it = ModelFactory::modelRegistry->find(name_type);
     if (it != ModelFactory::modelRegistry->end())
