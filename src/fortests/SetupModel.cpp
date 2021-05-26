@@ -135,7 +135,7 @@ SetupModel::SetupModel(const double& rHertz,
         //set numerical Jacobean if needed
         mpModel->ForceUseOfNumericalJacobian(SetupModel::forceNumericalJModels.find(modelName) != SetupModel::forceNumericalJModels.end());
     }
-    std::cout << "* model = " << mpModel->GetSystemName() << std::endl;
+    //std::cout << "* model = " << mpModel->GetSystemName() << std::endl;
 
     double s_magnitude = -15; // We will attempt to overwrite these with model specific ones below
     double s_duration = 3.0; // We will attempt to overwrite these with model specific ones below
