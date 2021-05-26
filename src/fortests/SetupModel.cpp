@@ -79,50 +79,63 @@ SetupModel::SetupModel(const double& rHertz,
         EXCEPTION("You can only call ApPredict with the option '--model' OR '--cellml <file>'.");
     }
 
-    //Figure out which cellml we need name
+    // Figure out which cellml we need name
     std::string modelName;
     if (modelIndex != UNSIGNED_UNSET) //passed a number
     {
         modelName = std::to_string(modelIndex);
-    }else if(CommandLineArguments::Instance()->OptionExists("--cellml")){// passed a file name via --cellml
+    }
+    else if(CommandLineArguments::Instance()->OptionExists("--cellml"))
+    {
+        // passed a file name via --cellml
         WARNING("Argument --cellml <file> is deprecated use --model <file> instead.");
         modelName = CommandLineArguments::Instance()->GetStringCorrespondingToOption("--cellml");
-    }else{ // passed a an index, model name or file name via --cellml
+    }
+    else
+    {   
+        // passed a an index, model name or file name via --cellml
         modelName = CommandLineArguments::Instance()->GetStringCorrespondingToOption("--model");
     }
 
     // check if we have been given a file name and if so use that
     FileFinder cellml_file(modelName, RelativeTo::AbsoluteOrCwd);
-    if (cellml_file.Exists()){
+    if (cellml_file.Exists())
+    {
         if (mpHandler == NULL)
         {
             EXCEPTION("Trying to set up a dynamically loaded model without a working directory in SetupModel constructor.");
         }
         CellMLLoader loader(cellml_file, *mpHandler, {});
         mpModel = loader.LoadCvodeCell();
-
-    }else{ // we have been given a model name or number
-        if(CommandLineArguments::Instance()->OptionExists("--cellml")){
+    }
+    else
+    { // we have been given a model name or number
+        if(CommandLineArguments::Instance()->OptionExists("--cellml"))
+        {
             EXCEPTION("Invalid file given with --cellml argument: " + modelName);
         }
         
         // Check if we have been given an index that can be mapped to a model name
         auto mapIterator = SetupModel::modelMapping.find(modelName);
-        if(mapIterator != SetupModel::modelMapping.end()){
+        if(mapIterator != SetupModel::modelMapping.end())
+        {
             modelName = mapIterator->second;
         }
 
         // Create model using factory
-        if(ModelFactory::Exists(modelName , "AnalyticCvode")){
+        if(ModelFactory::Exists(modelName , "AnalyticCvode"))
+        {
             mpModel.reset((AbstractCvodeCell*)ModelFactory::Create(modelName , "AnalyticCvode", p_solver, p_stimulus));
-
-        }else{  // throw an error if the model isn't found
+        }
+        else
+        {  // throw an error if the model isn't found
             EXCEPTION("No model matches this index: " + modelName);
         }
 
         //set numerical Jacobean if needed
         mpModel->ForceUseOfNumericalJacobian(SetupModel::forceNumericalJModels.find(modelName) != SetupModel::forceNumericalJModels.end());
     }
+    std::cout << "* model = " << mpModel->GetSystemName() << std::endl;
 
     double s_magnitude = -15; // We will attempt to overwrite these with model specific ones below
     double s_duration = 3.0; // We will attempt to overwrite these with model specific ones below
