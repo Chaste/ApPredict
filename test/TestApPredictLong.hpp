@@ -62,21 +62,21 @@ public:
     {
         // Test a simple hERG block with TT06
         // loop over hardcoded and dynamically loaded.
-        for (unsigned i = 0; i < 2; i++)
+        // try both --model --cellml and --cellml and try both relative and absolute paths
+
+        FileFinder cellm_file("projects/ApPredict/src/cellml/cellml/ten_tusscher_model_2006_epi.cellml", RelativeTo::CWD);
+        std::vector<std::string> model_args = { "--model 2",
+                                                "--model ten_tusscher_model_2006_epi",
+                                                "--model projects/ApPredict/src/cellml/cellml/ten_tusscher_model_2006_epi.cellml",
+                                                "--model " + cellm_file.GetAbsolutePath(),
+                                                "--cellml projects/ApPredict/src/cellml/cellml/ten_tusscher_model_2006_epi.cellml"};
+        for (unsigned i = 0; i < model_args.size(); i++)
         {
-            std::string model_option;
-            if (i == 0)
-            {
-                model_option = "--model 2";
-            }
-            else
-            {
-                model_option = "--cellml projects/ApPredict/src/cellml/cellml/ten_tusscher_model_2006_epi.cellml";
-            }
-            CommandLineArgumentsMocker wrapper(model_option + " --plasma-concs 1 10 --pic50-herg 4.5 --plasma-conc-logscale false --output-dir ApPredict_output_long");
+            CommandLineArgumentsMocker wrapper(model_args[i] + " --plasma-concs 1 10 --pic50-herg 4.5 --plasma-conc-logscale false --output-dir ApPredict_output_long");
 
             ApPredictMethods methods;
             methods.Run();
+
             std::vector<double> concs = methods.GetConcentrations();
 
             TS_ASSERT_EQUALS(concs.size(), 3u);

@@ -85,6 +85,45 @@ public:
             TS_ASSERT_THROWS_THIS(ApPredictMethods methods,
                                   "The pacing frequency (0) set by '--pacing-freq' option must be a positive number.");
         }
+
+        {
+            CommandLineArgumentsMocker wrapper("--model 1 --cellml 1 --pacing-freq 1 --pacing-max-time 20 --plasma-concs 1 ");
+
+            TS_ASSERT_THROWS_THIS(SetupModel setup(1.0, UNSIGNED_UNSET),
+                                  "You can only call ApPredict with the option '--model' OR '--cellml <file>'.");
+        }
+
+        {
+            CommandLineArgumentsMocker wrapper("--cellml 1 --pacing-freq 1 --pacing-max-time 20 --plasma-concs 1 ");
+
+            TS_ASSERT_THROWS_THIS(SetupModel setup(1.0, UNSIGNED_UNSET),
+                                  "Invalid file given with --cellml argument: 1");
+        }
+        {
+            CommandLineArgumentsMocker wrapper("--model bla --pacing-freq 1 --pacing-max-time 20 --plasma-concs 1 ");
+
+            TS_ASSERT_THROWS_THIS(SetupModel setup(1.0, UNSIGNED_UNSET),
+                                  "No model matches this index: bla");
+        }
+        {
+            CommandLineArgumentsMocker wrapper("--model 99999");
+
+            TS_ASSERT_THROWS_THIS(SetupModel setup(1.0, UNSIGNED_UNSET),
+                                  "No model matches this index: 99999");
+        }
+        {
+            CommandLineArgumentsMocker wrapper("--cellml projects/ApPredict/src/cellml/cellml/ten_tusscher_model_2006_epi.cellml --plasma-concs 1 10 --pic50-herg 4.5 --plasma-conc-logscale false --output-dir ApPredict_output_long");
+
+            ApPredictMethods methods;
+            TS_ASSERT_EQUALS(Warnings::Instance()->GetNextWarningMessage(),"Argument --cellml <file> is deprecated use --model <file> instead.");
+        }
+        {
+            CommandLineArgumentsMocker wrapper("--cellml bla.cellml");
+
+            TS_ASSERT_THROWS_THIS(SetupModel setup(1.0, UNSIGNED_UNSET),
+                                  "Invalid file given with --cellml argument: bla.cellml");
+        }
+
     }
 
     void TestVoltageThresholdDetectionAlgorithm()
@@ -104,7 +143,7 @@ public:
 
             TS_ASSERT_DELTA(threshold_voltage, thresholds_for_each_model[model_index - 1u], 1e-2);
         }
-    }
+   }
 
     /**
      * This test should emulate the standalone executable and read your command line arguments.

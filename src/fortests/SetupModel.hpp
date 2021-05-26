@@ -41,6 +41,10 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "AbstractCvodeCell.hpp"
 #include "OutputFileHandler.hpp"
 
+#include "ModelFactory.hpp"
+#include <unordered_set>
+
+
 /**
  * Class to return a Cvode cell model with appropriate stimulus based on the
  * CellML default stimulus. This class reads the command line argument
@@ -50,6 +54,13 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 class SetupModel
 {
 private:
+
+    /** Map of model index to model name*/
+    static const std::map<std::string, std::string> modelMapping;
+
+    /** Set of names of models that require forced numerical Jacobian*/
+    static const std::unordered_set<std::string> forceNumericalJModels;
+
     /** Private default constructor to stop this being called and point in the direction of the other constructor */
     SetupModel(){};
 
@@ -72,6 +83,8 @@ public:
      *
      * @param model_index  1 = Shannon, 2=TenTusscher, 3 = Mahajan, 4 = Hund-Rudy, 5 = Grandi,
      *        6 = O'Hara-Rudy, 7 = Paci ventricular, 8 = CiPA O'Hara-Rudy v1.0
+     *        UNSIGNED_UNSET = look at the --model command line parameter: this can be a number, 
+     *        name of cellml file (without .) or path to cellml file.
      * @param hertz  The frequency of the regular stimulus that this model should use.
      * @param pHandler  An optional pointer to use as a working directory when
      *                  generating code on the fly from CellML (defaults to empty pointer).
@@ -91,7 +104,8 @@ public:
                "*   options: 1 = Shannon, 2 = TenTusscher (06), 3 = Mahajan,\n"
                "*            4 = Hund-Rudy, 5 = Grandi, 6 = O'Hara-Rudy 2011 (endo),\n"
                "*            7 = Paci (ventricular), 8 = O'Hara-Rudy CiPA v1 2017 (endo)\n"
-               "* OR --cellml <file>\n";
+               "* OR --model <name of pre-compiled cellmlfile (without .cellml)>\n"
+               "* OR --model <file> (a CellML file, relative to current working directory or an absolute path)\n";
     }
 
     /**

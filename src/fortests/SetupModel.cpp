@@ -38,6 +38,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "CheckpointArchiveTypes.hpp"
 
 #include "Exception.hpp"
+#include "Warnings.hpp"
 #include "SetupModel.hpp"
 
 #include "AbstractIvpOdeSolver.hpp"
@@ -46,15 +47,18 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "FileFinder.hpp"
 #include "RegularStimulus.hpp"
 
-#include "shannon_wang_puglisi_weber_bers_2004Cvode.hpp"
-//#include "Shannon2004Cvode.hpp"
-#include "grandi_pasqualini_bers_2010_ssCvode.hpp"
-#include "hund_rudy_2004Cvode.hpp"
-#include "mahajan_shiferaw_2008Cvode.hpp"
-#include "ohara_rudy_2011_endoCvode.hpp"
-#include "ohara_rudy_cipa_v1_2017Cvode.hpp"
-#include "paci_hyttinen_aaltosetala_severi_ventricularVersionCvode.hpp"
-#include "ten_tusscher_model_2006_epiCvode.hpp"
+/* Mapping to implemnt backward compatibility with old hard coded model numbers */
+const std::map<std::string, std::string> SetupModel::modelMapping = {{"1", "shannon_wang_puglisi_weber_bers_2004"},
+                                                                     {"2", "ten_tusscher_model_2006_epi"},
+                                                                     {"3", "mahajan_shiferaw_2008"},
+                                                                     {"4", "hund_rudy_2004"},
+                                                                     {"5", "grandi_pasqualini_bers_2010_ss"},
+                                                                     {"6", "ohara_rudy_2011_endo"},
+                                                                     {"7", "paci_hyttinen_aaltosetala_severi_ventricularVersion"},
+                                                                     {"8", "ohara_rudy_cipa_v1_2017"}};
+
+const std::unordered_set<std::string> SetupModel::forceNumericalJModels = {"hund_rudy_2004"};
+
 
 SetupModel::SetupModel(const double& rHertz,
     unsigned modelIndex,
@@ -65,70 +69,73 @@ SetupModel::SetupModel(const double& rHertz,
     boost::shared_ptr<AbstractStimulusFunction> p_stimulus;
     boost::shared_ptr<AbstractIvpOdeSolver> p_solver;
 
-    // If modelIndex is specified, then we have to use that, and ignore command line.
-    if (modelIndex == UNSIGNED_UNSET && CommandLineArguments::Instance()->OptionExists("--cellml"))
+    // Exceptions for wrong argument combinations
+    if (modelIndex == UNSIGNED_UNSET && !CommandLineArguments::Instance()->OptionExists("--cellml") && !CommandLineArguments::Instance()->OptionExists("--model"))
     {
-        // Try to use a dynamically loaded model
-        if (CommandLineArguments::Instance()->OptionExists("--model"))
-        {
-            EXCEPTION("You can only call ApPredict with the option '--model' OR '--cellml <file>'.");
-        }
-        std::string cellml_file_path = CommandLineArguments::Instance()->GetStringCorrespondingToOption("--cellml");
-        FileFinder cellml_file(cellml_file_path, RelativeTo::CWD);
-        std::vector<std::string> options = boost::assign::list_of("--expose-annotated-variables");
+        EXCEPTION("Argument \"--model <index>\" is required");
+    }
+    if (modelIndex == UNSIGNED_UNSET && CommandLineArguments::Instance()->OptionExists("--cellml") && CommandLineArguments::Instance()->OptionExists("--model"))
+    {
+        EXCEPTION("You can only call ApPredict with the option '--model' OR '--cellml <file>'.");
+    }
+
+    // Figure out which cellml we need name
+    std::string modelName;
+    if (modelIndex != UNSIGNED_UNSET) //passed a number
+    {
+        modelName = std::to_string(modelIndex);
+    }
+    else if(CommandLineArguments::Instance()->OptionExists("--cellml"))
+    {
+        // passed a file name via --cellml
+        WARNING("Argument --cellml <file> is deprecated use --model <file> instead.");
+        modelName = CommandLineArguments::Instance()->GetStringCorrespondingToOption("--cellml");
+    }
+    else
+    {   
+        // passed a an index, model name or file name via --model
+        modelName = CommandLineArguments::Instance()->GetStringCorrespondingToOption("--model");
+    }
+
+    // check if we have been given a file name and if so use that
+    FileFinder cellml_file(modelName, RelativeTo::AbsoluteOrCwd);
+    if (cellml_file.Exists())
+    {
         if (mpHandler == NULL)
         {
             EXCEPTION("Trying to set up a dynamically loaded model without a working directory in SetupModel constructor.");
         }
-        CellMLLoader loader(cellml_file, *mpHandler, options);
+        CellMLLoader loader(cellml_file, *mpHandler, {});
         mpModel = loader.LoadCvodeCell();
     }
-    else // Using a hardcoded model
-    {
-        if (modelIndex == UNSIGNED_UNSET)
+    else
+    { // we have been given a model name or number
+        if(CommandLineArguments::Instance()->OptionExists("--cellml"))
         {
-            if (!CommandLineArguments::Instance()->OptionExists("--model"))
-            {
-                EXCEPTION("Argument \"--model <index>\" is required");
-            }
-            modelIndex = CommandLineArguments::Instance()->GetUnsignedCorrespondingToOption("--model");
+            EXCEPTION("Invalid file given with --cellml argument: " + modelName);
         }
-        switch (modelIndex)
+        
+        // Check if we have been given an index that can be mapped to a model name
+        auto mapIterator = SetupModel::modelMapping.find(modelName);
+        if(mapIterator != SetupModel::modelMapping.end())
         {
-        case 1u:
-            // This one is from the cellml project - more metadata.
-            mpModel.reset(new Cellshannon_wang_puglisi_weber_bers_2004FromCellMLCvode(p_solver, p_stimulus));
-            // This one is from the Chaste source
-            //mpModel.reset(new CellShannon2004FromCellMLCvode(p_solver, p_stimulus));
-            break;
-        case 2u:
-            mpModel.reset(new Cellten_tusscher_model_2006_epiFromCellMLCvode(p_solver, p_stimulus));
-            break;
-        case 3u:
-            mpModel.reset(new Cellmahajan_shiferaw_2008FromCellMLCvode(p_solver, p_stimulus));
-            break;
-        case 4u:
-            mpModel.reset(new Cellhund_rudy_2004FromCellMLCvode(p_solver, p_stimulus));
-            // Hund Rudy doesn't play well with the use of an Analyic Jacobian, see Cooper, Spiteri, Mirams, 2015 paper
-            mpModel->ForceUseOfNumericalJacobian(true);
-            break;
-        case 5u:
-            mpModel.reset(new Cellgrandi_pasqualini_bers_2010_ssFromCellMLCvode(p_solver, p_stimulus));
-            break;
-        case 6u:
-            mpModel.reset(new Cellohara_rudy_2011_endoFromCellMLCvode(p_solver, p_stimulus));
-            break;
-        case 7u:
-            mpModel.reset(new Cellpaci_hyttinen_aaltosetala_severi_ventricularVersionFromCellMLCvode(p_solver, p_stimulus));
-            break;
-        case 8u:
-            mpModel.reset(new Cellohara_rudy_cipa_v1_2017FromCellMLCvode(p_solver, p_stimulus));
-            break;
-        default:
-            EXCEPTION("No model matches this index");
+            modelName = mapIterator->second;
         }
+
+        // Create model using factory
+        if(ModelFactory::Exists(modelName , "AnalyticCvode"))
+        {
+            mpModel.reset((AbstractCvodeCell*)ModelFactory::Create(modelName , "AnalyticCvode", p_solver, p_stimulus));
+        }
+        else
+        {  // throw an error if the model isn't found
+            EXCEPTION("No model matches this index: " + modelName);
+        }
+
+        //set numerical Jacobean if needed
+        mpModel->ForceUseOfNumericalJacobian(SetupModel::forceNumericalJModels.find(modelName) != SetupModel::forceNumericalJModels.end());
     }
-    //std::cout << "* model = " << mpModel->GetSystemName() << "\n";
+    //std::cout << "* model = " << mpModel->GetSystemName() << std::endl;
 
     double s_magnitude = -15; // We will attempt to overwrite these with model specific ones below
     double s_duration = 3.0; // We will attempt to overwrite these with model specific ones below

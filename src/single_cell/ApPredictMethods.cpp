@@ -928,6 +928,11 @@ void ApPredictMethods::Run()
 
 void ApPredictMethods::CommonRunMethod()
 {
+    if (!mSuppressOutput)
+    {
+        std::cout << "* model = " << mpModel->GetSystemName() << std::endl;
+    }
+
     // Arguments that take default values
     std::vector<std::vector<double>> IC50s;
     std::vector<std::vector<double>> hills;
