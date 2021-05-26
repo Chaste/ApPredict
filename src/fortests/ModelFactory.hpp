@@ -44,34 +44,45 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 /**
- * Class to provide a way to create models indirectly using the name of the cellml file and the model type.
- * This elliminated the need to hardcode which models are available.
- * Following the Factory design pattern, this class provides methods for generated cells to register their existance 
- * and methods for creating new instances of cells.
+ * Class to provide a way to create models indirectly using the name of the cellml 
+ * file and the model type. This eliminated the need to hardcode which models are available.
+ * Following the Factory design pattern, this class provides methods for generated 
+ * cells to register their existance and methods for creating new instances of cells.
  */
-class ModelFactory{
+class ModelFactory
+{
 public:
-
-    /** Type definition for methods to creat a new model*/
+    /** Type definition for methods to creat a new model */
     using TCreateMethod = void*(*)(boost::shared_ptr<AbstractIvpOdeSolver> p_solver, boost::shared_ptr<AbstractStimulusFunction> p_stimulus);
 
-    /** Type definition for Mapping of model name & type to create method*/
+    /** Type definition for Mapping of model name & type to create method */
     using TModelMapping = std::shared_ptr<std::map<std::pair<std::string, std::string>, TCreateMethod>>;
 
-    /** Method to check whether a given model, type combination has been registered and can be created */
-    static bool Exists(const std::string& name, const std::string& type);
+    /** Method to check whether a given model, type combination has been registered 
+     *  and can be created */
+    static bool Exists(const std::string& rName, const std::string& rType);
 
-    /** Method to create an given type instance of a model. The result needs to be type cast to the desired cell type (see TestModelFactory.hpp for examples)*/
-    static void* Create(const std::string& name, const std::string& type, boost::shared_ptr<AbstractIvpOdeSolver> pSolver, boost::shared_ptr<AbstractStimulusFunction> pStimulus);
+    /** Method to create an given type instance of a model. 
+     * The result needs to be type cast to the desired cell type 
+     * (see TestModelFactory.hpp for examples) */
+    static void* Create(const std::string& rName, 
+                        const std::string& rType, 
+                        boost::shared_ptr<AbstractIvpOdeSolver> pSolver, 
+                        boost::shared_ptr<AbstractStimulusFunction> pStimulus);
 
-    /** Registration method for generated cells to register themselves with the model factory*/
-    static bool Register(const std::string& name, const std::string& type, ModelFactory::TCreateMethod funcCreate);
+    /** Registration method for generated cells to register themselves with the model factory */
+    static bool Register(const std::string& rName, 
+                         const std::string& rType, 
+                         ModelFactory::TCreateMethod funcCreate);
 
 private:
-    /** Mapping of model name & type to create method */
-    static ModelFactory::TModelMapping modelRegistry;
+    // N.B. these need to be down here as the types are declared above.
 
-    /** Private getter, making sure the map isinitialised before using it*/
+    /** Mapping of model name & type to create method */
+    static ModelFactory::TModelMapping mpModelRegistry;
+
+    /** Private getter, making sure the map is initialised before using it */
     static TModelMapping  getModelRegistry();
 };
+
 #endif // MODELFACTORY_HPP_

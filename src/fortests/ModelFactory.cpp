@@ -35,38 +35,45 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "ModelFactory.hpp"
 
-ModelFactory::TModelMapping ModelFactory::modelRegistry;
+ModelFactory::TModelMapping ModelFactory::mpModelRegistry;
 
-ModelFactory::TModelMapping ModelFactory::getModelRegistry(){
-    if(ModelFactory::modelRegistry == nullptr){
-        ModelFactory::modelRegistry = std::make_unique<std::map<std::pair<std::string, std::string>, ModelFactory::TCreateMethod>>();
+ModelFactory::TModelMapping ModelFactory::getModelRegistry()
+{
+    if (ModelFactory::mpModelRegistry == nullptr)
+    {
+        ModelFactory::mpModelRegistry = std::make_unique<std::map<std::pair<std::string, std::string>, ModelFactory::TCreateMethod>>();
     }
-    return ModelFactory::modelRegistry;
+    return ModelFactory::mpModelRegistry;
 }
 
-bool ModelFactory::Exists(const std::string& name, const std::string& type)
+bool ModelFactory::Exists(const std::string& rName, const std::string& rType)
 {
-    std::pair<std::string, std::string> name_type = std::make_pair(name, type);
+    std::pair<std::string, std::string> name_type = std::make_pair(rName, rType);
     return ModelFactory::getModelRegistry()->find(name_type) != ModelFactory::getModelRegistry()->end();
 }
 
-void* ModelFactory::Create(const std::string& name, const std::string& type, boost::shared_ptr<AbstractIvpOdeSolver> pSolver, boost::shared_ptr<AbstractStimulusFunction> pStimulus)
+void* ModelFactory::Create(const std::string& rName, 
+                           const std::string& rType, 
+                           boost::shared_ptr<AbstractIvpOdeSolver> pSolver, 
+                           boost::shared_ptr<AbstractStimulusFunction> pStimulus)
 {
-    std::pair<std::string, std::string> name_type = std::make_pair(name, type);
+    std::pair<std::string, std::string> name_type = std::make_pair(rName, rType);
     auto it = ModelFactory::getModelRegistry()->find(name_type);
     if (it == ModelFactory::getModelRegistry()->end())
     {
-        EXCEPTION("Model type combination does not exist cannot create: " + name + ", " + type);
+        EXCEPTION("Model type combination does not exist cannot create: " + rName + ", " + rType);
     }
     return it->second(pSolver, pStimulus); // call the createFunc
 }
 
-bool ModelFactory::Register(const std::string& name, const std::string& type, ModelFactory::TCreateMethod funcCreate)
+bool ModelFactory::Register(const std::string& rName, 
+                            const std::string& rType, 
+                            ModelFactory::TCreateMethod funcCreate)
 {
-    std::pair<std::string, std::string> nameType = std::make_pair(name, type);
+    std::pair<std::string, std::string> nameType = std::make_pair(rName, rType);
     if (ModelFactory::getModelRegistry()->count(nameType) != 0)
     {
-        EXCEPTION("Duplicate model: "+ name +" registration with the ModelFactory for type: "+ type +". If you are using your own version of this model please rename the cellml file.");
+        EXCEPTION("Duplicate model: " + rName + " registration with the ModelFactory for type: " + rType + ". If you are using your own version of this model please rename the cellml file.");
     }
     ModelFactory::getModelRegistry()->insert(std::pair<std::pair<std::string, std::string>, ModelFactory::TCreateMethod>(nameType, funcCreate));
     return true;
