@@ -52,8 +52,10 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 class ModelFactory{
 public:
 
-    /** Map of model index to model name*/
+    /** Type definition for methods to creat a new model*/
     using TCreateMethod = void*(*)(boost::shared_ptr<AbstractIvpOdeSolver> p_solver, boost::shared_ptr<AbstractStimulusFunction> p_stimulus);
+
+    /** Type definition for Mapping of model name & type to create method*/
     using TModelMapping = std::shared_ptr<std::map<std::pair<std::string, std::string>, TCreateMethod>>;
 
     /** Method to check whether a given model, type combination has been registered and can be created */
