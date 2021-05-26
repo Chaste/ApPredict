@@ -93,7 +93,7 @@ SetupModel::SetupModel(const double& rHertz,
     }
     else
     {   
-        // passed a an index, model name or file name via --cellml
+        // passed a an index, model name or file name via --model
         modelName = CommandLineArguments::Instance()->GetStringCorrespondingToOption("--model");
     }
 
