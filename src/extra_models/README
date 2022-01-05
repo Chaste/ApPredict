@@ -4,6 +4,6 @@ Once the project is built these will be available as pre-compiled models
 and can be used with --model <name of cellml file (without.cellml)>.
 
 Please note: The additional cellml file cannot have the same name as one of the pre-included cellml files in src/cellml/cellml
-as these would generated model code with conflicting names. 
+as these would generate model code with conflicting names. 
 In case you receive a compile error with regards to duplicate definitions, 
 we suggest renaming the additional cellml files to avoid conflicts.
