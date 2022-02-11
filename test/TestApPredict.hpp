@@ -44,8 +44,8 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "ApPredictMethods.hpp"
 #include "CommandLineArgumentsMocker.hpp"
 #include "FileFinder.hpp"
-#include "SetupModel.hpp"
 #include "NumericFileComparison.hpp"
+#include "SetupModel.hpp"
 
 class TestApPredict : public CxxTest::TestSuite
 {
@@ -67,7 +67,7 @@ public:
             ApPredictMethods methods;
 
             TS_ASSERT_THROWS_THIS(methods.Run(),
-                                  "Argument \"--model <index>\" is required");
+                                  "Argument \"--model <index or name or file>\" is required (run ApPredict executable with no options for help message).");
         }
 
         {
@@ -90,7 +90,7 @@ public:
             CommandLineArgumentsMocker wrapper("--model 1 --cellml 1 --pacing-freq 1 --pacing-max-time 20 --plasma-concs 1 ");
 
             TS_ASSERT_THROWS_THIS(SetupModel setup(1.0, UNSIGNED_UNSET),
-                                  "You can only call ApPredict with the option '--model' OR '--cellml <file>'.");
+                                  "You can only call ApPredict with the option '--model' OR '--cellml <file>' (not both).");
         }
 
         {
@@ -115,7 +115,7 @@ public:
             CommandLineArgumentsMocker wrapper("--cellml projects/ApPredict/src/cellml/cellml/ten_tusscher_model_2006_epi.cellml --plasma-concs 1 10 --pic50-herg 4.5 --plasma-conc-logscale false --output-dir ApPredict_output_long");
 
             ApPredictMethods methods;
-            TS_ASSERT_EQUALS(Warnings::Instance()->GetNextWarningMessage(),"Argument --cellml <file> is deprecated use --model <file> instead.");
+            TS_ASSERT_EQUALS(Warnings::Instance()->GetNextWarningMessage(), "Argument --cellml <file> is deprecated: use --model <file> instead.");
         }
         {
             CommandLineArgumentsMocker wrapper("--cellml bla.cellml");
@@ -123,7 +123,6 @@ public:
             TS_ASSERT_THROWS_THIS(SetupModel setup(1.0, UNSIGNED_UNSET),
                                   "Invalid file given with --cellml argument: bla.cellml");
         }
-
     }
 
     void TestVoltageThresholdDetectionAlgorithm()
@@ -143,7 +142,7 @@ public:
 
             TS_ASSERT_DELTA(threshold_voltage, thresholds_for_each_model[model_index - 1u], 1e-2);
         }
-   }
+    }
 
     /**
      * This test should emulate the standalone executable and read your command line arguments.
@@ -151,9 +150,9 @@ public:
     void TestDrugAffectByVaryingConductances(void)
     {
         //////////// DEFINE PARAMETERS ///////////////
-        CommandLineArguments *p_args = CommandLineArguments::Instance();
+        CommandLineArguments* p_args = CommandLineArguments::Instance();
         unsigned argc = *(p_args->p_argc); // has the number of arguments, and
-        //char **argv = *(p_args->p_argv); // is a char** of them.
+        // char **argv = *(p_args->p_argv); // is a char** of them.
         unsigned num_args = argc - 1;
         std::cout << "# " << num_args << " arguments supplied.\n"
                   << std::flush;
