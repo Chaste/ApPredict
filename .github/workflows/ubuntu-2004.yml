@@ -24,12 +24,14 @@ jobs:
       uses: actions/checkout@v3
       with:
         repository: Chaste/Chaste
+        submodules: recursive
       
     - name: checkout ApPredict project
       uses: actions/checkout@v3
       with:
         repository: Chaste/ApPredict
         path: projects/ApPredict
+        submodules: recursive
 
     - name: install dependencies
       run: |
@@ -63,24 +65,8 @@ jobs:
       run: cmake --build . --parallel 8 --target chaste_core
       working-directory: chaste-build-dir
 
-    - name: build cell_based
-      run: cmake --build . --parallel 8 --target chaste_cell_based
-      working-directory: chaste-build-dir
-
-    - name: build crypt
-      run: cmake --build . --parallel 8 --target chaste_crypt
-      working-directory: chaste-build-dir
-
     - name: build heart
       run: cmake --build . --parallel 8 --target chaste_heart
-      working-directory: chaste-build-dir
-
-    - name: build lung
-      run: cmake --build . --parallel 8 --target chaste_lung
-      working-directory: chaste-build-dir
-
-    - name: build Continuous test pack
-      run: cmake --build . --parallel 8 --target Continuous
       working-directory: chaste-build-dir
       
     - name: build ApPredict test pack
