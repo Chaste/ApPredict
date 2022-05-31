@@ -15,7 +15,7 @@ jobs:
   build-and-test:
 
     name: Build and Test on Ubuntu 20.04
-    runs-on: self-hosted ubuntu-20.04
+    runs-on: [self-hosted, ubuntu-20.04]
     env:
       CHASTE_TEST_OUTPUT: ${{ github.workspace }}/chaste-test-dir
 
