@@ -79,6 +79,10 @@ jobs:
       run: cmake --build . --parallel 8 --target chaste_lung
       working-directory: chaste-build-dir
 
+    - name: build Continuous test pack
+      run: cmake --build . --parallel 8 --target Continuous
+      working-directory: chaste-build-dir
+      
     - name: build ApPredict test pack
       run: cmake --build . --parallel 8 --target ApPredict
       working-directory: chaste-build-dir
