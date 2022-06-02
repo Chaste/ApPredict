@@ -65,8 +65,8 @@ jobs:
       run: cmake --build . --parallel 8 --target chaste_heart
       working-directory: Chaste/build
       
-    - name: build ApPredict test pack
-      run: cmake --build . --parallel 8 --target ApPredict
+    - name: build ApPredict
+      run: cmake --build . --parallel 8 --target project_ApPredict
       working-directory: Chaste/build
 
     - name: run ApPredict test pack
