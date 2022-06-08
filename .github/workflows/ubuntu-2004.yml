@@ -24,7 +24,7 @@ jobs:
     steps:
     - name: set number of processors
       run: |
-        echo "NPROC: $(( $(nproc) < 12 ? $(nproc) : 12 ))" >> $GITHUB_ENV
+        echo "NPROC=$(( $(nproc) < 12 ? $(nproc) : 12 ))" >> $GITHUB_ENV
         
     - name: checkout Chaste repository
       uses: actions/checkout@v3
