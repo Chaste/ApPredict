@@ -22,6 +22,10 @@ jobs:
       CXX: g++
       
     steps:
+    - name: set number of processors
+      run: |
+        echo "NPROC: $(( $(nproc) < 12 ? $(nproc) : 12 ))" >> $GITHUB_ENV
+        
     - name: checkout Chaste repository
       uses: actions/checkout@v3
       with:
@@ -54,21 +58,21 @@ jobs:
         mkdir -p ${CHASTE_TEST_OUTPUT}
         
     - name: cmake configure
-      run: cmake -DCMAKE_BUILD_TYPE=Release ..
+      run: nice -n 10 cmake -DCMAKE_BUILD_TYPE=Release ..
       working-directory: Chaste/build
 
     - name: build core libraries
-      run: cmake --build . --parallel 8 --target chaste_core
+      run: nice -n 10 cmake --build . --parallel ${NPROC} --target chaste_core
       working-directory: Chaste/build
 
     - name: build heart
-      run: cmake --build . --parallel 8 --target chaste_heart
+      run: nice -n 10 cmake --build . --parallel ${NPROC} --target chaste_heart
       working-directory: Chaste/build
       
     - name: build ApPredict
-      run: cmake --build . --parallel 8 --target project_ApPredict
+      run: nice -n 10 cmake --build . --parallel ${NPROC} --target project_ApPredict
       working-directory: Chaste/build
 
     - name: run ApPredict test pack
-      run: ctest -j8 -L ApPredict --output-on-failure
+      run: nice -n 10 ctest -j${NPROC} -L ApPredict --output-on-failure
       working-directory: Chaste/build
