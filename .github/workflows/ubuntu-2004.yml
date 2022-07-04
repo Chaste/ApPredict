@@ -76,3 +76,13 @@ jobs:
     - name: run ApPredict test pack
       run: nice -n 10 ctest -j${NPROC} -L ApPredict --output-on-failure
       working-directory: Chaste/build
+  
+    - name: send notifications
+      if: failure()
+      env:
+        SLACK_BOT_TOKEN: ${{ secrets.SLACK_NOTIFICATIONS_BOT_TOKEN }}
+      uses: voxmedia/github-action-slack-notify-build@v1
+      with:
+        channel: ap-predict
+        status: FAILED
+        color: danger
