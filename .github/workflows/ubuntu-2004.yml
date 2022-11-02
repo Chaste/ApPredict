@@ -1,0 +1,88 @@
+name: Ubuntu 20.04 ApPredict test suite
+
+on:
+  push:
+    branches:
+      - master
+      
+  schedule:
+    - cron:  '0 0 * * *'
+    
+  workflow_dispatch:
+  
+jobs:
+
+  build-and-test:
+
+    name: Build and test on Ubuntu 20.04
+    runs-on: [self-hosted, ubuntu-20.04]
+    env:
+      CHASTE_TEST_OUTPUT: ${{ github.workspace }}/chaste-test-dir
+      CC: gcc
+      CXX: g++
+      
+    steps:
+    - name: set number of processors
+      run: |
+        echo "NPROC=$(( $(nproc) < 12 ? $(nproc) : 12 ))" >> $GITHUB_ENV
+        
+    - name: checkout Chaste repository
+      uses: actions/checkout@v3
+      with:
+        repository: Chaste/Chaste
+        path: Chaste
+        submodules: recursive
+      
+    - name: checkout ApPredict project
+      uses: actions/checkout@v3
+      with:
+        repository: Chaste/ApPredict
+        path: Chaste/projects/ApPredict
+        submodules: recursive
+        
+    - name: ${CXX} version
+      run: |
+        ${CXX} --version
+        ${CXX} --version > compiler.version
+        
+    - name: cache build directory
+      uses: actions/cache@v3
+      id: cache
+      with:
+        path: Chaste/build
+        key: ${{ runner.os }}-${{ hashFiles('docs/ReleaseNotes.html') }}-${{ hashFiles('compiler.version') }}
+
+    - name: make build and test directories
+      run: |
+        mkdir -p Chaste/build
+        mkdir -p ${CHASTE_TEST_OUTPUT}
+        
+    - name: cmake configure
+      run: nice -n 10 cmake -DCMAKE_BUILD_TYPE=Release ..
+      working-directory: Chaste/build
+
+    - name: build core libraries
+      run: nice -n 10 cmake --build . --parallel ${NPROC} --target chaste_core
+      working-directory: Chaste/build
+
+    - name: build heart
+      run: nice -n 10 cmake --build . --parallel ${NPROC} --target chaste_heart
+      working-directory: Chaste/build
+      
+    - name: build ApPredict
+      run: nice -n 10 cmake --build . --parallel ${NPROC} --target project_ApPredict
+      working-directory: Chaste/build
+
+    - name: run ApPredict test pack
+      run: nice -n 10 ctest -j${NPROC} -L ApPredict --output-on-failure
+      working-directory: Chaste/build
+  
+    - name: send notifications
+      if: failure()
+      env:
+        SLACK_BOT_TOKEN: ${{ secrets.SLACK_NOTIFICATIONS_BOT_TOKEN }}
+      uses: voxmedia/github-action-slack-notify-build@v1
+      with:
+        channel: ap-predict
+        status: FAILED
+        color: danger
