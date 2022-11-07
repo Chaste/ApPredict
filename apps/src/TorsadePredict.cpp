@@ -51,12 +51,21 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 int main(int argc, char *argv[])
 {
+    int exit_code = ExecutableSupport::EXIT_OK;
+    
     // This sets up PETSc and prints out copyright information, etc.
     ExecutableSupport::StandardStartup(&argc, &argv);
     ApPredictMethods::ShowVersion();
-    ExecutableSupport::SetOutputDirectory("TorsadePredict_output");
 
-    int exit_code = ExecutableSupport::EXIT_OK;
+    if (CommandLineArguments::Instance()->OptionExists("--version"))
+    {
+        std::string info;
+        ExecutableSupport::GetBuildInfo(info);
+        std::cout << info << std::flush;
+        return exit_code;
+    }
+
+    ExecutableSupport::SetOutputDirectory("TorsadePredict_output");
 
     // You should put all the main code within a try-catch, to ensure that
     // you clean up PETSc before quitting.
