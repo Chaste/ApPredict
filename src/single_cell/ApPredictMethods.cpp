@@ -203,6 +203,9 @@ std::string ApPredictMethods::PrintCommonArguments()
                           "* --output-dir       By default output goes into '$CHASTE_TEST_OUTPUT/ApPredict_output'\n"
                           "*                    but you can redirect it (useful for parallel scripting)\n"
                           "*                    with this argument.\n"
+                          "* --version          Print out Chaste and ApPredict versions, along with dependency versions\n"
+                          "*                    and exit immediately (this info automatically goes to a 'provenance_info.txt' \n"
+                          "*                    file on completion of a normal run without this flag).\n"
                           "*\n";
     return message;
 }
