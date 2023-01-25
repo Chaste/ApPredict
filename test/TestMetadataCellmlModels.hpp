@@ -74,6 +74,10 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "decker_2009Cvode.hpp"
 #include "decker_2009CvodeOpt.hpp"
 #include "decker_2009Opt.hpp"
+#include "faber_rudy_2000.hpp"
+#include "faber_rudy_2000Cvode.hpp"
+#include "faber_rudy_2000CvodeOpt.hpp"
+#include "faber_rudy_2000Opt.hpp"
 #include "grandi_pasqualini_bers_2010_ss.hpp"
 #include "grandi_pasqualini_bers_2010_ssCvode.hpp"
 #include "grandi_pasqualini_bers_2010_ssCvodeOpt.hpp"
@@ -184,7 +188,7 @@ public:
         double e = 0.5;
         double f = 0.4;
 
-        for (unsigned model_index = 1u; model_index <= 12u; model_index++)
+        for (unsigned model_index = 1u; model_index <= 13u; model_index++)
         {
             AbstractCardiacCell* p_chaste_cell;
             AbstractCardiacCell* p_chaste_cell_opt;
@@ -288,6 +292,14 @@ public:
                     p_chaste_cell_opt = new Cellpaci_hyttinen_aaltosetala_severi_ventricularVersionFromCellMLOpt(p_solver, p_stimulus);
                     p_cvode_cell = new Cellpaci_hyttinen_aaltosetala_severi_ventricularVersionFromCellMLCvode(p_solver, p_stimulus);
                     p_cvode_cell_opt = new Cellpaci_hyttinen_aaltosetala_severi_ventricularVersionFromCellMLCvodeOpt(p_solver, p_stimulus);
+                    break;
+                }
+                case 13u:
+                {
+                    p_chaste_cell = new Cellfaber_rudy_2000FromCellML(p_solver, p_stimulus);
+                    p_chaste_cell_opt = new Cellfaber_rudy_2000FromCellMLOpt(p_solver, p_stimulus);
+                    p_cvode_cell = new Cellfaber_rudy_2000FromCellMLCvode(p_solver, p_stimulus);
+                    p_cvode_cell_opt = new Cellfaber_rudy_2000FromCellMLCvodeOpt(p_solver, p_stimulus);
                     break;
                 }
                 default:
