@@ -1,6 +1,6 @@
 /*
 
-Copyright (c) 2005-2021, University of Oxford.
+Copyright (c) 2005-2023, University of Oxford.
 All rights reserved.
 
 University of Oxford means the Chancellor, Masters and Scholars of the
@@ -43,25 +43,25 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "AbstractActionPotentialMethod.hpp"
 
 AbstractActionPotentialMethod::AbstractActionPotentialMethod()
-        : mRunYet(false),
-          mMaxNumPaces(UNSIGNED_UNSET),
-          mErrorMessage(""),
-          mErrorCode(0u),
-          mNoOneToOneCorrespondenceIsError(false),
-          mAlternansIsError(false),
-          mActionPotentialThreshold(-50),
-          mActionPotentialThresholdSetManually(false),
-          mDefaultParametersApd90(DOUBLE_UNSET),
-          mDefaultParametersTimeOfVMax(DOUBLE_UNSET),
-          mRepeat(false),
-          mRepeatNumber(0u),
-          mSuppressOutput(false),
-          mHertz(1.0), // default to 1 Hz, replaced by suitable command line
-          // argument if present.
-          mSuccessful(false),
-          mPeriodTwoBehaviour(false)
+    : mRunYet(false),
+      mMaxNumPaces(UNSIGNED_UNSET),
+      mErrorMessage(""),
+      mErrorCode(0u),
+      mNoOneToOneCorrespondenceIsError(false),
+      mAlternansIsError(false),
+      mActionPotentialThreshold(-50),
+      mActionPotentialThresholdSetManually(false),
+      mDefaultParametersApd90(DOUBLE_UNSET),
+      mDefaultParametersTimeOfVMax(DOUBLE_UNSET),
+      mRepeat(false),
+      mRepeatNumber(0u),
+      mSuppressOutput(false),
+      mHertz(1.0), // default to 1 Hz, replaced by suitable command line
+      // argument if present.
+      mSuccessful(false),
+      mPeriodTwoBehaviour(false)
 {
-    CommandLineArguments* p_args = CommandLineArguments::Instance();
+    CommandLineArguments *p_args = CommandLineArguments::Instance();
 
     if (p_args->OptionExists("--pacing-freq"))
     {
@@ -155,7 +155,7 @@ unsigned AbstractActionPotentialMethod::GetErrorCode()
 }
 
 void AbstractActionPotentialMethod::WriteMessageToFile(
-    const std::string& rMessage)
+    const std::string &rMessage)
 {
     WARNING(rMessage); // Send the message to std::cout as well as any message
     // file in subclasses.
@@ -167,12 +167,19 @@ void AbstractActionPotentialMethod::SuppressOutput(bool suppress)
 }
 
 OdeSolution AbstractActionPotentialMethod::SteadyStatePacingExperiment(
-    boost::shared_ptr<AbstractCvodeCell> pModel, double& rApd90, double& rApd50,
-    double& rUpstroke, double& rPeak, double& rPeakTime, double& rCaMax,
-    double& rCaMin, const double printingTimeStep, const double conc)
+    boost::shared_ptr<AbstractCvodeCell> pModel,
+    double &rApd90,
+    double &rApd50,
+    double &rUpstroke,
+    double &rPeak,
+    double &rPeakTime,
+    double &rCaMax,
+    double &rCaMin,
+    const double printingTimeStep,
+    const double conc)
 {
     mRunYet = true;
-    mRepeat = false; //    These two resets are for counting whether we should repeat the last
+    mRepeat = false;    //    These two resets are for counting whether we should repeat the last
     mRepeatNumber = 0u; // AP simulation to detect alternans or abnormal repolarization.
 
     /**
@@ -220,7 +227,7 @@ OdeSolution AbstractActionPotentialMethod::SteadyStatePacingExperiment(
     // If it doesn't we don't bother pursuing this concentration and we skip
     // running to steady state.
     {
-        pModel->SetMaxSteps(100000);
+        pModel->SetMaxSteps(100000 + 10 * s1_period);
         OdeSolution solution = pModel->Solve(0, num_paces_to_analyze * s1_period, maximum_time_step,
                                              printingTimeStep); // Maximum timestep here is usually
         // the printing time step
@@ -256,7 +263,7 @@ OdeSolution AbstractActionPotentialMethod::SteadyStatePacingExperiment(
             if (!mSuppressOutput)
                 std::cout << "First pace APD90 = " << apd90 << "\n"; // << std::flush;
         }
-        catch (Exception& e)
+        catch (Exception &e)
         {
             if (e.GetShortMessage() == "AP did not occur, never exceeded threshold voltage." || e.GetShortMessage() == "No full action potential was recorded")
             {
@@ -318,10 +325,18 @@ void AbstractActionPotentialMethod::PushModelForwardOneS1Interval(
 }
 
 OdeSolution AbstractActionPotentialMethod::PerformAnalysisOfTwoPaces(
-    boost::shared_ptr<AbstractCvodeCell> pModel, double& rApd90, double& rApd50,
-    double& rUpstroke, double& rPeak, double& rPeakTime, double& rCaMax,
-    double& rCaMin, const double s1_period, const double maximumTimeStep,
-    const double printingTimeStep, const double conc)
+    boost::shared_ptr<AbstractCvodeCell> pModel,
+    double &rApd90,
+    double &rApd50,
+    double &rUpstroke,
+    double &rPeak,
+    double &rPeakTime,
+    double &rCaMax,
+    double &rCaMin,
+    const double s1_period,
+    const double maximumTimeStep,
+    const double printingTimeStep,
+    const double conc)
 {
     // We usually analyse two paces to look for alternans.
     // Have observed three period behaviour or more, so this is a hardcoded option
@@ -335,7 +350,7 @@ OdeSolution AbstractActionPotentialMethod::PerformAnalysisOfTwoPaces(
     // (after a bifurcation)
     // kind of alternans.
 
-    pModel->SetMaxSteps(num_paces_to_analyze * 100000); // Internal ODE solver steps, not paces!
+    pModel->SetMaxSteps(num_paces_to_analyze * (100000 + 10 * s1_period)); // Internal ODE solver steps, not paces!
     OdeSolution solution = pModel->Solve(0, num_paces_to_analyze * s1_period, maximumTimeStep,
                                          printingTimeStep); // Get plenty of detail on these two
     // paces for analysis.
@@ -406,14 +421,12 @@ OdeSolution AbstractActionPotentialMethod::PerformAnalysisOfTwoPaces(
         }
         mSuccessful = true;
     }
-    catch (Exception& e)
+    catch (Exception &e)
     {
         // We didn't get back any action potentials,
         // which should be because of one of the following errors (if not throw the
         // exception).
-        if (e.GetShortMessage() != "AP did not occur, never exceeded threshold voltage."
-            && e.GetShortMessage() != "No full action potential was recorded"
-            && e.GetShortMessage() != "No MaxUpstrokeVelocity matching a full action potential was recorded.")
+        if (e.GetShortMessage() != "AP did not occur, never exceeded threshold voltage." && e.GetShortMessage() != "No full action potential was recorded" && e.GetShortMessage() != "No MaxUpstrokeVelocity matching a full action potential was recorded.")
         {
             throw e;
         }
@@ -451,7 +464,7 @@ OdeSolution AbstractActionPotentialMethod::PerformAnalysisOfTwoPaces(
         if (!mSuppressOutput && mRepeatNumber > 0u)
             std::cout << message.str() << std::endl
                       << std::flush;
-        if (mRepeatNumber > 0u) 
+        if (mRepeatNumber > 0u)
         {
             WriteMessageToFile(message.str());
         }
@@ -476,7 +489,7 @@ OdeSolution AbstractActionPotentialMethod::PerformAnalysisOfTwoPaces(
                 mRepeat = true;
             }
             else
-            {   
+            {
                 // If we're going to repeat, we don't want this message twice.
                 if (mAlternansIsError)
                 {

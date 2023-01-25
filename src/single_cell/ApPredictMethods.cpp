@@ -1,6 +1,6 @@
 /*
 
-Copyright (c) 2005-2021, University of Oxford.
+Copyright (c) 2005-2023, University of Oxford.
 All rights reserved.
 
 University of Oxford means the Chancellor, Masters and Scholars of the
@@ -203,6 +203,9 @@ std::string ApPredictMethods::PrintCommonArguments()
                           "* --output-dir       By default output goes into '$CHASTE_TEST_OUTPUT/ApPredict_output'\n"
                           "*                    but you can redirect it (useful for parallel scripting)\n"
                           "*                    with this argument.\n"
+                          "* --version          Print out Chaste and ApPredict versions, along with dependency versions\n"
+                          "*                    and exit immediately (this info automatically goes to a 'provenance_info.txt' \n"
+                          "*                    file on completion of a normal run without this flag).\n"
                           "*\n";
     return message;
 }
@@ -928,6 +931,11 @@ void ApPredictMethods::Run()
 
 void ApPredictMethods::CommonRunMethod()
 {
+    if (!mSuppressOutput)
+    {
+        std::cout << "* model = " << mpModel->GetSystemName() << std::endl;
+    }
+
     // Arguments that take default values
     std::vector<std::vector<double>> IC50s;
     std::vector<std::vector<double>> hills;

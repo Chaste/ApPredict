@@ -1,4 +1,4 @@
-# Copyright (c) 2005-2021, University of Oxford.
+# Copyright (c) 2005-2023, University of Oxford.
 # All rights reserved.
 # 
 # University of Oxford means the Chancellor, Masters and Scholars of the
@@ -51,7 +51,7 @@ find_package(Chaste COMPONENTS heart)
 
 # Here we add extra arguments to force PyCML to use this extra argument (make Get and Set methods for
 # all metadata annotated variables). 
-set(Chaste_PYCML_EXTRA_ARGS "--expose-annotated-variables")
+set(Chaste_CODEGEN_EXTRA_ARGS "--use-model-factory")
 
 # ApPredict uses pthreads, so we specify that threads are required and add the necessary compile flag
 set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
