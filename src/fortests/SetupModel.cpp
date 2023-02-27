@@ -47,6 +47,17 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "FileFinder.hpp"
 #include "RegularStimulus.hpp"
 
+#include "shannon_wang_puglisi_weber_bers_2004Cvode.hpp"
+//#include "Shannon2004Cvode.hpp"
+#include "faber_rudy_2000Cvode.hpp"
+#include "grandi_pasqualini_bers_2010_ssCvode.hpp"
+#include "hund_rudy_2004Cvode.hpp"
+#include "mahajan_shiferaw_2008Cvode.hpp"
+#include "ohara_rudy_2011_endoCvode.hpp"
+#include "ohara_rudy_cipa_v1_2017Cvode.hpp"
+#include "paci_hyttinen_aaltosetala_severi_ventricularVersionCvode.hpp"
+#include "ten_tusscher_model_2006_epiCvode.hpp"
+
 /* Mapping to implement backward compatibility with old hardcoded model numbers */
 const std::map<std::string, std::string> SetupModel::modelMapping = { { "1", "shannon_wang_puglisi_weber_bers_2004" },
                                                                       { "2", "ten_tusscher_model_2006_epi" },
@@ -58,7 +69,7 @@ const std::map<std::string, std::string> SetupModel::modelMapping = { { "1", "sh
                                                                       { "8", "ohara_rudy_cipa_v1_2017" },
                                                                       { "9", "faber_rudy_2000" } };
 
-const std::unordered_set<std::string> SetupModel::forceNumericalJModels = { "hund_rudy_2004" };
+const std::unordered_set<std::string> SetupModel::forceNumericalJModels = { "hund_rudy_2004", "4" };
 
 SetupModel::SetupModel(const double& rHertz,
                        unsigned modelIndex,
@@ -117,20 +128,50 @@ SetupModel::SetupModel(const double& rHertz,
         }
 
         // Check if we have been given an index that can be mapped to a model name
-        auto mapIterator = SetupModel::modelMapping.find(modelName);
-        if (mapIterator != SetupModel::modelMapping.end())
+        switch (modelName)
         {
-            modelName = mapIterator->second;
-        }
-
-        // Create model using factory
-        if (ModelFactory::Exists(modelName, "AnalyticCvode"))
-        {
-            mpModel.reset((AbstractCvodeCell*)ModelFactory::Create(modelName, "AnalyticCvode", p_solver, p_stimulus));
-        }
-        else
-        { // throw an error if the model isn't found
-            EXCEPTION("No model matches this index: " + modelName);
+        case "1":
+            // This one is from the cellml project - more metadata.
+            mpModel.reset(new Cellshannon_wang_puglisi_weber_bers_2004FromCellMLCvode(p_solver, p_stimulus));
+            // This one is from the Chaste source
+            // mpModel.reset(new CellShannon2004FromCellMLCvode(p_solver,p_stimulus));
+            break;
+        case "2":
+            mpModel.reset(new Cellten_tusscher_model_2006_epiFromCellMLCvode(p_solver, p_stimulus));
+            break;
+        case "3":
+            mpModel.reset(new Cellmahajan_shiferaw_2008FromCellMLCvode(p_solver, p_stimulus));
+            break;
+        case "4":
+            mpModel.reset(new Cellhund_rudy_2004FromCellMLCvode(p_solver, p_stimulus));
+            // Hund Rudy doesn't play well with the use of an Analyic Jacobian, see Cooper, Spiteri, Mirams, 2015 paper
+            mpModel->ForceUseOfNumericalJacobian(true);
+            break;
+        case "5":
+            mpModel.reset(new Cellgrandi_pasqualini_bers_2010_ssFromCellMLCvode(p_solver, p_stimulus));
+            break;
+        case "6":
+            mpModel.reset(new Cellohara_rudy_2011_endoFromCellMLCvode(p_solver, p_stimulus));
+            break;
+        case "7":
+            mpModel.reset(new Cellpaci_hyttinen_aaltosetala_severi_ventricularVersionFromCellMLCvode(p_solver, p_stimulus));
+            break;
+        case "9":
+            mpModel.reset(new Cellfaber_rudy_2000FromCellMLCvode(p_solver, p_stimulus));
+            break;
+        case "8":
+            mpModel.reset(new Cellohara_rudy_cipa_v1_2017FromCellMLCvode(p_solver, p_stimulus));
+            break;
+        default:
+           // Create model using factory
+           if (ModelFactory::Exists(modelName, "AnalyticCvode"))
+           {
+               mpModel.reset((AbstractCvodeCell*)ModelFactory::Create(modelName, "AnalyticCvode", p_solver, p_stimulus));
+           }
+           else
+           { // throw an error if the model isn't found
+               EXCEPTION("No model matches this index: " + modelName);
+           }
         }
 
         // set numerical Jacobean if needed
