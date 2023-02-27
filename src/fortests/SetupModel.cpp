@@ -128,41 +128,28 @@ SetupModel::SetupModel(const double& rHertz,
         }
 
         // Check if we have been given an index that can be mapped to a model name
-        switch (modelName)
-        {
-        case "1":
+        if (modelName == "1"){
             // This one is from the cellml project - more metadata.
             mpModel.reset(new Cellshannon_wang_puglisi_weber_bers_2004FromCellMLCvode(p_solver, p_stimulus));
             // This one is from the Chaste source
             // mpModel.reset(new CellShannon2004FromCellMLCvode(p_solver,p_stimulus));
-            break;
-        case "2":
+        }else if (modelName == "2"){
             mpModel.reset(new Cellten_tusscher_model_2006_epiFromCellMLCvode(p_solver, p_stimulus));
-            break;
-        case "3":
+        }else if (modelName == "3"){
             mpModel.reset(new Cellmahajan_shiferaw_2008FromCellMLCvode(p_solver, p_stimulus));
-            break;
-        case "4":
+        }else if (modelName == "4"){
             mpModel.reset(new Cellhund_rudy_2004FromCellMLCvode(p_solver, p_stimulus));
-            // Hund Rudy doesn't play well with the use of an Analyic Jacobian, see Cooper, Spiteri, Mirams, 2015 paper
-            mpModel->ForceUseOfNumericalJacobian(true);
-            break;
-        case "5":
+        }else if (modelName == "5"){
             mpModel.reset(new Cellgrandi_pasqualini_bers_2010_ssFromCellMLCvode(p_solver, p_stimulus));
-            break;
-        case "6":
+        }else if (modelName == "6"){
             mpModel.reset(new Cellohara_rudy_2011_endoFromCellMLCvode(p_solver, p_stimulus));
-            break;
-        case "7":
+        }else if (modelName == "7"){
             mpModel.reset(new Cellpaci_hyttinen_aaltosetala_severi_ventricularVersionFromCellMLCvode(p_solver, p_stimulus));
-            break;
-        case "9":
+        }else if (modelName == "9"){
             mpModel.reset(new Cellfaber_rudy_2000FromCellMLCvode(p_solver, p_stimulus));
-            break;
-        case "8":
+        }else if (modelName == "8"){
             mpModel.reset(new Cellohara_rudy_cipa_v1_2017FromCellMLCvode(p_solver, p_stimulus));
-            break;
-        default:
+        }else{
            // Create model using factory
            if (ModelFactory::Exists(modelName, "AnalyticCvode"))
            {
@@ -175,6 +162,7 @@ SetupModel::SetupModel(const double& rHertz,
         }
 
         // set numerical Jacobean if needed
+        // Hund Rudy doesn't play well with the use of an Analyic Jacobian, see Cooper, Spiteri, Mirams, 2015 paper
         mpModel->ForceUseOfNumericalJacobian(SetupModel::forceNumericalJModels.find(modelName) != SetupModel::forceNumericalJModels.end());
     }
     // std::cout << "* model = " << mpModel->GetSystemName() << std::endl;
