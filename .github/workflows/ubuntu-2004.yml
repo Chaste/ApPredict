@@ -15,7 +15,7 @@ jobs:
   build-and-test:
 
     name: Build and test on Ubuntu 20.04
-    runs-on: [self-hosted, ubuntu-20.04]
+    runs-on: [self-hosted, ubuntu-focal]
     env:
       CHASTE_TEST_OUTPUT: ${{ github.workspace }}/chaste-test-dir
       CC: gcc
@@ -45,13 +45,6 @@ jobs:
         ${CXX} --version
         ${CXX} --version > compiler.version
         
-    - name: cache build directory
-      uses: actions/cache@v3
-      id: cache
-      with:
-        path: Chaste/build
-        key: ${{ runner.os }}-${{ hashFiles('docs/ReleaseNotes.html') }}-${{ hashFiles('compiler.version') }}
-
     - name: make build and test directories
       run: |
         mkdir -p Chaste/build
