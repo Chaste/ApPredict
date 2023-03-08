@@ -323,7 +323,7 @@ public:
             const double default_d = GetParameterOrScalingFactorForThis(p_chaste_cell, "membrane_slow_delayed_rectifier_potassium_current_conductance");
 
             double default_e = 0;
-            if (model_index == 7u || model_index == 4u)
+            if (model_index == 7u || model_index == 4u || model_index == 1u)
             {
                 TS_ASSERT_EQUALS(HasAParameterForThisOrScalingFactorOfThis(p_chaste_cell, "membrane_fast_transient_outward_current_conductance"), true);
                 default_e = GetParameterOrScalingFactorForThis(p_chaste_cell, "membrane_fast_transient_outward_current_conductance");
@@ -347,7 +347,7 @@ public:
                 SetParameterOrScalingFactorOfThis(p_chaste_cell, "membrane_rapid_delayed_rectifier_potassium_current_conductance", default_c * c);
                 SetParameterOrScalingFactorOfThis(p_chaste_cell, "membrane_slow_delayed_rectifier_potassium_current_conductance", default_d * d);
 
-                if (model_index == 7u || model_index == 4u)
+                if (model_index == 7u || model_index == 4u || model_index == 1u)
                 {
                     SetParameterOrScalingFactorOfThis(p_chaste_cell, "membrane_fast_transient_outward_current_conductance", default_e * e);
                 }
@@ -371,7 +371,7 @@ public:
                 SetParameterOrScalingFactorOfThis(p_chaste_cell_opt, "membrane_L_type_calcium_current_conductance", default_b * b);
                 SetParameterOrScalingFactorOfThis(p_chaste_cell_opt, "membrane_rapid_delayed_rectifier_potassium_current_conductance", default_c * c);
                 SetParameterOrScalingFactorOfThis(p_chaste_cell_opt, "membrane_slow_delayed_rectifier_potassium_current_conductance", default_d * d);
-                if (model_index == 7u || model_index == 4u)
+                if (model_index == 7u || model_index == 4u || model_index == 1u)
                 {
                     SetParameterOrScalingFactorOfThis(p_chaste_cell_opt, "membrane_fast_transient_outward_current_conductance", default_e * e);
                 }
@@ -395,7 +395,7 @@ public:
                 SetParameterOrScalingFactorOfThis(p_cvode_cell, "membrane_L_type_calcium_current_conductance", default_b * b);
                 SetParameterOrScalingFactorOfThis(p_cvode_cell, "membrane_rapid_delayed_rectifier_potassium_current_conductance", default_c * c);
                 SetParameterOrScalingFactorOfThis(p_cvode_cell, "membrane_slow_delayed_rectifier_potassium_current_conductance", default_d * d);
-                if (model_index == 7u || model_index == 4u)
+                if (model_index == 7u || model_index == 4u || model_index == 1u)
                 {
                     SetParameterOrScalingFactorOfThis(p_cvode_cell, "membrane_fast_transient_outward_current_conductance", default_e * e);
                 }
@@ -419,7 +419,7 @@ public:
                 SetParameterOrScalingFactorOfThis(p_cvode_cell_opt, "membrane_L_type_calcium_current_conductance", default_b * b);
                 SetParameterOrScalingFactorOfThis(p_cvode_cell_opt, "membrane_rapid_delayed_rectifier_potassium_current_conductance", default_c * c);
                 SetParameterOrScalingFactorOfThis(p_cvode_cell_opt, "membrane_slow_delayed_rectifier_potassium_current_conductance", default_d * d);
-                if (model_index == 7u || model_index == 4u)
+                if (model_index == 7u || model_index == 4u || model_index == 1u)
                 {
                     SetParameterOrScalingFactorOfThis(p_cvode_cell_opt, "membrane_fast_transient_outward_current_conductance", default_e * e);
                 }
