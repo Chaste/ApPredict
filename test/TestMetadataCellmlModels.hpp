@@ -44,6 +44,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "EulerIvpOdeSolver.hpp"
 #include "ZeroStimulus.hpp"
 
+//The Models below are pulled from https://github.com/chaste/cellml/ by (the heart component of) Chaste in the cmake step
 #include "shannon_wang_puglisi_weber_bers_2004.hpp"
 #include "davies_isap_2012.hpp"
 #include "davies_isap_2012Cvode.hpp"
