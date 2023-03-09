@@ -44,7 +44,8 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "EulerIvpOdeSolver.hpp"
 #include "ZeroStimulus.hpp"
 
-#include "Shannon2004.hpp"
+//The Models below are pulled from https://github.com/chaste/cellml/ by (the heart component of) Chaste in the cmake step
+#include "shannon_wang_puglisi_weber_bers_2004.hpp"
 #include "davies_isap_2012.hpp"
 #include "davies_isap_2012Cvode.hpp"
 #include "davies_isap_2012CvodeOpt.hpp"
@@ -65,10 +66,10 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "priebe_beuckelmann_1998Cvode.hpp"
 #include "priebe_beuckelmann_1998CvodeOpt.hpp"
 #include "priebe_beuckelmann_1998Opt.hpp"
-//#include "Shannon2004Opt.hpp" // Opt files not made to save time as Shannon is
+//#include "shannon_wang_puglisi_weber_bers_2004Opt.hpp" // Opt files not made to save time as Shannon is
 //in trunk.
-#include "Shannon2004Cvode.hpp"
-//#include "Shannon2004CvodeOpt.hpp" // Opt files not made to save time as
+#include "shannon_wang_puglisi_weber_bers_2004Cvode.hpp"
+//#include "shannon_wang_puglisi_weber_bers_2004CvodeOpt.hpp" // Opt files not made to save time as
 //Shannon is in trunk.
 #include "decker_2009.hpp"
 #include "decker_2009Cvode.hpp"
@@ -200,10 +201,10 @@ public:
             {
                 case 1u:
                 {
-                    p_chaste_cell = new CellShannon2004FromCellML(p_solver, p_stimulus);
-                    p_chaste_cell_opt = new CellShannon2004FromCellML(p_solver, p_stimulus); // Opt files not made as Shannon is in trunk
-                    p_cvode_cell = new CellShannon2004FromCellMLCvode(p_solver, p_stimulus);
-                    p_cvode_cell_opt = new CellShannon2004FromCellMLCvode(p_solver, p_stimulus); // Opt files not made as Shannon is in trunk
+                    p_chaste_cell = new Cellshannon_wang_puglisi_weber_bers_2004FromCellML(p_solver, p_stimulus);
+                    p_chaste_cell_opt = new Cellshannon_wang_puglisi_weber_bers_2004FromCellML(p_solver, p_stimulus); // Opt files not made as Shannon is in trunk
+                    p_cvode_cell = new Cellshannon_wang_puglisi_weber_bers_2004FromCellMLCvode(p_solver, p_stimulus);
+                    p_cvode_cell_opt = new Cellshannon_wang_puglisi_weber_bers_2004FromCellMLCvode(p_solver, p_stimulus); // Opt files not made as Shannon is in trunk
                     break;
                 }
                 case 2u:
