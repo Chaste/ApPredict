@@ -44,13 +44,11 @@
 
 include(FetchContent)
 #set(FETCHCONTENT_BASE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+message (STATUS "Downloading APPredict cellml files to ${CMAKE_CURRENT_SOURCE_DIR}/src/cellml")
 FetchContent_Declare(CellML_repo_appredict
                      GIT_REPOSITORY https://github.com/Chaste/cellml.git
                      GIT_TAG c26e1a0939e8c619e2ba10fe41d1af495503f6a1
                      SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/cellml)
-#                     GIT_TAG 09720d70c6a2676225a9325d625331258821ef81
-#                     SUBBUILD_DIR ${CMAKE_CURRENT_BUILD_DIR}/hlp
-#                     BINARY_DIR ${CMAKE_CURRENT_BUILD_DIR}/hlp)
 FetchContent_MakeAvailable(CellML_repo_appredict)
 
 
