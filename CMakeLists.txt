@@ -43,14 +43,19 @@
 # Note that the order in which components are specified does not matter.
 
 include(FetchContent)
-#set(FETCHCONTENT_BASE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 message (STATUS "Downloading APPredict cellml files to ${CMAKE_CURRENT_SOURCE_DIR}/src/cellml")
 FetchContent_Declare(CellML_repo_appredict
                      GIT_REPOSITORY https://github.com/Chaste/cellml.git
                      GIT_TAG c26e1a0939e8c619e2ba10fe41d1af495503f6a1
                      SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/cellml)
 FetchContent_MakeAvailable(CellML_repo_appredict)
-
+file(RELATIVE_PATH cellml_rel_dir ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/src/cellml/cellml)
+set(cellml_output_dir ${CMAKE_CURRENT_BINARY_DIR}/${cellml_rel_dir})
+file(MAKE_DIRECTORY ${cellml_output_dir})
+file(GLOB cellml_files ${cellml_dir}/*.cellml)
+foreach(cellml_file ${cellml_files})
+    chaste_do_cellml(Chaste_ApPredict_SOURCES ${cellml_file} OFF  "--output-dir" ${cellml_output_dir})
+endforeach()
 
 # Here we just depend on core components (nothing application-specific).
 find_package(Chaste COMPONENTS heart)
