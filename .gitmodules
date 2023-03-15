@@ -1,3 +1,0 @@
-[submodule "src/cellml"]
-	path = src/cellml
-	url = https://github.com/Chaste/cellml.git
