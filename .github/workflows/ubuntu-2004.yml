@@ -8,7 +8,12 @@ on:
   schedule:
     - cron:  '0 0 * * *'
     
-  workflow_dispatch:
+  workflow_dispatch:  
+    inputs:
+      chaste_branch:
+        description: "Chaste branch"
+        default: "develop"
+        type: "string"
   
 jobs:
 
@@ -31,6 +36,7 @@ jobs:
       with:
         repository: Chaste/Chaste
         path: Chaste
+        branch: ${{ inputs.chaste_branch }}
         submodules: recursive
       
     - name: checkout ApPredict project
