@@ -21,3 +21,5 @@ apps/src/DoseResponseFitter
 apps/src/DoseResponseFitter\.o
 
 .vscode/settings.json
+
+src/cellml/

@@ -43,7 +43,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "PkpdDataStructure.hpp"
 
 /**
- * Common code to allow this to be run as a test via scons and also as a
+ * Common code to allow this to be run as a test via cmake and also as a
  * executable application from the apps folder.
  *
  * This class provides all of the functionality behind the ApPredict executable
