@@ -43,18 +43,34 @@
 # Note that the order in which components are specified does not matter.
 
 include(FetchContent)
-message (STATUS "Downloading APPredict cellml files to ${CMAKE_CURRENT_SOURCE_DIR}/src/cellml")
+#message (STATUS "Downloading APPredict cellml files to ${CMAKE_CURRENT_SOURCE_DIR}/src/cellml")
 FetchContent_Declare(CellML_repo_appredict
                      GIT_REPOSITORY https://github.com/Chaste/cellml.git
                      GIT_TAG c26e1a0939e8c619e2ba10fe41d1af495503f6a1
                      SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/cellml)
 FetchContent_MakeAvailable(CellML_repo_appredict)
-file(RELATIVE_PATH cellml_rel_dir ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/src/cellml/cellml)
-set(cellml_output_dir ${CMAKE_CURRENT_BINARY_DIR}/${cellml_rel_dir})
-file(MAKE_DIRECTORY ${cellml_output_dir})
-file(GLOB cellml_files ${cellml_dir}/*.cellml)
+
+# remove .git folder to prevent accidentally checking in deletion of cellml files
+file(REMOVE_RECURSE ${CMAKE_CURRENT_SOURCE_DIR}/src/cellml/.git)
+
+# remove cellml files that are not required
+file(GLOB cellml_files ${CMAKE_CURRENT_SOURCE_DIR}/src/cellml/cellml/*.cellml)
 foreach(cellml_file ${cellml_files})
-    chaste_do_cellml(Chaste_ApPredict_SOURCES ${cellml_file} OFF  "--output-dir" ${cellml_output_dir})
+    if (NOT ${cellml_file} MATCHES davies_isap_2012.cellml
+        AND NOT ${cellml_file} MATCHES decker_2009.cellml
+        AND NOT ${cellml_file} MATCHES faber_rudy_2000.cellml
+        AND NOT ${cellml_file} MATCHES grandi_pasqualini_bers_2010_ss.cellml
+        AND NOT ${cellml_file} MATCHES hund_rudy_2004.cellml
+        AND NOT ${cellml_file} MATCHES livshitz_rudy_2007.cellml
+        AND NOT ${cellml_file} MATCHES mahajan_shiferaw_2008.cellml
+        AND NOT ${cellml_file} MATCHES ohara_rudy_2011_endo.cellml
+        AND NOT ${cellml_file} MATCHES ohara_rudy_cipa_v1_2017.cellml
+        AND NOT ${cellml_file} MATCHES paci_hyttinen_aaltosetala_severi_ventricularVersion.cellml
+        AND NOT ${cellml_file} MATCHES priebe_beuckelmann_1998.cellml
+        AND NOT ${cellml_file} MATCHES shannon_wang_puglisi_weber_bers_2004.cellml
+        AND NOT ${cellml_file} MATCHES ten_tusscher_model_2006_epi.cellml)
+        file(REMOVE ${cellml_file})
+    endif()
 endforeach()
 
 # Here we just depend on core components (nothing application-specific).
