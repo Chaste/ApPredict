@@ -13,29 +13,15 @@ Please see [Getting Started] for details of how to do this
 
 ## Installation
 
-This repo must be cloned into
+This repo must be cloned into the Chaste source `projects` folder:
 ```sh
-<chaste source directory>/projects/ApPredict
+$ cd <chaste source directory>/projects
+$ git clone https://github.com/Chaste/ApPredict.git
 ```
 so that all the file paths can be picked up correctly (replacing ```<chaste source directory>``` with the place you have put the Chaste source code). Alternatively, you can put a sim link from the above folder to wherever you clone this repo.
 
 This ApPredict project should be used with the current `develop` branch of [Chaste](https://github.com/Chaste/Chaste). If instead you want a version that works with a released version of Chaste, then please select the relevant Tag of this github repository.
 
-The following instructions should do the cloning, note that this project pulls in a submodule from the [Chaste/cellml](https://github.com/chaste/cellml) repository, so **cloning it requires the ```--recursive``` option**:
-```sh
-$ cd <chaste source directory>/projects
-$ git clone --recursive https://github.com/Chaste/ApPredict.git
-```
-
-### Older git
-
-N.B. on really old git versions (<1.6.5), `--recursive` doesn't work and you need to do:
-```sh
-$ cd <chaste source directory>/projects
-$ git clone https://github.com/Chaste/ApPredict.git
-$ cd ApPredict
-$ git submodule init
-$ git submodule update
-```
+(In the past we had a git submodule with CellML files from www.github.com/Chaste/CellML, but this is now pulled in by a cmake [fetch](https://cmake.org/cmake/help/latest/module/FetchContent.html))
 
 [Getting Started]: <https://chaste.cs.ox.ac.uk/trac/wiki/GettingStarted>
