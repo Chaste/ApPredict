@@ -3,7 +3,7 @@ name: Ubuntu 20.04 ApPredict test suite
 on:
   push:
     branches:
-      - master
+      - main
       
   schedule:
     - cron:  '0 0 * * *'
