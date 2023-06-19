@@ -47,7 +47,7 @@ message (STATUS "Downloading ApPredict cellml files to ${CMAKE_CURRENT_SOURCE_DI
 Set(FETCHCONTENT_UPDATES_DISCONNECTED ON)
 FetchContent_Declare(CellML_repo_appredict
                      GIT_REPOSITORY https://github.com/Chaste/cellml.git
-                     GIT_TAG c26e1a0939e8c619e2ba10fe41d1af495503f6a1
+                     GIT_TAG e394aba8a7ca50f72ee212e21431045eae8b5ca4
                      SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/cellml)
 FetchContent_MakeAvailable(CellML_repo_appredict)
 
