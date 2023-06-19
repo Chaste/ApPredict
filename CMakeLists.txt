@@ -43,7 +43,7 @@
 # Note that the order in which components are specified does not matter.
 
 include(FetchContent)
-message (STATUS "Downloading APPredict cellml files to ${CMAKE_CURRENT_SOURCE_DIR}/src/cellml")
+message (STATUS "Downloading APredict cellml files to ${CMAKE_CURRENT_SOURCE_DIR}/src/cellml")
 Set(FETCHCONTENT_UPDATES_DISCONNECTED ON)
 FetchContent_Declare(CellML_repo_appredict
                      GIT_REPOSITORY https://github.com/Chaste/cellml.git
