@@ -128,9 +128,9 @@ public:
     void TestVoltageThresholdDetectionAlgorithm()
     {
         std::vector<double> thresholds_for_each_model = boost::assign::list_of(-46.7750) /*Shannon etc.*/
-            (-23.0772)(-34.6525)(-35.9230)(-28.4091)(-38.4384)(-40.6058);
+            (-23.0772)(-34.6525)(-35.9230)(-28.4091)(-38.4384)(-39.1051)(-38.636)(-26.9059);
 
-        for (unsigned model_index = 1; model_index < 8u; model_index++)
+        for (unsigned model_index = 1; model_index < 10u; model_index++)
         {
             SetupModel setup(1.0, model_index); // models at 1 Hz
             boost::shared_ptr<AbstractCvodeCell> p_model = setup.GetModel();
