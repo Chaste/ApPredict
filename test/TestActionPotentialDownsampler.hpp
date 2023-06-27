@@ -37,6 +37,9 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define TESTACTIONPOTENTIALDOWNSAMPLER_HPP_
 
 #include <cxxtest/TestSuite.h>
+
+#include <cassert>
+
 #include "AbstractDataReader.hpp"
 #include "ActionPotentialDownsampler.hpp"
 #include "CommandLineArgumentsMocker.hpp"
