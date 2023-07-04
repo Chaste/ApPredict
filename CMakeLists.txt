@@ -81,8 +81,7 @@ find_package(Chaste COMPONENTS heart)
 # This is needed if your project is not contained in the projects folder within a Chaste source tree.
 #find_package(Chaste COMPONENTS heart crypt PATHS /path/to/chaste-install NO_DEFAULT_PATH)
 
-# Here we add extra arguments to force PyCML to use this extra argument (make Get and Set methods for
-# all metadata annotated variables). 
+# Here we add extra arguments to force chaste_codegen to use this extra argument
 set(Chaste_CODEGEN_EXTRA_ARGS "--use-model-factory")
 
 # ApPredict uses pthreads, so we specify that threads are required and add the necessary compile flag
