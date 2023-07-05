@@ -42,36 +42,35 @@
 #
 # Note that the order in which components are specified does not matter.
 
-include(FetchContent)
-message (STATUS "Downloading ApPredict cellml files to ${CMAKE_CURRENT_SOURCE_DIR}/src/cellml")
-Set(FETCHCONTENT_UPDATES_DISCONNECTED ON)
-FetchContent_Declare(CellML_repo_appredict
-                     GIT_REPOSITORY https://github.com/Chaste/cellml.git
-                     GIT_TAG e394aba8a7ca50f72ee212e21431045eae8b5ca4
-                     SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/cellml)
-FetchContent_MakeAvailable(CellML_repo_appredict)
+set(ApPredict_CELLML_TAG e394aba8a7ca50f72ee212e21431045eae8b5ca4)
+set(ApPredict_CELLML_URL "https://github.com/Chaste/cellml/blob/${ApPredict_CELLML_TAG}/cellml")
+set(ApPredict_CELLML_SRC "${CMAKE_CURRENT_SOURCE_DIR}/src/cellml")
+set(ApPredict_CELLML_FILES
+    davies_isap_2012.cellml
+    decker_2009.cellml
+    faber_rudy_2000.cellml
+    grandi_pasqualini_bers_2010_ss.cellml
+    hund_rudy_2004.cellml
+    livshitz_rudy_2007.cellml
+    mahajan_shiferaw_2008.cellml
+    ohara_rudy_2011_endo.cellml
+    ohara_rudy_cipa_v1_2017.cellml
+    paci_hyttinen_aaltosetala_severi_ventricularVersion.cellml
+    priebe_beuckelmann_1998.cellml
+    shannon_wang_puglisi_weber_bers_2004.cellml
+    ten_tusscher_model_2006_epi.cellml
+)
 
-# remove .git folder to prevent accidentally checking in deletion of cellml files
-file(REMOVE_RECURSE ${CMAKE_CURRENT_SOURCE_DIR}/src/cellml/.git)
-
-# remove cellml files that are not required
-file(GLOB cellml_files ${CMAKE_CURRENT_SOURCE_DIR}/src/cellml/cellml/*.cellml)
-foreach(cellml_file ${cellml_files})
-    if (NOT ${cellml_file} MATCHES davies_isap_2012.cellml
-        AND NOT ${cellml_file} MATCHES decker_2009.cellml
-        AND NOT ${cellml_file} MATCHES faber_rudy_2000.cellml
-        AND NOT ${cellml_file} MATCHES grandi_pasqualini_bers_2010_ss.cellml
-        AND NOT ${cellml_file} MATCHES hund_rudy_2004.cellml
-        AND NOT ${cellml_file} MATCHES livshitz_rudy_2007.cellml
-        AND NOT ${cellml_file} MATCHES mahajan_shiferaw_2008.cellml
-        AND NOT ${cellml_file} MATCHES ohara_rudy_2011_endo.cellml
-        AND NOT ${cellml_file} MATCHES ohara_rudy_cipa_v1_2017.cellml
-        AND NOT ${cellml_file} MATCHES paci_hyttinen_aaltosetala_severi_ventricularVersion.cellml
-        AND NOT ${cellml_file} MATCHES priebe_beuckelmann_1998.cellml
-        AND NOT ${cellml_file} MATCHES shannon_wang_puglisi_weber_bers_2004.cellml
-        AND NOT ${cellml_file} MATCHES ten_tusscher_model_2006_epi.cellml)
-        file(REMOVE ${cellml_file})
-    endif()
+message (STATUS "Downloading ApPredict cellml files to ${ApPredict_CELLML_SRC}")
+foreach(cellml_file ${ApPredict_CELLML_FILES})
+    if (NOT EXISTS "${ApPredict_CELLML_SRC}/${cellml_file}")
+        file(DOWNLOAD
+            "${ApPredict_CELLML_URL}/cellml/${cellml_file}"
+            "${ApPredict_CELLML_SRC}/${cellml_file}"
+            TIMEOUT 5
+            TLS_VERIFY ON
+        )
+    endif ()
 endforeach()
 
 # Here we just depend on core components (nothing application-specific).
