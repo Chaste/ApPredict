@@ -43,7 +43,7 @@
 # Note that the order in which components are specified does not matter.
 
 set(ApPredict_CELLML_TAG e394aba8a7ca50f72ee212e21431045eae8b5ca4)
-set(ApPredict_CELLML_URL "https://github.com/Chaste/cellml/blob/${ApPredict_CELLML_TAG}/cellml")
+set(ApPredict_CELLML_URL "https://raw.githubusercontent.com/Chaste/cellml/${ApPredict_CELLML_TAG}/cellml")
 set(ApPredict_CELLML_SRC "${CMAKE_CURRENT_SOURCE_DIR}/src/cellml")
 set(ApPredict_CELLML_FILES
     davies_isap_2012.cellml
@@ -65,11 +65,17 @@ message (STATUS "Downloading ApPredict cellml files to ${ApPredict_CELLML_SRC}")
 foreach(cellml_file ${ApPredict_CELLML_FILES})
     if (NOT EXISTS "${ApPredict_CELLML_SRC}/${cellml_file}")
         file(DOWNLOAD
-            "${ApPredict_CELLML_URL}/cellml/${cellml_file}"
+            "${ApPredict_CELLML_URL}/${cellml_file}"
             "${ApPredict_CELLML_SRC}/${cellml_file}"
-            TIMEOUT 5
+            TIMEOUT 10
             TLS_VERIFY ON
+            STATUS dl_status
         )
+        list (GET dl_status 0 dl_status_code)
+        if (NOT dl_status_code EQUAL 0)
+            file(REMOVE "${ApPredict_CELLML_SRC}/${cellml_file}") # remove stub
+            message (WARNING "Could not download ${cellml_file}")
+        endif ()
     endif ()
 endforeach()
 
