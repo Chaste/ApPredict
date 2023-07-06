@@ -56,6 +56,14 @@ jobs:
     - name: cmake configure
       run: nice -n 10 cmake -DCMAKE_BUILD_TYPE=Release ..
       working-directory: Chaste/build
+      
+    - name: remove cellml
+      run: rm -rf ApPredict/src/cellml
+      working-directory: Chaste/projects
+      
+    - name: cmake configure again
+      run: nice -n 10 cmake -DCMAKE_BUILD_TYPE=Release ..
+      working-directory: Chaste/build
 
     - name: build core libraries
       run: nice -n 10 cmake --build . --parallel ${NPROC} --target chaste_core

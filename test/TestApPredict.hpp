@@ -112,7 +112,7 @@ public:
                                   "No model matches this index: 99999");
         }
         {
-            CommandLineArgumentsMocker wrapper("--cellml projects/ApPredict/src/cellml/cellml/ten_tusscher_model_2006_epi.cellml --plasma-concs 1 10 --pic50-herg 4.5 --plasma-conc-logscale false --output-dir ApPredict_output_long");
+            CommandLineArgumentsMocker wrapper("--cellml projects/ApPredict/src/cellml/ten_tusscher_model_2006_epi.cellml --plasma-concs 1 10 --pic50-herg 4.5 --plasma-conc-logscale false --output-dir ApPredict_output_long");
 
             ApPredictMethods methods;
             TS_ASSERT_EQUALS(Warnings::Instance()->GetNextWarningMessage(), "Argument --cellml <file> is deprecated: use --model <file> instead.");

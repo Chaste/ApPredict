@@ -22,6 +22,6 @@ so that all the file paths can be picked up correctly (replacing ```<chaste sour
 
 This ApPredict project should be used with the current `develop` branch of [Chaste](https://github.com/Chaste/Chaste). If instead you want a version that works with a released version of Chaste, then please select the relevant Tag of this github repository.
 
-(In the past we had a git submodule with CellML files from www.github.com/Chaste/CellML, but this is now pulled in by a cmake [fetch](https://cmake.org/cmake/help/latest/module/FetchContent.html))
+(In the past we had a git submodule with CellML files from www.github.com/Chaste/CellML, but this is now pulled in by a cmake [file download](https://cmake.org/cmake/help/latest/command/file.html#download))
 
 [Getting Started]: <https://chaste.cs.ox.ac.uk/trac/wiki/GettingStarted>
