@@ -1,0 +1,48 @@
+cff-version: 1.2.0
+title: ApPredict
+message: >-
+  ApPredict a free open source program for prediction of
+  cardiac action potential changes under drug block of ion
+  channels, based on Chaste C++ library. If you use this
+  software, please cite it using the preferred citation
+  below.
+type: software
+authors:
+  - given-names: Gary
+    family-names: Mirams
+    email: gary.mirams@nottingham.ac.uk
+    affiliation: University of Nottingham
+    orcid: 'https://orcid.org/0000-0002-4569-4312'
+identifiers:
+  - type: doi
+    value: 10.5281/zenodo.1138891
+    description: Latest version of ApPredict on Zenodo
+repository-code: 'https://github.com/Chaste/ApPredict'
+url: 'https://chaste.github.io/projects/ap-predict/'
+abstract: >-
+  ApPredict - a free open source program for prediction of
+  action potential changes under drug-block of ion
+  channels. 
+keywords:
+  - hERG
+  - safety pharmacology
+  - cardiac
+  - Torsade
+  - Action Potential
+license: BSD-3-Clause
+commit: '2024.1'
+version: '2024.1'
+date-released: '2024-02-23'
+preferred-citation:
+  type: article
+  authors:
+  - family-names: Williams
+    given-names: Geoff
+  - family-names: Mirams
+    given-names: Gary R
+    orcid: 'https://orcid.org/0000-0002-4569-4312'
+  journal: "Journal of pharmacological and toxicological methods"
+  title: "A web portal for in-silico action potential predictions"
+  year: 2015
+  volume: 75
+  pages: 10-16
