@@ -45,4 +45,6 @@ preferred-citation:
   title: "A web portal for in-silico action potential predictions"
   year: 2015
   volume: 75
-  pages: 10-16
+  start: 10
+  end: 16
+  doi: 10.1016/j.vascn.2015.05.002
