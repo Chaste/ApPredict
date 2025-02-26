@@ -1690,7 +1690,8 @@ void ApPredictMethods::ParameterWrapper(
 
             // Not all of the models have a distinct fast I_to component.
             // In this case we look for the complete I_to current instead.
-            if (rMetadataNames[channel_idx] == "membrane_fast_transient_outward_current_conductance" && pModel->HasAnyVariable("membrane_transient_outward_current_conductance"))
+            if (rMetadataNames[channel_idx] == "membrane_fast_transient_outward_current_conductance" && 
+                (pModel->HasParameter("membrane_transient_outward_current_conductance") || pModel->HasParameter("membrane_transient_outward_current_conductance_scaling_factor")))
             {
                 WARNING(pModel->GetSystemName()
                         << " does not have "
