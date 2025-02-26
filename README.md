@@ -25,3 +25,7 @@ This ApPredict project should be used with the current `develop` branch of [Chas
 (In the past we had a git submodule with CellML files from www.github.com/Chaste/CellML, but this is now pulled in by a cmake [file download](https://cmake.org/cmake/help/latest/command/file.html#download))
 
 [Getting Started]: <https://chaste.cs.ox.ac.uk/trac/wiki/GettingStarted>
+
+## Documentation
+
+For further documentation, see https://chaste.github.io/projects/ap-predict/
