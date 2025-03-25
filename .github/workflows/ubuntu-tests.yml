@@ -27,6 +27,20 @@ jobs:
       chaste_branch: ${{ inputs.chaste_branch || 'develop' }}
 
     steps:
+      - name: Slack notification
+        uses: slackapi/slack-github-action@v2.0.0
+        with:
+          method: chat.postMessage
+          token: ${{ secrets.SLACK_NOTIFICATIONS_BOT_TOKEN }}
+          payload: |
+            channel: ${{ secrets.SLACK_CHANNEL_ID }}
+            text: "Chaste/ApPredict\nStatus: ${{ job.status }}\nCommit: ${{ github.event.pull_request.html_url || github.event.head_commit.url }}"
+            blocks:
+              - type: "section"
+                text:
+                  type: "mrkdwn"
+                  text: ":rotating_light: <https://github.com/Chaste/ApPredict|Chaste/ApPredict>\n*Status:* <${{ job.status }}>\n*Commit:* <${{ github.event.pull_request.html_url || github.event.head_commit.url }}>"
+
       - name: Checkout Chaste/${{ env.chaste_branch }}
         uses: actions/checkout@v4
         with:
