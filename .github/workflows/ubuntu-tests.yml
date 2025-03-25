@@ -54,14 +54,14 @@ jobs:
           sudo apt-get install -y chaste-dependencies
 
       - name: Configure
-        run: cmake -DCMAKE_BUILD_TYPE=Release ..
+        run: cmake -DCMAKE_BUILD_TYPE=Release ../Chaste
         working-directory: build
 
       - name: Remove cellml
         run: rm -rf Chaste/projects/ApPredict/src/cellml/
 
       - name: Configure again # Checks that missing cellml is fetched (#30, #26)
-        run: cmake -DCMAKE_BUILD_TYPE=Release ..
+        run: cmake -DCMAKE_BUILD_TYPE=Release ../Chaste
         working-directory: build
 
       - name: TestChasteBuildInfo
