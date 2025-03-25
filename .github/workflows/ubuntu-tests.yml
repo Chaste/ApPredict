@@ -1,92 +1,89 @@
-name: Ubuntu 20.04 ApPredict test suite
+name: Ubuntu ApPredict test suite
 
 on:
+  schedule:
+    - cron: "0 0 * * *" # every day at midnight.
+
+  pull_request:
+
   push:
     branches:
       - main
-      
-  schedule:
-    - cron:  '0 0 * * *'
-    
-  workflow_dispatch:  
+
+  workflow_dispatch:
     inputs:
-      chaste_clone_params:
-        description: "Chaste clone parameters"
-        default: "--branch develop"
+      chaste_branch:
+        description: "Chaste branch"
+        required: false
         type: "string"
-  
+        default: "develop"
+
 jobs:
-
   build-and-test:
+    runs-on: ubuntu-22.04
 
-    name: Build and test on Ubuntu 20.04
-    runs-on: [self-hosted, ubuntu-focal]
     env:
       CHASTE_TEST_OUTPUT: ${{ github.workspace }}/chaste-test-dir
-      CC: gcc
-      CXX: g++
-      
+      chaste_branch: ${{ inputs.chaste_branch || 'develop' }}
+
     steps:
-    - name: set number of processors
-      run: |
-        echo "NPROC=$(( $(nproc) < 12 ? $(nproc) : 12 ))" >> $GITHUB_ENV
-        
-    - name: checkout Chaste repository
-      run: |
-            rm Chaste -rf
-            git clone https://github.com/Chaste/Chaste.git ${{ inputs.chaste_clone_params }}
-      
-    - name: checkout ApPredict project
-      uses: actions/checkout@v3
-      with:
-        repository: Chaste/ApPredict
-        path: Chaste/projects/ApPredict
-        submodules: recursive
-        
-    - name: ${CXX} version
-      run: |
-        ${CXX} --version
-        ${CXX} --version > compiler.version
-        
-    - name: make build and test directories
-      run: |
-        mkdir -p Chaste/build
-        mkdir -p ${CHASTE_TEST_OUTPUT}
-        
-    - name: cmake configure
-      run: nice -n 10 cmake -DCMAKE_BUILD_TYPE=Release ..
-      working-directory: Chaste/build
-      
-    - name: remove cellml
-      run: rm -rf ApPredict/src/cellml
-      working-directory: Chaste/projects
-      
-    - name: cmake configure again
-      run: nice -n 10 cmake -DCMAKE_BUILD_TYPE=Release ..
-      working-directory: Chaste/build
+      - name: Checkout Chaste/${{ env.chaste_branch }}
+        uses: actions/checkout@v4
+        with:
+          repository: Chaste/Chaste
+          path: Chaste
+          ref: ${{ env.chaste_branch }}
 
-    - name: build core libraries
-      run: nice -n 10 cmake --build . --parallel ${NPROC} --target chaste_core
-      working-directory: Chaste/build
+      - name: Checkout ApPredict
+        uses: actions/checkout@v4
+        with:
+          repository: Chaste/ApPredict
+          path: Chaste/projects/ApPredict
 
-    - name: build heart
-      run: nice -n 10 cmake --build . --parallel ${NPROC} --target chaste_heart
-      working-directory: Chaste/build
-      
-    - name: build ApPredict
-      run: nice -n 10 cmake --build . --parallel ${NPROC} --target project_ApPredict
-      working-directory: Chaste/build
+      - name: Setup directories
+        run: |
+          mkdir -p build
+          mkdir -p ${CHASTE_TEST_OUTPUT}
 
-    - name: run ApPredict test pack
-      run: nice -n 10 ctest -j${NPROC} -L ApPredict --output-on-failure
-      working-directory: Chaste/build
-  
-    - name: send notifications
-      if: failure()
-      env:
-        SLACK_BOT_TOKEN: ${{ secrets.SLACK_NOTIFICATIONS_BOT_TOKEN }}
-      uses: voxmedia/github-action-slack-notify-build@v1
-      with:
-        channel: ap-predict
-        status: FAILED
-        color: danger
+      - name: Install dependencies
+        run: |
+          sudo wget -O /usr/share/keyrings/chaste.asc https://chaste.github.io/chaste.asc
+          repo="deb [signed-by=/usr/share/keyrings/chaste.asc] https://chaste.github.io/ubuntu jammy/"
+          echo "${repo}" | sudo tee /etc/apt/sources.list.d/chaste.list
+          sudo apt-get update
+          sudo apt-get install -y chaste-dependencies
+
+      - name: Configure
+        run: cmake -DCMAKE_BUILD_TYPE=Release ..
+        working-directory: build
+
+      - name: Remove cellml
+        run: rm -rf Chaste/projects/ApPredict/src/cellml/
+
+      - name: Configure again # Checks that missing cellml is fetched (#30, #26)
+        run: cmake -DCMAKE_BUILD_TYPE=Release ..
+        working-directory: build
+
+      - name: TestChasteBuildInfo
+        run: |
+          cmake --build . --target TestChasteBuildInfo --parallel $(nproc)
+          ctest -V -R TestChasteBuildInfo$
+        working-directory: build
+
+      - name: Build ApPredict
+        run: cmake --build . --target project_ApPredict --parallel $(nproc)
+        working-directory: build
+
+      - name: Run ApPredict test suite
+        run: ctest -L ApPredict -j $(nproc) --output-on-failure
+        working-directory: build
+
+      - name: send notifications
+        if: failure()
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_NOTIFICATIONS_BOT_TOKEN }}
+        uses: voxmedia/github-action-slack-notify-build@v1
+        with:
+          channel: ap-predict
+          status: FAILED
+          color: danger
