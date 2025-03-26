@@ -1,0 +1,94 @@
+name: Ubuntu ApPredict test suite
+
+on:
+  schedule:
+    - cron: "0 0 * * *" # every day at midnight.
+
+  pull_request:
+
+  push:
+    branches:
+      - main
+
+  workflow_dispatch:
+    inputs:
+      chaste_branch:
+        description: "Chaste branch"
+        required: false
+        type: "string"
+        default: "develop"
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-22.04
+
+    env:
+      CHASTE_TEST_OUTPUT: ${{ github.workspace }}/chaste-test-dir
+      chaste_branch: ${{ inputs.chaste_branch || 'develop' }}
+
+    steps:
+      - name: Checkout Chaste/${{ env.chaste_branch }}
+        uses: actions/checkout@v4
+        with:
+          repository: Chaste/Chaste
+          path: Chaste
+          ref: ${{ env.chaste_branch }}
+
+      - name: Checkout ApPredict
+        uses: actions/checkout@v4
+        with:
+          repository: Chaste/ApPredict
+          path: Chaste/projects/ApPredict
+
+      - name: Setup directories
+        run: |
+          mkdir -p build
+          mkdir -p ${CHASTE_TEST_OUTPUT}
+
+      - name: Install dependencies
+        run: |
+          sudo wget -O /usr/share/keyrings/chaste.asc https://chaste.github.io/chaste.asc
+          repo="deb [signed-by=/usr/share/keyrings/chaste.asc] https://chaste.github.io/ubuntu jammy/"
+          echo "${repo}" | sudo tee /etc/apt/sources.list.d/chaste.list
+          sudo apt-get update
+          sudo apt-get install -y chaste-dependencies
+
+      - name: Configure
+        run: cmake -DCMAKE_BUILD_TYPE=Release ../Chaste
+        working-directory: build
+
+      - name: Remove cellml
+        run: rm -rf Chaste/projects/ApPredict/src/cellml/
+
+      - name: Configure again # Checks that missing cellml is fetched (#30, #26)
+        run: cmake -DCMAKE_BUILD_TYPE=Release ../Chaste
+        working-directory: build
+
+      - name: TestChasteBuildInfo
+        run: |
+          cmake --build . --target TestChasteBuildInfo --parallel $(nproc)
+          ctest -V -R TestChasteBuildInfo$
+        working-directory: build
+
+      - name: Build ApPredict
+        run: cmake --build . --target project_ApPredict --parallel $(nproc)
+        working-directory: build
+
+      - name: Run ApPredict test suite
+        run: ctest -L ApPredict -j $(nproc) --output-on-failure
+        working-directory: build
+
+      - name: Slack notification
+        if: failure()
+        uses: slackapi/slack-github-action@v2.0.0
+        with:
+          method: chat.postMessage
+          token: ${{ secrets.SLACK_NOTIFICATIONS_BOT_TOKEN }}
+          payload: |
+            channel: ${{ secrets.SLACK_CHANNEL_ID }}
+            text: "Chaste/ApPredict\nStatus: ${{ job.status }}\nBranch: ${{ github.event.pull_request.html_url || github.event.head_commit.url }}"
+            blocks:
+              - type: "section"
+                text:
+                  type: "mrkdwn"
+                  text: ":rotating_light: <https://github.com/Chaste/ApPredict|Chaste/ApPredict>\n*Status:* <${{ job.status }}>\n*Branch:* <${{ github.event.pull_request.html_url || github.event.head_commit.url }}>"
