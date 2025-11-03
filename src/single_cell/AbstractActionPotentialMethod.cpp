@@ -358,15 +358,35 @@ OdeSolution AbstractActionPotentialMethod::PerformAnalysisOfTwoPaces(
     // Get voltage properties
     const unsigned voltage_index = pModel->GetSystemInformation()->GetStateVariableIndex("membrane_voltage");
     std::vector<double> voltages = solution.GetVariableAtIndex(voltage_index);
-    CellProperties voltage_properties(voltages, solution.rGetTimes(),
-                                      mActionPotentialThreshold);
+    std::vector<double> times = solution.rGetTimes();
+
 
     std::vector<double> apd90s;
     std::vector<double> peak_voltages;
     // See if we can get back some action potential duration(s).
     try
     {
-        apd90s = voltage_properties.GetAllActionPotentialDurations(90);
+
+        // split into num_paces_to_analyze paces for analysis
+        unsigned current_index = 0;
+        std::vector<CellProperties> voltage_properties;
+        for (unsigned pace = 0; pace < num_paces_to_analyze; pace++)
+        {
+            std::vector<double> pace_voltages;
+            std::vector<double> pace_times;
+            const double pace_end_time = (pace + 1) * s1_period;
+            while (current_index < times.size() && times[current_index] <= pace_end_time)
+            {
+                pace_voltages.push_back(voltages[current_index]);
+                pace_times.push_back(times[current_index]);
+                current_index++;
+            }
+            CellProperties voltage_properties_for_pace(pace_voltages, pace_times, mActionPotentialThreshold);
+            auto apd90s_for_pace = voltage_properties_for_pace.GetAllActionPotentialDurations(90);
+            voltage_properties.push_back(voltage_properties_for_pace);
+            apd90s.insert(std::end(apd90s), std::begin(apd90s_for_pace), std::end(apd90s_for_pace));
+        }
+
         if (!mSuppressOutput)
         {
             std::cout << "Last " << apd90s.size()
@@ -378,25 +398,15 @@ OdeSolution AbstractActionPotentialMethod::PerformAnalysisOfTwoPaces(
             std::cout << std::endl; //<< std::flush;
         }
 
-        if (apd90s.size() >= 2u && fabs(apd90s[0] - apd90s[1]) > alternans_threshold)
-        {
-            // We suspect alternans, and analyse the first of the two APs
-            rApd90 = voltage_properties.GetAllActionPotentialDurations(90)[0];
-            rApd50 = voltage_properties.GetAllActionPotentialDurations(50)[0];
-            rUpstroke = voltage_properties.GetMaxUpstrokeVelocities()[0];
-            peak_voltages = voltage_properties.GetPeakPotentials();
-            rPeak = peak_voltages[0];
-            rPeakTime = voltage_properties.GetTimesAtPeakPotentials()[0];
-        }
-        else
-        {
-            // Return the last as it is more likely to be the steady state one.
-            rApd90 = voltage_properties.GetLastActionPotentialDuration(90);
-            rApd50 = voltage_properties.GetLastActionPotentialDuration(50);
-            rUpstroke = voltage_properties.GetLastCompleteMaxUpstrokeVelocity();
-            rPeak = voltage_properties.GetLastCompletePeakPotential();
-            rPeakTime = voltage_properties.GetTimeAtLastCompletePeakPotential();
-        }
+        // if we suspect alternans, analyse the first of the two APs, otherwise the
+        // second
+        unsigned analysis_pace_index = (apd90s.size() >= 2u && fabs(apd90s[0] - apd90s[1]) > alternans_threshold) ? 0u : 1u;
+        rApd90 = voltage_properties[analysis_pace_index].GetLastActionPotentialDuration(90);
+        rApd50 = voltage_properties[analysis_pace_index].GetLastActionPotentialDuration(50);
+        rUpstroke = voltage_properties[analysis_pace_index].GetLastCompleteMaxUpstrokeVelocity();
+        rPeak = voltage_properties[analysis_pace_index].GetLastCompletePeakPotential();
+        rPeakTime = voltage_properties[analysis_pace_index].GetTimeAtLastCompletePeakPotential();
+
         // It makes sense to return the peak voltage time relative to start of
         // stimulus application.
         boost::shared_ptr<RegularStimulus> p_reg_stim = boost::static_pointer_cast<RegularStimulus>(
