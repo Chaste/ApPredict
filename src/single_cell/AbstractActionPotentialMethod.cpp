@@ -382,8 +382,8 @@ OdeSolution AbstractActionPotentialMethod::PerformAnalysisOfTwoPaces(
                 current_index++;
             }
             CellProperties voltage_properties_for_pace(pace_voltages, pace_times, mActionPotentialThreshold);
-            auto apd90s_for_pace = voltage_properties_for_pace.GetAllActionPotentialDurations(90);
             voltage_properties.push_back(voltage_properties_for_pace);
+            auto apd90s_for_pace = voltage_properties_for_pace.GetAllActionPotentialDurations(90);
             apd90s.insert(std::end(apd90s), std::begin(apd90s_for_pace), std::end(apd90s_for_pace));
         }
 
@@ -400,7 +400,7 @@ OdeSolution AbstractActionPotentialMethod::PerformAnalysisOfTwoPaces(
 
         // if we suspect alternans, analyse the first of the two APs, otherwise the
         // second
-        unsigned analysis_pace_index = (apd90s.size() >= 2u && fabs(apd90s[0] - apd90s[1]) > alternans_threshold) ? 0u : 1u;
+        const unsigned analysis_pace_index = (apd90s.size() >= 2u && fabs(apd90s[0] - apd90s[1]) > alternans_threshold) ? 0u : 1u;
         rApd90 = voltage_properties[analysis_pace_index].GetLastActionPotentialDuration(90);
         rApd50 = voltage_properties[analysis_pace_index].GetLastActionPotentialDuration(50);
         rUpstroke = voltage_properties[analysis_pace_index].GetLastCompleteMaxUpstrokeVelocity();
