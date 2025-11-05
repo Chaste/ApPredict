@@ -369,17 +369,14 @@ OdeSolution AbstractActionPotentialMethod::PerformAnalysisOfTwoPaces(
 
         // split into num_paces_to_analyze paces for analysis
         std::vector<CellProperties> voltage_properties;
-        auto pace_start = std::begin(times);
         for (unsigned pace = 0; pace < num_paces_to_analyze; pace++)
         {
-            // find the start and end iterators and indices for this pace
-            const double pace_end_time = (pace + 1) * s1_period;
-            auto pace_end = std::find_if(pace_start, std::end(times), [pace_end_time](double t) { return t > pace_end_time; });
-            const size_t pace_start_index = std::distance(std::begin(times), pace_start);
-            const size_t pace_end_index = std::distance(std::begin(times), pace_end);
+            // find the start and end of the pace
+            const size_t pace_start_index = static_cast<size_t>(std::floor(pace * s1_period / printingTimeStep));
+            const size_t pace_end_index = static_cast<size_t>(std::floor((pace + 1) * s1_period / printingTimeStep));
 
             // extract times and voltages
-            std::vector<double> pace_times(pace_start, pace_end);
+            std::vector<double> pace_times(std::begin(times) + pace_start_index, std::begin(times) + pace_end_index);
             std::vector<double> pace_voltages(std::begin(voltages) + pace_start_index, std::begin(voltages) + pace_end_index);
 
             // contruct CellProperties and save for later
@@ -387,9 +384,6 @@ OdeSolution AbstractActionPotentialMethod::PerformAnalysisOfTwoPaces(
             voltage_properties.push_back(voltage_properties_for_pace);
             auto apd90s_for_pace = voltage_properties_for_pace.GetAllActionPotentialDurations(90);
             apd90s.insert(std::end(apd90s), std::begin(apd90s_for_pace), std::end(apd90s_for_pace));
-            
-            // update pace_start for next iteration
-            pace_start = pace_end;
         }
 
         if (!mSuppressOutput)
