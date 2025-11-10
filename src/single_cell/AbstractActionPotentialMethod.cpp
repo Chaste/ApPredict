@@ -341,7 +341,7 @@ OdeSolution AbstractActionPotentialMethod::PerformAnalysisOfTwoPaces(
     // We usually analyse two paces to look for alternans.
     // Have observed three period behaviour or more, so this is a hardcoded option
     // for now.
-    const unsigned num_paces_to_analyze = 2u;
+    const unsigned num_paces_to_analyze = 3u;
     mRepeat = false;
     const double alternans_threshold = 1; // ms in APD90 - hardcoded,
     // could make an option in future. But if it is any smaller alternans 'comes
@@ -378,15 +378,15 @@ OdeSolution AbstractActionPotentialMethod::PerformAnalysisOfTwoPaces(
             std::cout << std::endl; //<< std::flush;
         }
 
-        if (apd90s.size() >= 2u && fabs(apd90s[0] - apd90s[1]) > alternans_threshold)
+        if (apd90s.size() >= 3u && fabs(apd90s[1] - apd90s[2]) > alternans_threshold)
         {
             // We suspect alternans, and analyse the first of the two APs
-            rApd90 = voltage_properties.GetAllActionPotentialDurations(90)[0];
-            rApd50 = voltage_properties.GetAllActionPotentialDurations(50)[0];
-            rUpstroke = voltage_properties.GetMaxUpstrokeVelocities()[0];
+            rApd90 = voltage_properties.GetAllActionPotentialDurations(90)[1];
+            rApd50 = voltage_properties.GetAllActionPotentialDurations(50)[1];
+            rUpstroke = voltage_properties.GetMaxUpstrokeVelocities()[1];
             peak_voltages = voltage_properties.GetPeakPotentials();
-            rPeak = peak_voltages[0];
-            rPeakTime = voltage_properties.GetTimesAtPeakPotentials()[0];
+            rPeak = peak_voltages[1];
+            rPeakTime = voltage_properties.GetTimesAtPeakPotentials()[1];
         }
         else
         {
@@ -480,10 +480,10 @@ OdeSolution AbstractActionPotentialMethod::PerformAnalysisOfTwoPaces(
         assert(apd90s.size() > 0u);
 
         // Deal with the case when we are in alternans
-        if (apd90s.size() >= 2u && fabs(apd90s[0] - apd90s[1]) > alternans_threshold)
+        if (apd90s.size() >= 3u && fabs(apd90s[1] - apd90s[2]) > alternans_threshold)
         {
             mPeriodTwoBehaviour = true;
-            if (apd90s[1] > apd90s[0] && mRepeatNumber == 0u)
+            if (apd90s[2] > apd90s[1] && mRepeatNumber == 0u)
             {
                 // Redo so that we always plot the longest AP first.
                 mRepeat = true;
@@ -500,7 +500,7 @@ OdeSolution AbstractActionPotentialMethod::PerformAnalysisOfTwoPaces(
                     // 2. That this isn't caused by a slow depolarisation which tends to
                     // give varied Peak Vm
                     // (see test case 9 in O'Hara model TestTroublesomeApEvaluations)
-                    if (mDefaultParametersApd90 != DOUBLE_UNSET && (apd90s[0] > mDefaultParametersApd90 && apd90s[1] > mDefaultParametersApd90) && (fabs(peak_voltages[0] - peak_voltages[1]) < 10 /*mV*/)) // magic number!
+                    if (mDefaultParametersApd90 != DOUBLE_UNSET && (apd90s[1] > mDefaultParametersApd90 && apd90s[2] > mDefaultParametersApd90) && (fabs(peak_voltages[1] - peak_voltages[2]) < 10 /*mV*/)) // magic number!
                     {
                         // We have alternans tending to long/no repolarisation
                         mErrorCode = 6u;
@@ -519,8 +519,8 @@ OdeSolution AbstractActionPotentialMethod::PerformAnalysisOfTwoPaces(
                 {
                     message << "At a concentration of " << conc << "uM: ";
                 }
-                message << "possible alternans detected, APD90s = " << apd90s[0] << ", "
-                        << apd90s[1] << " ms";
+                message << "possible alternans detected, APD90s = " << apd90s[1] << ", "
+                        << apd90s[2] << " ms";
                 std::string message_string = message.str();
                 WriteMessageToFile(message_string);
             }
@@ -535,7 +535,7 @@ OdeSolution AbstractActionPotentialMethod::PerformAnalysisOfTwoPaces(
             }
         }
 
-        // Deal with the case when there was only one AP but two stimuli
+        // Deal with the case when there was only less than three AP but three stimuli
         if (apd90s.size() < num_paces_to_analyze && mSuccessful)
         {
             std::stringstream message;
@@ -543,8 +543,8 @@ OdeSolution AbstractActionPotentialMethod::PerformAnalysisOfTwoPaces(
             {
                 message << "At a concentration of " << conc << "uM: ";
             }
-            message << "only one action potential was recorded (" << apd90s[0]
-                    << " ms) for two paces of " << s1_period << "ms.";
+            message << "less than three action potential was recorded (" << apd90s[0]
+                    << " ms) for three paces of " << s1_period << "ms.";
             std::string message_string = message.str();
             WriteMessageToFile(message_string);
 
