@@ -1520,7 +1520,7 @@ void ApPredictMethods::CommonRunMethod()
         boost::shared_ptr<RegularStimulus> p_default_stimulus = boost::static_pointer_cast<RegularStimulus>(
             mpModel->GetStimulusFunction());
         double s1_period = p_default_stimulus->GetPeriod();
-        double s_start = p_default_stimulus->GetStartTime();
+        double s_start = p_default_stimulus->GetStartTime() + s1_period;
         std::vector<double> voltages = solution.GetVariableAtIndex(mpModel->GetSystemInformation()->GetStateVariableIndex("membrane_voltage"));
         double window = s1_period;
         if (this->mPeriodTwoBehaviour)
