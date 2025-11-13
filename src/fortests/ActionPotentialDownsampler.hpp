@@ -62,7 +62,8 @@ public:
                                const std::vector<double>& rTimes,
                                const std::vector<double>& rVoltages,
                                double window,
-                               double stimulusStart=0);
+                               double stimulusStart=0,
+                               double windowStart=0);
 };
 
 #endif // ACTIONPOTENTIALDOWNSAMPLER_HPP_

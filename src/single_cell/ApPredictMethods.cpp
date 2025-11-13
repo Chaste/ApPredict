@@ -1527,8 +1527,9 @@ void ApPredictMethods::CommonRunMethod()
         {
             window *= 2.0;
         }
+        double data_start = s1_period;
         ActionPotentialDownsampler(mOutputFolder, filename.str(),
-                                   solution.rGetTimes(), voltages, window, s_start);
+                                   solution.rGetTimes(), voltages, window, s_start, data_start);
     } // Conc
 
     if (!reliable_credible_intervals)
