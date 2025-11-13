@@ -306,9 +306,6 @@ OdeSolution AbstractActionPotentialMethod::SteadyStatePacingExperiment(
     if (mRepeat)
     {
         // std::cout << "Repeating simulation to order alternans APs consistently...\n";
-        // If we might benefit from pushing forward one period and re-analysing...
-        PushModelForwardOneS1Interval(pModel, s1_period, maximum_time_step);
-
         solution = PerformAnalysisOfTwoPaces(
             pModel, rApd90, rApd50, rUpstroke, rPeak, rPeakTime, rCaMax, rCaMin,
             s1_period, maximum_time_step, printingTimeStep, conc);
@@ -483,7 +480,7 @@ OdeSolution AbstractActionPotentialMethod::PerformAnalysisOfTwoPaces(
         if (apd90s.size() >= 3u && fabs(apd90s[1] - apd90s[2]) > alternans_threshold)
         {
             mPeriodTwoBehaviour = true;
-            if (apd90s[2] > apd90s[1] && mRepeatNumber == 0u)
+            if (apd90s[1] > apd90s[0] && mRepeatNumber == 0u)
             {
                 // Redo so that we always plot the longest AP first.
                 mRepeat = true;
