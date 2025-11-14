@@ -540,8 +540,12 @@ OdeSolution AbstractActionPotentialMethod::PerformAnalysisOfTwoPaces(
             {
                 message << "At a concentration of " << conc << "uM: ";
             }
-            message << "less than three action potential was recorded (" << apd90s[0]
-                    << " ms) for three paces of " << s1_period << "ms.";
+            message << "less than three action potential was recorded (";
+            for (unsigned i = 0; i < apd90s.size(); i++)
+            {
+                message << apd90s[i] << " ms, ";
+            }
+            message << ") for three paces of " << s1_period << "ms.";
             std::string message_string = message.str();
             WriteMessageToFile(message_string);
 
@@ -552,7 +556,15 @@ OdeSolution AbstractActionPotentialMethod::PerformAnalysisOfTwoPaces(
                 // absence of this caused a bit of a bug where a period 3
                 // non-repolarising looked like non
                 // depolarising...
-                if (apd90s[0] > s1_period || voltages.back() >= mActionPotentialThreshold)
+                bool an_ap_greater_than_period = false;
+                for (unsigned i = 0; i < apd90s.size(); i++)
+                {
+                    if (apd90s[i] > s1_period)
+                    {
+                        an_ap_greater_than_period = true;
+                    }
+                }
+                if (an_ap_greater_than_period || voltages.back() >= mActionPotentialThreshold)
                 {
                     mErrorCode = 3u;
                     mErrorMessage = "NoActionPotential_3";
