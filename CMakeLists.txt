@@ -59,6 +59,7 @@ set(ApPredict_CELLML_FILES
     priebe_beuckelmann_1998.cellml
     shannon_wang_puglisi_weber_bers_2004.cellml
     ten_tusscher_model_2006_epi.cellml
+    noble_model_1962.cellml
 )
 
 message (STATUS "Downloading ApPredict cellml files to ${ApPredict_CELLML_SRC}")
