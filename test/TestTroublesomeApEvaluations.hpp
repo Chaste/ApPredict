@@ -97,7 +97,7 @@ private:
 public:
     void TestTroublesomeNobleCases()
     {
-        CommandLineArgumentsMocker wrapper("--model noble_model_1962");
+        CommandLineArgumentsMocker wrapper("--model noble_model_1962 --pacing-stim-magnitude -25.5");
         SetupModel setup(2.0, UNSIGNED_UNSET, boost::shared_ptr<OutputFileHandler>(), false); // Noble 1962, 2.0Hz
         boost::shared_ptr<AbstractCvodeCell> p_model = setup.GetModel();
         std::string message = Run(p_model, 100, true, DOUBLE_UNSET, DOUBLE_UNSET, "_noble_normal");

@@ -42,7 +42,7 @@
 #
 # Note that the order in which components are specified does not matter.
 
-set(ApPredict_CELLML_TAG e394aba8a7ca50f72ee212e21431045eae8b5ca4)
+set(ApPredict_CELLML_TAG fb76f77ef973ff4e18c2b36b841ff3be5e59b5c8)
 set(ApPredict_CELLML_URL "https://raw.githubusercontent.com/Chaste/cellml/${ApPredict_CELLML_TAG}/cellml")
 set(ApPredict_CELLML_SRC "${CMAKE_CURRENT_SOURCE_DIR}/src/cellml")
 set(ApPredict_CELLML_FILES
