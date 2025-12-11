@@ -285,8 +285,8 @@ public:
             std::cout << "\nCase 8a: NoAP6 (but a bit like 5):\n"
                       << std::endl;
             p_model->SetStateVariables(steady_state);
-            p_model->SetParameter(gkr_name, gKr_max * 0.0407);
-            message = Run(p_model, 100, true, voltage_threshold, default_apd, "_gKr_0.0407");
+            p_model->SetParameter(gkr_name, gKr_max * 0.0406);
+            message = Run(p_model, 100, true, voltage_threshold, default_apd, "_gKr_0.0406");
             TS_ASSERT_EQUALS(message, "NoActionPotential_6");
         }
 
