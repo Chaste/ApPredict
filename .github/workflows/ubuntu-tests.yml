@@ -33,13 +33,16 @@ jobs:
           repository: Chaste/Chaste
           path: Chaste
           ref: ${{ env.chaste_branch }}
-
+        
       - name: Checkout ApPredict
         uses: actions/checkout@v6
         with:
           repository: Chaste/ApPredict
           path: Chaste/projects/ApPredict
 
+      - name: Force fail
+        run: exit 1
+        
       - name: Setup directories
         run: |
           mkdir -p build
@@ -79,7 +82,7 @@ jobs:
         working-directory: build
 
       - name: Slack notification
-        if: ${{ failure() && github.event_name == 'schedule' }}
+        if: ${{ failure() }}
         uses: slackapi/slack-github-action@v3.0.1
         with:
           method: chat.postMessage
