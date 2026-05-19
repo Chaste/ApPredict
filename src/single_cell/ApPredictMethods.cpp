@@ -1064,6 +1064,7 @@ void ApPredictMethods::CommonRunMethod()
     {
         SingleActionPotentialPrediction ap_runner(mpModel);
         ap_runner.SuppressOutput();
+        ap_runner.SuppressWarnings(); // We expect this not to be converged and to cause AP failures, don't want warnings
         ap_runner.SetMaxNumPaces(100u);
         this->SetVoltageThresholdForRecordingAsActionPotential(ap_runner.DetectVoltageThresholdForActionPotential());
     }
