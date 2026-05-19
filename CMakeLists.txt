@@ -42,7 +42,7 @@
 #
 # Note that the order in which components are specified does not matter.
 
-set(ApPredict_CELLML_TAG e394aba8a7ca50f72ee212e21431045eae8b5ca4)
+set(ApPredict_CELLML_TAG fb76f77ef973ff4e18c2b36b841ff3be5e59b5c8)
 set(ApPredict_CELLML_URL "https://raw.githubusercontent.com/Chaste/cellml/${ApPredict_CELLML_TAG}/cellml")
 set(ApPredict_CELLML_SRC "${CMAKE_CURRENT_SOURCE_DIR}/src/cellml")
 set(ApPredict_CELLML_FILES
@@ -59,6 +59,7 @@ set(ApPredict_CELLML_FILES
     priebe_beuckelmann_1998.cellml
     shannon_wang_puglisi_weber_bers_2004.cellml
     ten_tusscher_model_2006_epi.cellml
+    noble_model_1962.cellml
 )
 
 message (STATUS "Downloading ApPredict cellml files to ${ApPredict_CELLML_SRC}")
