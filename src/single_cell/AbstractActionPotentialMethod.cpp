@@ -163,7 +163,7 @@ void AbstractActionPotentialMethod::WriteMessageToFile(
         // Send the message to std::cout as well as any message
         // file in subclasses.
         WARNING(rMessage);
-    }   
+    }
 }
 
 void AbstractActionPotentialMethod::SuppressOutput(bool suppress)
