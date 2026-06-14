@@ -69,15 +69,15 @@ public:
     OdeSolution RunSteadyPacingExperiment()
     {
         double printing_timestep = 0.1;
-        return AbstractActionPotentialMethod::SteadyStatePacingExperiment(mpModel,
-                                                                          mApd90,
-                                                                          mApd50,
-                                                                          mUpstroke,
-                                                                          mPeak,
-                                                                          mPeakTime,
-                                                                          mCaMax,
-                                                                          mCaMin,
-                                                                          printing_timestep);
+        return this->SteadyStatePacingExperiment(mpModel,
+                                                 mApd90,
+                                                 mApd50,
+                                                 mUpstroke,
+                                                 mPeak,
+                                                 mPeakTime,
+                                                 mCaMax,
+                                                 mCaMin,
+                                                 printing_timestep);
     }
 
     /**
@@ -89,16 +89,16 @@ public:
     OdeSolution RunSteadyPacingExperiment(double conc)
     {
         double printing_timestep = 0.1;
-        return AbstractActionPotentialMethod::SteadyStatePacingExperiment(mpModel,
-                                                                          mApd90,
-                                                                          mApd50,
-                                                                          mUpstroke,
-                                                                          mPeak,
-                                                                          mPeakTime,
-                                                                          mCaMax,
-                                                                          mCaMin,
-                                                                          printing_timestep,
-                                                                          conc);
+        return this->SteadyStatePacingExperiment(mpModel,
+                                                 mApd90,
+                                                 mApd50,
+                                                 mUpstroke,
+                                                 mPeak,
+                                                 mPeakTime,
+                                                 mCaMax,
+                                                 mCaMin,
+                                                 printing_timestep,
+                                                 conc);
     }
 
     /**
@@ -217,7 +217,9 @@ public:
             // Remember state variables
             N_Vector steady_full_conductance_state_vars = mpModel->GetStateVariables();
 
+            this->SuppressWarnings(true);
             OdeSolution solution = RunSteadyPacingExperiment();
+            this->SuppressWarnings(false);
 
             // Put conductances back where they were!
             mpModel->SetParameter(fast_sodium_name, original_na_conductance);

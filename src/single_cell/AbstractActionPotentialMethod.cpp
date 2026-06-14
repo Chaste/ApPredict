@@ -56,6 +56,7 @@ AbstractActionPotentialMethod::AbstractActionPotentialMethod()
       mRepeat(false),
       mRepeatNumber(0u),
       mSuppressOutput(false),
+      mSuppressWarnings(false),
       mHertz(1.0), // default to 1 Hz, replaced by suitable command line
       // argument if present.
       mSuccessful(false),
@@ -157,13 +158,22 @@ unsigned AbstractActionPotentialMethod::GetErrorCode()
 void AbstractActionPotentialMethod::WriteMessageToFile(
     const std::string &rMessage)
 {
-    WARNING(rMessage); // Send the message to std::cout as well as any message
-    // file in subclasses.
+    if (!mSuppressWarnings)
+    {
+        // Send the message to std::cout as well as any message
+        // file in subclasses.
+        WARNING(rMessage);
+    }
 }
 
 void AbstractActionPotentialMethod::SuppressOutput(bool suppress)
 {
     mSuppressOutput = suppress;
+}
+
+void AbstractActionPotentialMethod::SuppressWarnings(bool suppress)
+{
+    mSuppressWarnings = suppress;
 }
 
 OdeSolution AbstractActionPotentialMethod::SteadyStatePacingExperiment(
@@ -291,6 +301,10 @@ OdeSolution AbstractActionPotentialMethod::SteadyStatePacingExperiment(
         if (mSuppressOutput)
         {
             steady_runner.SuppressOutput();
+        }
+        if (mSuppressWarnings)
+        {
+            steady_runner.SuppressWarnings();
         }
         if (mMaxNumPaces != UNSIGNED_UNSET)
         {
