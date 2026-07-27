@@ -43,7 +43,7 @@
 # Note that the order in which components are specified does not matter.
 
 set(ApPredict_CELLML_TAG fb76f77ef973ff4e18c2b36b841ff3be5e59b5c8)
-set(ApPredict_CELLML_ARCHIVE_URL "https://codeload.github.com/Chaste/cellml/tar.gz/${ApPredict_CELLML_TAG}")
+set(ApPredict_CELLML_ARCHIVE_URL "https://github.com/Chaste/cellml/archive/${ApPredict_CELLML_TAG}.tar.gz")
 set(ApPredict_CELLML_SRC "${CMAKE_CURRENT_SOURCE_DIR}/src/cellml")
 set(ApPredict_CELLML_FILES
     davies_isap_2012.cellml
