@@ -413,16 +413,10 @@ void ApPredictMethods::ApplyDrugBlock(
     }
     else // We haven't got that conductance parameter, or at least it isn't labelled.
     {
-        // If we aren't trying to change it - don't worry, just carry on.
-        if (conductance_factor < 1)
-        {
-            // If the model hasn't got this channel conductance labelled,
-            // (but we are trying to change it) throw an error.
-            EXCEPTION(
-                pModel->GetSystemName()
-                << " does not have the current \"" << mMetadataNames[channel_index]
-                << "\" labelled, but you have requested a block on this channel.");
-        }
+        // We aren't trying to change it (ReadInIC50HillAndSaturation() already throws,
+        // before we ever get here, if a block was requested on a channel that isn't
+        // labelled in this model) - don't worry, just carry on.
+        assert(conductance_factor == 1.0);
     }
 }
 
