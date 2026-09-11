@@ -250,6 +250,20 @@ void ApPredictMethods::ReadInIC50HillAndSaturation(
         read_ic50s = true;
     }
 
+    // If the user has requested a block on this channel, but the model doesn't
+    // have this conductance labelled, throw straight away. Otherwise this
+    // wouldn't be picked up until we reach a concentration in the main loop
+    // that actually causes some block (i.e. a non-zero concentration), which
+    // can be confusing as the simulation appears to run fine for the first
+    // (often zero, "control") concentration(s) before failing later on.
+    if (read_ic50s && !mpModel->HasParameter(mMetadataNames[channelIdx]) && !mpModel->HasParameter(mMetadataNames[channelIdx] + "_scaling_factor"))
+    {
+        EXCEPTION(
+            mpModel->GetSystemName()
+            << " does not have the current \"" << mMetadataNames[channelIdx]
+            << "\" labelled, but you have requested a block on this channel.");
+    }
+
     // Try loading any Hills
     if (p_args->OptionExists("--hill-" + channel))
     {
