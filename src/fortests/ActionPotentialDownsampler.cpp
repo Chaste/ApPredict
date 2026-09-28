@@ -46,7 +46,8 @@ ActionPotentialDownsampler::ActionPotentialDownsampler(const std::string& rFolde
                                                        const std::vector<double>& rTimes,
                                                        const std::vector<double>& rVoltages,
                                                        double window,
-                                                       double stimulusStart)
+                                                       double stimulusStart,
+                                                       double windowStart)
 {
     OutputFileHandler handler(rFoldername, false); // don't wipe the folder!
     out_stream output_file = handler.OpenOutputFile(rFilename);
@@ -59,8 +60,10 @@ ActionPotentialDownsampler::ActionPotentialDownsampler(const std::string& rFolde
 
     assert(rTimes.size()>0);
     double start_time_for_this_pace = rTimes[0] + stimulusStart;
+    double dt = rTimes[1] - rTimes[0];
+    unsigned start_index = static_cast<unsigned>(floor(windowStart / dt));
 
-    for (unsigned i=0; i<rVoltages.size(); i++)
+    for (unsigned i=start_index; i<rVoltages.size(); i++)
     {
         if (rTimes[i] - start_time_for_this_pace > window)
         {
@@ -71,7 +74,7 @@ ActionPotentialDownsampler::ActionPotentialDownsampler(const std::string& rFolde
         {
             // A new bit of code to downsample the output so flot doesn't timeout loading large datasets
             // We want to plot the first point, but not necessarily the last if we are repolarized.
-            if (i>0 && (i<rVoltages.size() || rVoltages[i] < -50)) // if we aren't at the beginning or the end of the trace
+            if (i>start_index && (i<rVoltages.size() || rVoltages[i] < -50)) // if we aren't at the beginning or the end of the trace
             {
             	if (fabs(rVoltages[i] - last_voltage_printed) > 1.0 /*mV*/ )
                 {

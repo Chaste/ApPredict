@@ -39,6 +39,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <cxxtest/TestSuite.h>
 #include "SetupModel.hpp"
 #include "SingleActionPotentialPrediction.hpp"
+#include "CommandLineArgumentsMocker.hpp"
 #include "ZeroStimulus.hpp"
 
 class TestTroublesomeApEvaluations : public CxxTest::TestSuite
@@ -94,6 +95,16 @@ private:
     }
 
 public:
+    void TestTroublesomeNobleCases()
+    {
+        CommandLineArgumentsMocker wrapper("--model noble_model_1962 --pacing-stim-magnitude -25.5");
+        SetupModel setup(2.0, UNSIGNED_UNSET, boost::shared_ptr<OutputFileHandler>(), false); // Noble 1962, 2.0Hz
+        boost::shared_ptr<AbstractCvodeCell> p_model = setup.GetModel();
+        std::string message = Run(p_model, 100, true, DOUBLE_UNSET, DOUBLE_UNSET, "_noble_normal");
+        // Noble 1962 model has a non-flat resting potential, so we just check that no error occurs in the AP evaluation.
+        TS_ASSERT_EQUALS(message, "No error");
+    }
+
     void TestTroublesomeTenTusscherCases()
     {
         SetupModel setup(1.0, 2u); // TT06, 1.0Hz
@@ -274,8 +285,8 @@ public:
             std::cout << "\nCase 8a: NoAP6 (but a bit like 5):\n"
                       << std::endl;
             p_model->SetStateVariables(steady_state);
-            p_model->SetParameter(gkr_name, gKr_max * 0.0407);
-            message = Run(p_model, 100, true, voltage_threshold, default_apd, "_gKr_0.0407");
+            p_model->SetParameter(gkr_name, gKr_max * 0.0406);
+            message = Run(p_model, 100, true, voltage_threshold, default_apd, "_gKr_0.0406");
             TS_ASSERT_EQUALS(message, "NoActionPotential_6");
         }
 

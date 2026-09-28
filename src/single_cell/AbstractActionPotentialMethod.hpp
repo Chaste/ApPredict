@@ -149,6 +149,9 @@ protected:
     /** Whether to suppress output to std::cout */
     bool mSuppressOutput;
 
+    /** Whether to suppress warning messages when no AP is detected. */
+    bool mSuppressWarnings;
+
     /** The frequency in Hz at which to perform this run */
     double mHertz;
 
@@ -384,6 +387,13 @@ public:
      * @param suppress  Whether to suppress output (defaults to true).
      */
     void SuppressOutput(bool suppress = true);
+
+    /**
+     * Tell the simulator whether to suppress warnings when no AP is detected.
+     *
+     * @param suppress  Whether to suppress no-AP warnings (defaults to true).
+     */
+    void SuppressWarnings(bool suppress = true);
 
     /**
      * Tell this class to treat a lack of 1:1 correspondence between stimuli and

@@ -69,7 +69,7 @@ public:
             std::tuple<std::string, std::string, bool>{ "IK1", "membrane_inward_rectifier_potassium_current_conductance", false }
         };
 
-        unsigned model_index;
+        const unsigned model_index = UNSIGNED_UNSET;
 
         if (*(CommandLineArguments::Instance()->p_argc) == 1 || CommandLineArguments::Instance()->OptionExists("--help"))
         {
@@ -80,15 +80,6 @@ public:
                          " * --channels <space separated list> (choice of: hERG, ICaL, INa, IKs, Ito, INaL, IK1)\n"
                       << std::flush;
             return;
-        }
-
-        if (CommandLineArguments::Instance()->OptionExists("--model"))
-        {
-            model_index = CommandLineArguments::Instance()->GetUnsignedCorrespondingToOption("--model");
-        }
-        else
-        {
-            EXCEPTION("Please specify model index with --model.");
         }
 
         double hertz = 1.0;

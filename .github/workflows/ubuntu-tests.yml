@@ -28,18 +28,18 @@ jobs:
 
     steps:
       - name: Checkout Chaste/${{ env.chaste_branch }}
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: Chaste/Chaste
           path: Chaste
           ref: ${{ env.chaste_branch }}
-
+        
       - name: Checkout ApPredict
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: Chaste/ApPredict
           path: Chaste/projects/ApPredict
-
+        
       - name: Setup directories
         run: |
           mkdir -p build
@@ -79,8 +79,8 @@ jobs:
         working-directory: build
 
       - name: Slack notification
-        if: failure()
-        uses: slackapi/slack-github-action@v2.0.0
+        if: ${{ failure() && github.event_name == 'schedule' }}
+        uses: slackapi/slack-github-action@v3.0.1
         with:
           method: chat.postMessage
           token: ${{ secrets.SLACK_NOTIFICATIONS_BOT_TOKEN }}

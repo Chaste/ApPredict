@@ -62,7 +62,8 @@ const std::unordered_set<std::string> SetupModel::forceNumericalJModels = { "hun
 
 SetupModel::SetupModel(const double& rHertz,
                        unsigned modelIndex,
-                       boost::shared_ptr<OutputFileHandler> pHandler)
+                       boost::shared_ptr<OutputFileHandler> pHandler,
+                       bool useSuggestedCycleLength)
         : mpHandler(pHandler)
 {
     // Cvode cells use a CVODE solver regardless of which standard solver is passed in.
@@ -149,7 +150,7 @@ SetupModel::SetupModel(const double& rHertz,
         s_magnitude = p_reg_stim->GetMagnitude();
         s_duration = p_reg_stim->GetDuration();
     }
-    else if (mpModel->HasAttribute("SuggestedCycleLength"))
+    else if (mpModel->HasAttribute("SuggestedCycleLength") && useSuggestedCycleLength)
     {
         // If the model has no stimulus current it can be given this attribute tag
         // so we know roughly what cycle length to use on it...

@@ -91,7 +91,8 @@ public:
      */
     SetupModel(const double& rHertz,
                unsigned model_index = UNSIGNED_UNSET,
-               boost::shared_ptr<OutputFileHandler> pHandler = boost::shared_ptr<OutputFileHandler>());
+               boost::shared_ptr<OutputFileHandler> pHandler = boost::shared_ptr<OutputFileHandler>(),
+               bool useSuggestedCycleLength = true);
 
     /**
      * Print the option and possible arguments that this class takes.
