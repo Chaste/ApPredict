@@ -1,6 +1,6 @@
 /*
 
-Copyright (c) 2005-2025, University of Oxford.
+Copyright (c) 2005-2026, University of Oxford.
 All rights reserved.
 
 University of Oxford means the Chancellor, Masters and Scholars of the
@@ -219,6 +219,14 @@ bool LookupTableGenerator<DIM>::GenerateLookupTable()
         }
     }
 
+    // A subdivision into 2^DIM boxes (the original refinement scheme) counts as DIM refinement levels,
+    // so we scale the maximum difference in refinement to keep its meaning the same.
+    unsigned max_refinement_level_difference = UNSIGNED_UNSET;
+    if (mMaxRefinementDifference != UNSIGNED_UNSET)
+    {
+        max_refinement_level_difference = mMaxRefinementDifference * DIM;
+    }
+
     bool meets_all_tolerances = false;
     for (unsigned quantitiy_idx = 0u; quantitiy_idx < mQuantitiesToRecord.size();
          quantitiy_idx++)
@@ -231,7 +239,7 @@ bool LookupTableGenerator<DIM>::GenerateLookupTable()
             // Find which parameter box has the largest variation between its corners
             ParameterBox<DIM> *p_box = mpParentBox->FindBoxWithLargestQoIErrorEstimate(
                 quantitiy_idx, mQoITolerances[quantitiy_idx],
-                mMaxRefinementDifference);
+                max_refinement_level_difference);
 
             // If we don't get a box back, then we can quit this while loop,
             // as variation in this QoI is within tols.
@@ -244,9 +252,10 @@ bool LookupTableGenerator<DIM>::GenerateLookupTable()
                 break;
             }
 
-            // Subdivide this box (NB if we GetCorners() after this,
-            // it includes the new points and makes no sense!).
-            CornerSet new_parameter_points = p_box->SubDivide();
+            // Bisect this box along the dimension with the largest error estimate
+            // (NB if we GetCorners() after this, it includes the new points and makes no sense!).
+            unsigned dimension_to_split = p_box->ChooseDimensionToSplit(quantitiy_idx);
+            CornerSet new_parameter_points = p_box->SubDivide(dimension_to_split);
 
             // Evaluate at these points.
             RunEvaluationsForThesePoints(new_parameter_points, p_file);

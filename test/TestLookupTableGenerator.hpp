@@ -1,6 +1,6 @@
 /*
 
-Copyright (c) 2005-2025, University of Oxford.
+Copyright (c) 2005-2026, University of Oxford.
 All rights reserved.
 
 University of Oxford means the Chancellor, Masters and Scholars of the
@@ -125,6 +125,94 @@ public:
 
         TS_ASSERT_EQUALS(parameter_values.size(), 10u);
         TS_ASSERT_EQUALS(quantities_of_interest.size(), 10u);
+    }
+
+    void TestLookupTableMaker2dBisection()
+    {
+        unsigned model_index = 2u; // Ten Tusscher 2006 epi
+
+        std::string file_name = "2d_test";
+        LookupTableGenerator<2> generator(model_index, file_name, "TestLookupTables");
+        generator.SetParameterToScale("membrane_rapid_delayed_rectifier_potassium_current_conductance", 0.0, 1.0);
+        generator.SetParameterToScale("membrane_L_type_calcium_current_conductance", 0.0, 1.0);
+        generator.AddQuantityOfInterest(Apd90, 0.5 /*ms*/); // QoI and tolerance
+
+        generator.SetMaxNumEvaluations(1u); // Just does the corners
+        generator.GenerateLookupTable();
+        TS_ASSERT_EQUALS(generator.GetNumEvaluations(), 4u);
+
+        // Each refinement step bisects one box, adding at most 2^(DIM-1) = 2 new points.
+        for (unsigned i = 0; i < 6u; i++)
+        {
+            unsigned num_evals_before = generator.GetNumEvaluations();
+            generator.SetMaxNumEvaluations(num_evals_before + 1u);
+            generator.GenerateLookupTable();
+            TS_ASSERT_LESS_THAN_EQUALS(num_evals_before + 1u, generator.GetNumEvaluations());
+            TS_ASSERT_LESS_THAN_EQUALS(generator.GetNumEvaluations(), num_evals_before + 2u);
+        }
+
+        std::vector<c_vector<double, 2u>> parameter_values = generator.GetParameterPoints();
+        std::vector<std::vector<double>> quantities_of_interest = generator.GetFunctionValues();
+        TS_ASSERT_EQUALS(parameter_values.size(), generator.GetNumEvaluations());
+        TS_ASSERT_EQUALS(quantities_of_interest.size(), generator.GetNumEvaluations());
+
+        // Interpolation at the corners of parameter space (the first points evaluated) is exact,
+        // and bilinear interpolation shouldn't go outside the range of the data anywhere.
+        std::vector<std::vector<double>> interpolated = generator.Interpolate(parameter_values);
+        double min_apd = DBL_MAX;
+        double max_apd = -DBL_MAX;
+        for (unsigned i = 0; i < quantities_of_interest.size(); i++)
+        {
+            min_apd = std::min(min_apd, quantities_of_interest[i][0]);
+            max_apd = std::max(max_apd, quantities_of_interest[i][0]);
+            if (i < 4u)
+            {
+                TS_ASSERT_DELTA(interpolated[i][0], quantities_of_interest[i][0], 1e-12);
+            }
+        }
+        std::vector<std::vector<double>> sample_points;
+        for (unsigned i = 0; i <= 10u; i++)
+        {
+            sample_points.push_back(std::vector<double>{ 0.1 * i, 1.0 - 0.1 * i });
+            sample_points.push_back(std::vector<double>{ 0.1 * i, 0.33 });
+        }
+        interpolated = generator.Interpolate(sample_points);
+        for (unsigned i = 0; i < interpolated.size(); i++)
+        {
+            TS_ASSERT_LESS_THAN_EQUALS(min_apd - 1e-9, interpolated[i][0]);
+            TS_ASSERT_LESS_THAN_EQUALS(interpolated[i][0], max_apd + 1e-9);
+        }
+
+        // Check archiving and resuming work on a bisected table.
+        OutputFileHandler handler("TestLookupTableArchiving", false);
+        std::string archive_filename = handler.GetOutputDirectoryFullPath() + "Generator2d.arch";
+        {
+            AbstractUntemplatedLookupTableGenerator* const p_generator = &generator;
+            std::ofstream ofs(archive_filename.c_str());
+            boost::archive::text_oarchive output_arch(ofs);
+            output_arch << p_generator;
+        }
+        {
+            AbstractUntemplatedLookupTableGenerator* p_generator;
+            std::ifstream ifs(archive_filename.c_str(), std::ios::binary);
+            boost::archive::text_iarchive input_arch(ifs);
+            input_arch >> p_generator;
+
+            TS_ASSERT_EQUALS(p_generator->GetDimension(), 2u);
+            TS_ASSERT_EQUALS(p_generator->GetNumEvaluations(), generator.GetNumEvaluations());
+            std::vector<std::vector<double>> loaded_interpolated = p_generator->Interpolate(sample_points);
+            for (unsigned i = 0; i < interpolated.size(); i++)
+            {
+                TS_ASSERT_DELTA(loaded_interpolated[i][0], interpolated[i][0], 1e-12);
+            }
+
+            unsigned num_evals_before = p_generator->GetNumEvaluations();
+            p_generator->SetMaxNumEvaluations(num_evals_before + 1u);
+            p_generator->GenerateLookupTable();
+            TS_ASSERT_LESS_THAN_EQUALS(num_evals_before + 1u, p_generator->GetNumEvaluations());
+            TS_ASSERT_LESS_THAN_EQUALS(p_generator->GetNumEvaluations(), num_evals_before + 2u);
+            delete p_generator;
+        }
     }
 
     void TestLookupTableMaker5d()

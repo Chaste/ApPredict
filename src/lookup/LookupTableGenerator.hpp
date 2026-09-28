@@ -1,6 +1,6 @@
 /*
 
-Copyright (c) 2005-2025, University of Oxford.
+Copyright (c) 2005-2026, University of Oxford.
 All rights reserved.
 
 University of Oxford means the Chancellor, Masters and Scholars of the
@@ -71,6 +71,12 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * You should add QoIs in order of importance, as the lookup table will be
  * refined for each in turn.
+ *
+ * Refinement works by repeatedly finding the ParameterBox with the largest error
+ * estimate and bisecting it along the dimension with the largest error estimate
+ * (see ParameterBox::ChooseDimensionToSplit()). Tables generated with older versions
+ * of this class (which divided boxes into 2^DIM) can still be loaded, interpolated
+ * and refined further.
  *
  * If you ever add a new DIM (6 or more) be sure to add new explicit instantiation and boost
  * serialization export wrappers...
@@ -323,6 +329,9 @@ public:
 	 * where the QoIs are varying most rapidly, this can lead to under-exploring
 	 * other parts of
 	 * the parameter space.
+	 *
+	 * The difference is measured in whole levels of refinement, i.e. halving a box in
+	 * every dimension, which takes DIM bisections.
 	 *
 	 * @param rMaxRefinementDifference  The maximum difference in the parameter
 	 * boxes to allow.
