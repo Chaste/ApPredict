@@ -250,6 +250,20 @@ void ApPredictMethods::ReadInIC50HillAndSaturation(
         read_ic50s = true;
     }
 
+    // If the user has requested a block on this channel, but the model doesn't
+    // have this conductance labelled, throw straight away. Otherwise this
+    // wouldn't be picked up until we reach a concentration in the main loop
+    // that actually causes some block (i.e. a non-zero concentration), which
+    // can be confusing as the simulation appears to run fine for the first
+    // (often zero, "control") concentration(s) before failing later on.
+    if (read_ic50s && !mpModel->HasParameter(mMetadataNames[channelIdx]) && !mpModel->HasParameter(mMetadataNames[channelIdx] + "_scaling_factor"))
+    {
+        EXCEPTION(
+            mpModel->GetSystemName()
+            << " does not have the current \"" << mMetadataNames[channelIdx]
+            << "\" labelled, but you have requested a block on this channel.");
+    }
+
     // Try loading any Hills
     if (p_args->OptionExists("--hill-" + channel))
     {
@@ -399,16 +413,10 @@ void ApPredictMethods::ApplyDrugBlock(
     }
     else // We haven't got that conductance parameter, or at least it isn't labelled.
     {
-        // If we aren't trying to change it - don't worry, just carry on.
-        if (conductance_factor < 1)
-        {
-            // If the model hasn't got this channel conductance labelled,
-            // (but we are trying to change it) throw an error.
-            EXCEPTION(
-                pModel->GetSystemName()
-                << " does not have the current \"" << mMetadataNames[channel_index]
-                << "\" labelled, but you have requested a block on this channel.");
-        }
+        // We aren't trying to change it (ReadInIC50HillAndSaturation() already throws,
+        // before we ever get here, if a block was requested on a channel that isn't
+        // labelled in this model) - don't worry, just carry on.
+        assert(conductance_factor == 1.0);
     }
 }
 
