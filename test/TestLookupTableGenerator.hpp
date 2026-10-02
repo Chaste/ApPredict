@@ -38,6 +38,12 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <cxxtest/TestSuite.h>
 
+#include <atomic>
+#include <chrono>
+#include <cmath>
+#include <set>
+#include <thread>
+
 #include "CheckpointArchiveTypes.hpp"
 
 #include "AbstractUntemplatedLookupTableGenerator.hpp"
@@ -213,6 +219,152 @@ public:
             TS_ASSERT_LESS_THAN_EQUALS(p_generator->GetNumEvaluations(), num_evals_before + 2u);
             delete p_generator;
         }
+    }
+
+    /**
+     * Refine a 2D table of a cheap analytic function, which has a region where 'evaluation' reports
+     * an error code, and takes a pseudo-random time to evaluate so that evaluations finish
+     * out of order.
+     *
+     * The function value is continuous across the error region, so boxes on its edge can converge
+     * (a jump in value there would be refined down to the minimum box width).
+     *
+     * @param rGenerator  the generator to set up (parameters must be set already)
+     * @param rNumCalls  incremented on every call to the function (from any thread)
+     */
+    void SetAnalyticEvaluationFunction(LookupTableGenerator<2>& rGenerator, std::atomic<unsigned>& rNumCalls)
+    {
+        rGenerator.mEvaluationFunctionForTesting = [&rNumCalls](const std::vector<double>& rX, std::vector<double>& rQoIs, unsigned& rErrorCode)
+        {
+            rNumCalls++;
+            // A delay of 0-9ms that varies between points.
+            unsigned delay_ms = (unsigned)(std::fabs(std::sin(1000.0 * rX[0] + 37.0 * rX[1])) * 10.0);
+            std::this_thread::sleep_for(std::chrono::milliseconds(delay_ms));
+
+            rQoIs.clear();
+            rQoIs.push_back(300.0 + 100.0 / (0.2 + rX[0] + 0.5 * rX[1]));
+            rErrorCode = (rX[0] + rX[1] < 0.3) ? 2u : 0u;
+        };
+    }
+
+    void TestParallelRefinementWithAnalyticFunction()
+    {
+        std::atomic<unsigned> num_calls(0u);
+        LookupTableGenerator<2> generator(2u, "2d_analytic_parallel", "TestLookupTableParallel");
+        generator.SetParameterToScale("membrane_rapid_delayed_rectifier_potassium_current_conductance", 0.0, 1.0);
+        generator.SetParameterToScale("membrane_slow_delayed_rectifier_potassium_current_conductance", 0.0, 1.0);
+        generator.AddQuantityOfInterest(Apd90, 2.0 /*ms*/);
+        generator.SetMaxVariationInRefinement(3u);
+        TS_ASSERT_THROWS_THIS(generator.SetNumThreads(0u), "The number of threads must be at least one.");
+        generator.SetNumThreads(8u);
+        TS_ASSERT_EQUALS(generator.GetNumThreads(), 8u);
+        SetAnalyticEvaluationFunction(generator, num_calls);
+
+        // Stop part way through, the cap can only be exceeded by the points on one new plane (1 in 2D).
+        generator.SetMaxNumEvaluations(100u);
+        TS_ASSERT_EQUALS(generator.GenerateLookupTable(), false);
+        TS_ASSERT_LESS_THAN_EQUALS(100u, generator.GetNumEvaluations());
+        TS_ASSERT_LESS_THAN_EQUALS(generator.GetNumEvaluations(), 101u);
+        CheckGeneratorIsConsistent(generator, num_calls);
+
+        // Archive it, and carry on to convergence with a different number of threads.
+        OutputFileHandler handler("TestLookupTableParallel", false);
+        std::string archive_filename = handler.GetOutputDirectoryFullPath() + "Generator2dParallel.arch";
+        {
+            AbstractUntemplatedLookupTableGenerator* const p_generator = &generator;
+            std::ofstream ofs(archive_filename.c_str());
+            boost::archive::text_oarchive output_arch(ofs);
+            output_arch << p_generator;
+        }
+        AbstractUntemplatedLookupTableGenerator* p_abstract_generator;
+        {
+            std::ifstream ifs(archive_filename.c_str(), std::ios::binary);
+            boost::archive::text_iarchive input_arch(ifs);
+            input_arch >> p_abstract_generator;
+        }
+        LookupTableGenerator<2>* p_loaded = dynamic_cast<LookupTableGenerator<2>*>(p_abstract_generator);
+        TS_ASSERT_EQUALS(p_loaded->GetNumEvaluations(), generator.GetNumEvaluations());
+        p_loaded->SetNumThreads(3u);
+        SetAnalyticEvaluationFunction(*p_loaded, num_calls);
+        p_loaded->SetMaxNumEvaluations(100000u);
+        TS_ASSERT_EQUALS(p_loaded->GenerateLookupTable(), true);
+        std::cout << "Analytic 2D table converged with " << p_loaded->GetNumEvaluations() << " evaluations.\n";
+        TS_ASSERT_LESS_THAN(101u, p_loaded->GetNumEvaluations());
+        CheckGeneratorIsConsistent(*p_loaded, num_calls);
+
+        // All the boxes meet the tolerance.
+        std::vector<ParameterBox<2>*> leaves;
+        p_loaded->CollectLeafBoxes(p_loaded->mpParentBox, leaves);
+        for (unsigned i = 0; i < leaves.size(); i++)
+        {
+            TS_ASSERT_EQUALS(leaves[i]->DoesBoxNeedFurtherRefinement(2.0, 0u), false);
+        }
+
+        // And the interpolation is good (looking away from the steepest part of the function).
+        for (unsigned i = 0; i <= 20u; i++)
+        {
+            for (unsigned j = 0; j <= 20u; j++)
+            {
+                std::vector<double> x{ 0.05 * i, 0.05 * j };
+                if (x[0] + x[1] < 0.45)
+                {
+                    continue;
+                }
+                double interpolated = p_loaded->Interpolate(std::vector<std::vector<double> >{ x })[0][0];
+                TS_ASSERT_DELTA(interpolated, 300.0 + 100.0 / (0.2 + x[0] + 0.5 * x[1]), 4.0);
+            }
+        }
+        delete p_loaded;
+    }
+
+    void TestSingleThreadedRefinementIsDeterministic()
+    {
+        std::vector<std::vector<c_vector<double, 2u> > > runs;
+        for (unsigned run = 0; run < 2u; run++)
+        {
+            std::atomic<unsigned> num_calls(0u);
+            LookupTableGenerator<2> generator(2u, "2d_analytic_serial", "TestLookupTableParallel");
+            generator.SetParameterToScale("membrane_rapid_delayed_rectifier_potassium_current_conductance", 0.0, 1.0);
+            generator.SetParameterToScale("membrane_slow_delayed_rectifier_potassium_current_conductance", 0.0, 1.0);
+            generator.AddQuantityOfInterest(Apd90, 2.0 /*ms*/);
+            generator.SetNumThreads(1u);
+            SetAnalyticEvaluationFunction(generator, num_calls);
+            generator.SetMaxNumEvaluations(150u);
+            generator.GenerateLookupTable();
+            CheckGeneratorIsConsistent(generator, num_calls);
+            runs.push_back(generator.GetParameterPoints());
+        }
+        TS_ASSERT_EQUALS(runs[0].size(), runs[1].size());
+        for (unsigned i = 0; i < std::min(runs[0].size(), runs[1].size()); i++)
+        {
+            TS_ASSERT_DELTA(runs[0][i][0], runs[1][i][0], 1e-12);
+            TS_ASSERT_DELTA(runs[0][i][1], runs[1][i][1], 1e-12);
+        }
+    }
+
+    /**
+     * Check that every point was evaluated exactly once, and every box has all its corners evaluated.
+     */
+    void CheckGeneratorIsConsistent(LookupTableGenerator<2>& rGenerator, std::atomic<unsigned>& rNumCalls)
+    {
+        std::vector<c_vector<double, 2u> > points = rGenerator.GetParameterPoints();
+        TS_ASSERT_EQUALS(points.size(), rGenerator.GetNumEvaluations());
+        TS_ASSERT_EQUALS(rNumCalls.load(), rGenerator.GetNumEvaluations());
+        std::set<c_vector<double, 2u>*, c_vector_compare<2u> > unique_points;
+        for (unsigned i = 0; i < points.size(); i++)
+        {
+            unique_points.insert(&points[i]);
+        }
+        TS_ASSERT_EQUALS(unique_points.size(), points.size());
+
+        std::vector<ParameterBox<2>*> leaves;
+        rGenerator.CollectLeafBoxes(rGenerator.mpParentBox, leaves);
+        for (unsigned i = 0; i < leaves.size(); i++)
+        {
+            TS_ASSERT(leaves[i]->mAllCornersEvaluated);
+            TS_ASSERT_EQUALS(leaves[i]->mParameterPointDataMapPredictions.size(), 0u);
+        }
+        TS_ASSERT_EQUALS(rGenerator.mpParentBox->GetCorners().size(), rGenerator.GetNumEvaluations());
     }
 
     void TestLookupTableMaker5d()

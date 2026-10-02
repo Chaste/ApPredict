@@ -52,6 +52,9 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 static const double TOL = 1e-12;
 
+template <unsigned DIM>
+class LookupTableGenerator;
+
 /**
  *  A special comparison method to allow std::map to sort and compare
  *  a std::map<c_vector<double,DIM>* >
@@ -103,6 +106,8 @@ private:
     friend class boost::serialization::access;
     friend class TestParameterBox;
     friend class TestLookupTableBackwardsCompatibility;
+    friend class TestLookupTableGenerator;
+    friend class LookupTableGenerator<DIM>;
     /**
      * Archive the object.
      *
@@ -532,6 +537,8 @@ public:
     /**
      * @param rTolerance  The tolerance that needs to be met
      * @param rQuantityIndex  The QoI that we want a report on.
+     *
+     * Boxes whose new corners are still being evaluated count as not meeting the tolerance.
      *
      * @return the percentage of parameter space (by volume) where the tolerance on this QoI is met.
      */

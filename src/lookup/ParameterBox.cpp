@@ -1062,7 +1062,9 @@ double ParameterBox<DIM>::ReportPercentageOfSpaceWhereToleranceIsMetForQoI(const
             area_box *= widths[j];
         }
 
-        if (all_boxes[i]->DoesBoxNeedFurtherRefinement(rTolerance, rQuantityIndex))
+        // Boxes still waiting for some of their new corners to be evaluated don't have error estimates yet.
+        if ((all_boxes[i]->mpParentBox && !all_boxes[i]->mAllCornersEvaluated)
+            || all_boxes[i]->DoesBoxNeedFurtherRefinement(rTolerance, rQuantityIndex))
         {
             area_not += area_box;
         }

@@ -1,4 +1,5 @@
 TestApPredictLong.hpp
+TestLookupTable2dHergIks.hpp
 TestPkpdInterpolations.hpp
 TestTorsadePredictLong.hpp
 TestTroublesomeApEvaluations.hpp

@@ -229,6 +229,19 @@ public:
     virtual void SetPacingFrequency(double frequency) = 0;
 
     /**
+     * Set the maximum number of evaluations (simulations) to run at once, each on its own thread.
+     * Defaults to the number of cores available on the machine.
+     *
+     * @param numThreads  The number of threads to use (at least 1).
+     */
+    virtual void SetNumThreads(unsigned numThreads) = 0;
+
+    /**
+     * @return The maximum number of evaluations that will run at once.
+     */
+    virtual unsigned GetNumThreads() const = 0;
+
+    /**
      * Helper method that just returns DIM, to avoid template chaos.
      */
     virtual unsigned GetDimension() const = 0;
