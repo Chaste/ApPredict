@@ -78,6 +78,8 @@ public:
                          " * --hertz <freq>  (the pacing frequency in Hertz - defaults to 1Hz)\n"
                          " then a list of ion channels that you would like to block:\n"
                          " * --channels <space separated list> (choice of: hERG, ICaL, INa, IKs, Ito, INaL, IK1)\n"
+                         " and optionally:\n"
+                         " * --threads <n> (the number of simulations to run at once - defaults to the number of cores)\n"
                       << std::flush;
             return;
         }
@@ -229,6 +231,12 @@ public:
             p_generator->SetMaxNumPaces(30u * 60u); // This is 30 minutes of 1Hz pacing
             p_generator->SetMaxVariationInRefinement(5u); // This prevents over-refining in one area.
         }
+
+        if (CommandLineArguments::Instance()->OptionExists("--threads"))
+        {
+            p_generator->SetNumThreads(CommandLineArguments::Instance()->GetUnsignedCorrespondingToOption("--threads"));
+        }
+        std::cout << "Running up to " << p_generator->GetNumThreads() << " simulations at once.\n";
 
         const unsigned start_evaluations = p_generator->GetNumEvaluations();
         std::cout << "Started with " << start_evaluations << " evaluations.\n";

@@ -1,6 +1,6 @@
 /*
 
-Copyright (c) 2005-2025, University of Oxford.
+Copyright (c) 2005-2026, University of Oxford.
 All rights reserved.
 
 University of Oxford means the Chancellor, Masters and Scholars of the
@@ -52,6 +52,9 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 static const double TOL = 1e-12;
 
+template <unsigned DIM>
+class LookupTableGenerator;
+
 /**
  *  A special comparison method to allow std::map to sort and compare
  *  a std::map<c_vector<double,DIM>* >
@@ -84,8 +87,13 @@ struct c_vector_compare
 /**
  * This class stores the co-ordinates of the corners of N-D boxes.
  *
- * It provides a method for dividing a box into equally sized sub-boxes, *
- * and keeps track of their indices too.
+ * It provides methods for dividing a box into sub-boxes, either into 2^DIM
+ * equally sized sub-boxes (by halving every dimension), or into two by bisecting
+ * along a single dimension. It keeps track of their indices too.
+ *
+ * Boxes are therefore hyper-rectangles, not necessarily hyper-cubes. A tree may
+ * contain a mixture of both kinds of subdivision (e.g. a legacy archive that has
+ * been refined further by bisection).
  *
  * It also provides methods to find out which sub-boxes have the most and
  * least refinement, as well as suggesting the next one to refine.
@@ -97,6 +105,9 @@ private:
     /** Needed for serialization. */
     friend class boost::serialization::access;
     friend class TestParameterBox;
+    friend class TestLookupTableBackwardsCompatibility;
+    friend class TestLookupTableGenerator;
+    friend class LookupTableGenerator<DIM>;
     /**
      * Archive the object.
      *
@@ -229,7 +240,59 @@ private:
     ParameterBox(){};
 
     /**
-     * @return A pointer to (one of) the children with the largest generation number.
+     * Work out, for each dimension, an estimate of the error in interpolating the given QoI
+     * across this box in that dimension.
+     *
+     * For each dimension we walk up the family tree from this box to the nearest box
+     * (including this one) that was created by a subdivision which halved that dimension,
+     * and use the error estimate that was measured when that subdivision was evaluated.
+     * If no such box exists (i.e. the tree has never been split along this dimension here)
+     * the error is unknown, and DBL_MAX is returned for that dimension.
+     *
+     * Nothing extra needs archiving for this: it is derived from box geometry and
+     * #mMaxErrorsInEachQoI, so it works for boxes loaded from older archives too.
+     *
+     * @param rQuantityIndex  The index of the quantity of interest.
+     * @return An error estimate for each dimension.
+     */
+    std::vector<double> GetErrorEstimatesPerDimension(const unsigned& rQuantityIndex);
+
+    /**
+     * @return The refinement level of this box, the number of times the original box has been
+     * halved (in any dimension) to get to this box, i.e. sum over dimensions of log2(1/width).
+     *
+     * A box created by g subdivisions into 2^DIM has level DIM*g,
+     * a box created by g bisections has level g.
+     */
+    unsigned GetRefinementLevel() const;
+
+    /**
+     * @param dimension  The dimension of interest.
+     * @return Whether this box is wide enough in the given dimension to be split further.
+     */
+    bool IsDimensionSplittable(unsigned dimension) const;
+
+    /**
+     * @param dimension  The dimension of interest.
+     * @param rQuantityIndex  The index of the quantity of interest.
+     * @return The largest change in the QoI along any edge of this box that is parallel to the
+     * given dimension (ignoring edges where either corner had an error code).
+     */
+    double GetQoIVariationAlongDimension(unsigned dimension, const unsigned& rQuantityIndex);
+
+    /**
+     * Called once all the predicted QoIs have been compared with real data,
+     * to populate #mMaxErrorsInEachQoI from #mErrorsInQoIs.
+     */
+    void FinaliseErrorEstimates();
+
+    /**
+     * Clear the data that a box doesn't need once it has become a parent.
+     */
+    void TidyUpAfterSubdivision();
+
+    /**
+     * @return A pointer to (one of) the children with the largest refinement level.
      */
     ParameterBox<DIM>* GetMostRefinedChild();
 
@@ -240,7 +303,7 @@ private:
      * @param rTolerance  The error estimate we are happy with.
      * @param rQuantityIndex  The index of the quantity of interest we are examining at present.
      * @return A pointer to (one of) the children (that has no children of its own)
-     *         with the smallest generation number.
+     *         with the smallest refinement level.
      */
     ParameterBox<DIM>* GetLeastRefinedChild(const double& rTolerance, const unsigned& rQuantityIndex);
 
@@ -349,7 +412,7 @@ private:
     /**
      * Report whether this box needs further refinement or not.
      *
-     * Contains a hard-coded limit on the maximum width in any dimension of the box, once this falls
+     * Contains a hard-coded limit on the width of the box, once every dimension falls
      * below a certain hard-coded limit we won't refine the boxes any more and will return false.
      *
      * @param rTolerance  The error estimate in the QoI that we are happy with
@@ -391,9 +454,41 @@ public:
      *
      * Makes this box into a parent and creates daughter boxes.
      *
+     * N.B. This was the original refinement scheme used by the LookupTableGenerator, which now uses
+     * SubDivide(unsigned) instead.
+     *
      * @return The new points in parameter space at which quantities of interest need to be evaluated.
      */
     CornerSet SubDivide();
+
+    /**
+     * Bisect this box along a single dimension into two daughter boxes.
+     * This requires 2^(DIM-1) new points, on the plane half way along the given dimension.
+     *
+     * Makes this box into a parent and creates daughter boxes.
+     *
+     * Some (or all) of the points on this plane may already have been evaluated, if neighbouring
+     * boxes have been refined. In that case the error in this box's prediction at those points
+     * is recorded immediately.
+     *
+     * @param dimension  The dimension along which to bisect this box.
+     * @return The new points in parameter space at which quantities of interest need to be evaluated
+     * (can be empty).
+     */
+    CornerSet SubDivide(unsigned dimension);
+
+    /**
+     * Choose the best dimension along which to bisect this box, for a given QoI.
+     *
+     * This is the dimension with the largest error estimate (see GetErrorEstimatesPerDimension()),
+     * with dimensions that have never been split in this part of the tree treated as having
+     * an infinite error. Ties are broken by the largest variation in the QoI across the box
+     * in that dimension, then by the widest dimension, then the lowest index.
+     *
+     * @param rQuantityIndex  The index of the quantity of interest.
+     * @return The dimension along which to bisect.
+     */
+    unsigned ChooseDimensionToSplit(const unsigned& rQuantityIndex);
 
     /**
      * Tell this box, and any children, the values of the quantities of interest (QoIs) at a given point.
@@ -408,19 +503,20 @@ public:
 
     /**
      * Find the parameter box that has the largest error estimate in a given quantity of interest.
-     * Will not over-refine one area if a rMaxGenerationDifference is set.
+     * Will not over-refine one area if a rMaxRefinementLevelDifference is set.
      *
      * If all boxes meet the tolerance a null pointer is returned.
      *
-     * @param quantityIndex  The index of the quantity of interest to check.
-     * @param tolerance  The tolerance for this quantity of interest across the box.
-     * @param maxGenerationDifference  The maximum difference in refinement levels in terms of generation.
+     * @param rQuantityIndex  The index of the quantity of interest to check.
+     * @param rTolerance  The tolerance for this quantity of interest across the box.
+     * @param rMaxRefinementLevelDifference  The maximum difference in refinement levels (see
+     *        GetRefinementLevel(), a subdivision into 2^DIM boxes counts as DIM levels).
      *
      * @return The box that most exceeds the tolerance in the quantity of interest, if any.
      */
     ParameterBox<DIM>* FindBoxWithLargestQoIErrorEstimate(const unsigned& rQuantityIndex,
                                                           const double& rTolerance,
-                                                          const unsigned& rMaxGenerationDifference = UNSIGNED_UNSET);
+                                                          const unsigned& rMaxRefinementLevelDifference = UNSIGNED_UNSET);
 
     /**
      * Calculate a regular grid interpolation by finding the box containing the point and
@@ -441,6 +537,8 @@ public:
     /**
      * @param rTolerance  The tolerance that needs to be met
      * @param rQuantityIndex  The QoI that we want a report on.
+     *
+     * Boxes whose new corners are still being evaluated count as not meeting the tolerance.
      *
      * @return the percentage of parameter space (by volume) where the tolerance on this QoI is met.
      */
