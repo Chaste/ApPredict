@@ -37,10 +37,12 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define TESTLOOKUPTABLE2DHERGIKS_HPP_
 
 #include <cxxtest/TestSuite.h>
+#include <chrono>
 #include <iomanip>
 
 #include "CheckpointArchiveTypes.hpp"
 
+#include "CommandLineArguments.hpp"
 #include "LookupTableGenerator.hpp"
 #include "OutputFileHandler.hpp"
 
@@ -52,6 +54,13 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * It writes the evaluated points (2d_hERG_IKs_1Hz.dat) and the table interpolated onto a
  * regular grid (2d_hERG_IKs_1Hz_interpolated.dat), so the interpolated surface and the
  * distribution of evaluated points can both be plotted.
+ *
+ * This is a long-running example, so it isn't in any test pack. To build it, add it to a
+ * test pack locally (e.g. NightlyTestPack.txt) and re-run cmake.
+ *
+ * Optional command line arguments (when running the test executable directly):
+ *  --max-evaluations <n>  stop after this many evaluations (default 20000), only check convergence for the default.
+ *  --threads <n>  the number of simulations to run at once (default: number of cores).
  */
 class TestLookupTable2dHergIks : public CxxTest::TestSuite
 {
@@ -68,11 +77,26 @@ public:
         generator.AddQuantityOfInterest(Apd90, 1.0 /*ms*/); // QoI and tolerance
         generator.SetMaxNumPaces(30u * 60u); // 30 minutes of 1Hz pacing, as in TestMakeALookupTable
         generator.SetMaxVariationInRefinement(5u);
-        generator.SetMaxNumEvaluations(20000u);
+        unsigned max_evaluations = 20000u;
+        if (CommandLineArguments::Instance()->OptionExists("--max-evaluations"))
+        {
+            max_evaluations = CommandLineArguments::Instance()->GetUnsignedCorrespondingToOption("--max-evaluations");
+        }
+        generator.SetMaxNumEvaluations(max_evaluations);
+        if (CommandLineArguments::Instance()->OptionExists("--threads"))
+        {
+            generator.SetNumThreads(CommandLineArguments::Instance()->GetUnsignedCorrespondingToOption("--threads"));
+        }
 
+        auto start_time = std::chrono::steady_clock::now();
         bool converged = generator.GenerateLookupTable();
-        TS_ASSERT(converged);
-        std::cout << "Lookup table used " << generator.GetNumEvaluations() << " evaluations.\n";
+        double elapsed_minutes = std::chrono::duration<double>(std::chrono::steady_clock::now() - start_time).count() / 60.0;
+        if (!CommandLineArguments::Instance()->OptionExists("--max-evaluations"))
+        {
+            TS_ASSERT(converged);
+        }
+        std::cout << "Lookup table used " << generator.GetNumEvaluations() << " evaluations in "
+                  << elapsed_minutes << " minutes, converged = " << converged << ".\n";
 
         // Interpolate the table onto a regular grid for plotting the surface.
         const unsigned num_grid_points = 101u;
