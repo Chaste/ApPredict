@@ -1739,13 +1739,13 @@ double ApPredictMethods::DoLinearInterpolation(
 
 void ApPredictMethods::ShowVersion()
 {
-    const std::map<std::string, std::string>& r_projects_modified = ChasteBuildInfo::rGetIfProjectsModified();
-    const std::map<std::string, std::string>& r_projects_versions = ChasteBuildInfo::rGetProjectVersions();
+    const std::map<std::string, SourceRevision> project_revisions = ChasteBuildInfo::GetProjectRevisions();
+    const SourceRevision& r_revision = project_revisions.at("ApPredict");
 
     std::string temp;
-    if (r_projects_modified.at("ApPredict") == "True")
+    if (r_revision.IsModified())
     {
         temp = " But it HAS BEEN MODIFIED from that commit!";
     }
-    std::cout << "ApPredict is based on commit " << r_projects_versions.at("ApPredict") << "." << temp << std::endl;
+    std::cout << "ApPredict is based on commit " << r_revision.rGetCommit() << "." << temp << std::endl;
 }
