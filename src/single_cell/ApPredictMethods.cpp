@@ -1740,7 +1740,9 @@ double ApPredictMethods::DoLinearInterpolation(
 void ApPredictMethods::ShowVersion()
 {
     const std::map<std::string, SourceRevision> project_revisions = ChasteBuildInfo::GetProjectRevisions();
-    const SourceRevision& r_revision = project_revisions.at("ApPredict");
+    const SourceRevision unknown_revision;
+    const auto revision_it = project_revisions.find("ApPredict");
+    const SourceRevision& r_revision = revision_it != project_revisions.end() ? revision_it->second : unknown_revision;
 
     std::string temp;
     if (r_revision.IsModified())
