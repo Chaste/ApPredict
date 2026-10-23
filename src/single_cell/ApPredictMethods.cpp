@@ -1757,5 +1757,5 @@ void ApPredictMethods::ShowVersion()
     {
         temp = " But it HAS BEEN MODIFIED from that commit!";
     }
-    std::cout << "ApPredict is based on commit " << r_revision.rGetCommit() << "." << temp << std::endl;
+    std::cout << "ApPredict is based on commit " << r_revision.GetShortCommit() << "." << temp << std::endl;
 }
