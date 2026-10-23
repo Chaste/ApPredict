@@ -1,6 +1,6 @@
 /*
 
-Copyright (c) 2005-2025, University of Oxford.
+Copyright (c) 2005-2026, University of Oxford.
 All rights reserved.
 
 University of Oxford means the Chancellor, Masters and Scholars of the
@@ -33,10 +33,13 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 */
 
-#include <boost/scoped_array.hpp> // to avoid variable length arrays.
-#include <iomanip>                // for setprecision()
-#include <pthread.h>              // for pthread_create, pthread_join, etc
-#include <unistd.h>               // Timing delays to make pthreads behave themselves
+#include <chrono>
+#include <condition_variable>
+#include <deque>
+#include <iomanip> // for setprecision()
+#include <map>
+#include <mutex>
+#include <thread>
 
 #include "FileFinder.hpp"
 #include "LookupTableGenerator.hpp"
@@ -44,19 +47,8 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "SetupModel.hpp"
 #include "SingleActionPotentialPrediction.hpp"
 
-void *ThreadedActionPotential(void *argument); // Forward declaration.
-
-struct ThreadReturnData
-{
-    bool exceptionOccurred;
-    std::string exceptionMessage;
-    unsigned errorOccurred;
-    std::vector<double> QoIs;
-};
-
 struct ThreadInputData
 {
-    std::vector<double> scalings;
     std::vector<std::string> mParameterNames;
     std::vector<double> mUnscaledParameters;
     std::vector<QuantityOfInterest> mQuantitiesToRecord;
@@ -67,12 +59,172 @@ struct ThreadInputData
     double mVoltageThreshold;
 };
 
+/**
+ * Run an action potential simulation with some parameters scaled, and work out the QoIs.
+ * Safe to call from several threads at once.
+ *
+ * @param rData  Details of the model and QoIs.
+ * @param rScalings  The scaling factor to apply to each parameter.
+ * @param rQoIs  Filled with the quantities of interest.
+ * @param rErrorCode  Set to the error code from the AP evaluation (0 if no error).
+ */
+void EvaluateActionPotential(const ThreadInputData& rData,
+                             const std::vector<double>& rScalings,
+                             std::vector<double>& rQoIs,
+                             unsigned& rErrorCode);
+
+/**
+ * Runs evaluations of QoIs, one std::thread per evaluation, and hands back
+ * the results in the order that they finish.
+ *
+ * Only the thread that owns this object should call its methods. The destructor waits for any
+ * evaluations that are still running.
+ */
+class EvaluationThreads
+{
+public:
+    /** The result of one evaluation */
+    struct Result
+    {
+        /** The ID the evaluation was launched with */
+        unsigned id;
+        /** The QoIs that were evaluated */
+        std::vector<double> qois;
+        /** The error code from the evaluation */
+        unsigned errorCode;
+        /** Whether the evaluation threw an exception */
+        bool exceptionOccurred;
+        /** The message of the exception, if there was one */
+        std::string exceptionMessage;
+    };
+
+    /**
+     * Constructor
+     *
+     * @param rEvaluate  The function to run on each thread.
+     * @param launchDelay  A pause (in seconds) after launching each thread.
+     */
+    EvaluationThreads(const LookupTableEvaluationFunction& rEvaluate, double launchDelay)
+            : mEvaluate(rEvaluate),
+              mLaunchDelay(launchDelay)
+    {
+    }
+
+    /** Destructor - waits for all running evaluations to finish */
+    ~EvaluationThreads()
+    {
+        for (auto& r_thread : mThreads)
+        {
+            r_thread.second.join();
+        }
+    }
+
+    /** @return The number of evaluations that are running or have finished but not been collected. */
+    unsigned GetNumRunning() const
+    {
+        return mThreads.size();
+    }
+
+    /**
+     * Start an evaluation on a new thread.
+     *
+     * @param id  An ID for this evaluation, which is returned with its result.
+     * @param rScalings  The parameter scalings to evaluate at.
+     */
+    void Launch(unsigned id, const std::vector<double>& rScalings)
+    {
+        assert(mThreads.find(id) == mThreads.end());
+        mThreads[id] = std::thread([this, id, rScalings]()
+        {
+            Result result;
+            result.id = id;
+            result.errorCode = 0u;
+            result.exceptionOccurred = false;
+            try
+            {
+                mEvaluate(rScalings, result.qois, result.errorCode);
+            }
+            catch (Exception& e)
+            {
+                result.exceptionOccurred = true;
+                result.exceptionMessage = e.GetShortMessage();
+            }
+            catch (std::exception& e)
+            {
+                result.exceptionOccurred = true;
+                result.exceptionMessage = e.what();
+            }
+            {
+                std::lock_guard<std::mutex> lock(mMutex);
+                mFinished.push_back(result);
+            }
+            mFinishedCondition.notify_one();
+        });
+
+        // Historically we have had seg. faults when launching AP simulation threads simultaneously,
+        // so we stagger them a little.
+        if (mLaunchDelay > 0.0)
+        {
+            std::this_thread::sleep_for(std::chrono::duration<double>(mLaunchDelay));
+        }
+    }
+
+    /**
+     * Wait for any running evaluation to finish.
+     *
+     * @return Its result.
+     */
+    Result WaitForResult()
+    {
+        assert(!mThreads.empty());
+        Result result;
+        {
+            std::unique_lock<std::mutex> lock(mMutex);
+            mFinishedCondition.wait(lock, [this]() { return !mFinished.empty(); });
+            result = mFinished.front();
+            mFinished.pop_front();
+        }
+        mThreads[result.id].join();
+        mThreads.erase(result.id);
+        return result;
+    }
+
+private:
+    /** The function that evaluates QoIs */
+    LookupTableEvaluationFunction mEvaluate;
+
+    /** A pause (in seconds) after launching each thread */
+    double mLaunchDelay;
+
+    /** The threads that have been launched and not yet collected, by ID */
+    std::map<unsigned, std::thread> mThreads;
+
+    /** Protects #mFinished */
+    std::mutex mMutex;
+
+    /** Signalled when an evaluation finishes */
+    std::condition_variable mFinishedCondition;
+
+    /** Results of evaluations that have finished but not been collected */
+    std::deque<Result> mFinished;
+};
+
+/**
+ * @return The number of threads to use by default, the number of cores on this machine.
+ */
+unsigned DefaultNumThreads()
+{
+    unsigned num_cores = std::thread::hardware_concurrency();
+    return (num_cores > 0u) ? num_cores : 1u;
+}
+
 /* Private constructor - just for archiving */
 template <unsigned DIM>
 LookupTableGenerator<DIM>::LookupTableGenerator()
     : AbstractUntemplatedLookupTableGenerator(),
       mModelIndex(0u),
-      mpParentBox(NULL){};
+      mpParentBox(NULL),
+      mNumThreads(DefaultNumThreads()){};
 
 template <unsigned DIM>
 LookupTableGenerator<DIM>::LookupTableGenerator(
@@ -89,7 +241,8 @@ LookupTableGenerator<DIM>::LookupTableGenerator(
       mMaxRefinementDifference(UNSIGNED_UNSET),
       mpParentBox(new ParameterBox<DIM>(NULL)),
       mMaxNumPaces(UNSIGNED_UNSET),
-      mVoltageThreshold(-50.0)
+      mVoltageThreshold(-50.0),
+      mNumThreads(DefaultNumThreads())
 {
     // empty
 }
@@ -140,8 +293,8 @@ bool LookupTableGenerator<DIM>::GenerateLookupTable()
     }
     *p_file << std::endl;
 
-    // Do a few special things the first time round.
-    if (!mGenerationHasBegun)
+    // Do a few special things the first time round (not needed for a test evaluation function).
+    if (!mGenerationHasBegun && !mEvaluationFunctionForTesting)
     {
         std::cout << "Generating from fresh" << std::endl;
         // Provide an initial guess for steady state ICs.
@@ -178,13 +331,37 @@ bool LookupTableGenerator<DIM>::GenerateLookupTable()
             mVoltageThreshold = ap_runner.DetectVoltageThresholdForActionPotential();
         }
         p_model->SetStateVariables(mInitialConditions); // Put the model back to sensible state
+    }
 
+    // Work out how to evaluate QoIs at each point.
+    LookupTableEvaluationFunction evaluate = mEvaluationFunctionForTesting;
+    double launch_delay = 0.0;
+    if (!evaluate)
+    {
+        ThreadInputData input_data;
+        input_data.mParameterNames = mParameterNames;
+        input_data.mUnscaledParameters = mUnscaledParameters;
+        input_data.mQuantitiesToRecord = mQuantitiesToRecord;
+        input_data.mInitialConditions = mInitialConditions;
+        input_data.mMaxNumPaces = mMaxNumPaces;
+        input_data.mModelIndex = mModelIndex;
+        input_data.mFrequency = mFrequency;
+        input_data.mVoltageThreshold = mVoltageThreshold;
+        evaluate = [input_data](const std::vector<double>& rScalings, std::vector<double>& rQoIs, unsigned& rErrorCode)
+        {
+            EvaluateActionPotential(input_data, rScalings, rQoIs, rErrorCode);
+        };
+        launch_delay = 0.1; // seconds
+    }
+
+    if (!mGenerationHasBegun)
+    {
         // Initial scalings
         CornerSet set_of_points = mpParentBox->GetCorners();
         assert(set_of_points.size() == pow(2, DIM));
 
         // Run these initial evaluations multi-threaded.
-        RunEvaluationsForThesePoints(set_of_points, p_file);
+        RunEvaluationsForThesePoints(set_of_points, evaluate, launch_delay, p_file);
 
         mGenerationHasBegun = true;
     }
@@ -223,34 +400,7 @@ bool LookupTableGenerator<DIM>::GenerateLookupTable()
     for (unsigned quantitiy_idx = 0u; quantitiy_idx < mQuantitiesToRecord.size();
          quantitiy_idx++)
     {
-        // While we are still less than the maximum number of evaluations then
-        // refine boxes.
-        bool meets_tolerance = false;
-        while (mNumEvaluations < mMaxNumEvaluations)
-        {
-            // Find which parameter box has the largest variation between its corners
-            ParameterBox<DIM> *p_box = mpParentBox->FindBoxWithLargestQoIErrorEstimate(
-                quantitiy_idx, mQoITolerances[quantitiy_idx],
-                mMaxRefinementDifference);
-
-            // If we don't get a box back, then we can quit this while loop,
-            // as variation in this QoI is within tols.
-            if (!p_box)
-            {
-                std::cout
-                    << "Error estimates are within requested tolerances... finishing\n"
-                    << std::flush;
-                meets_tolerance = true;
-                break;
-            }
-
-            // Subdivide this box (NB if we GetCorners() after this,
-            // it includes the new points and makes no sense!).
-            CornerSet new_parameter_points = p_box->SubDivide();
-
-            // Evaluate at these points.
-            RunEvaluationsForThesePoints(new_parameter_points, p_file);
-        }
+        bool meets_tolerance = RefineForQuantityOfInterest(quantitiy_idx, evaluate, launch_delay, p_file);
 
         if (meets_tolerance && quantitiy_idx == 0u)
         {
@@ -276,203 +426,350 @@ bool LookupTableGenerator<DIM>::GenerateLookupTable()
 }
 
 template <unsigned DIM>
-void LookupTableGenerator<DIM>::RunEvaluationsForThesePoints(
-    CornerSet setOfPoints, out_stream &rFile)
+bool LookupTableGenerator<DIM>::QueuedBoxPriorityCompare::operator()(const QueuedBox& rA, const QueuedBox& rB) const
 {
-    // Setup variables to control threading
-    unsigned num_threads = setOfPoints.size();
-    boost::scoped_array<ThreadInputData> thread_data(new ThreadInputData[num_threads]);
-    // struct ThreadInputData thread_data[num_threads];
-    boost::scoped_array<void *> answers(new void *[num_threads]);
-    int return_code;
-
-    // Generate the threads
-    boost::scoped_array<pthread_t> threads(new pthread_t[num_threads]);
-
-    // Create a couple of counters for convenience
-    CornerSetIter iter;
-    int i;
-
-    /*
-     *This loop launches each of the threads.
-     */
-    for (iter = setOfPoints.begin(), i = 0;
-         iter != setOfPoints.end();
-         ++iter, ++i)
+    if (rA.numErrorCodes != rB.numErrorCodes)
     {
-        std::vector<double> scalings;
-        for (unsigned j = 0; j < DIM; j++)
-        {
-            scalings.push_back((*(*iter))[j]);
-        }
-        thread_data[i].scalings = scalings;
-        thread_data[i].mParameterNames = mParameterNames;
-        thread_data[i].mUnscaledParameters = mUnscaledParameters;
-        thread_data[i].mQuantitiesToRecord = mQuantitiesToRecord;
-        thread_data[i].mInitialConditions = mInitialConditions;
-        thread_data[i].mMaxNumPaces = mMaxNumPaces;
-        thread_data[i].mModelIndex = mModelIndex;
-        thread_data[i].mFrequency = mFrequency;
-        thread_data[i].mVoltageThreshold = mVoltageThreshold;
-
-        // std::cout << "Launching pthread[" << i << "]" << std::endl;
-
-        // Launch the ThreadedActionPotential method on this thread
-        return_code = pthread_create(&threads[i], NULL, ThreadedActionPotential,
-                                     (void *)&thread_data[i]);
-
-        assert(0 == return_code); // Check launch worked OK
-        EXCEPT_IF_NOT(0 == return_code);
-
-        // Horrific seg. faults without the below line - bug in p_threads?
-        usleep(1e5); // 0.1 second pause to allow thread to launch properly!
+        // We prioritise refining boxes in well-behaved space over those on edges of regions with errors.
+        return rA.numErrorCodes < rB.numErrorCodes;
     }
-
-    /*
-     * This loop gets the answers back from all the threads.
-     */
-    for (iter = setOfPoints.begin(), i = 0;
-         iter != setOfPoints.end();
-         ++iter, ++i)
+    if (rA.errorEstimate != rB.errorEstimate)
     {
-        // Get the answers back
-        return_code = pthread_join(threads[i], &answers[i]);
-        assert(0 == return_code);
-        EXCEPT_IF_NOT(0 == return_code);
+        return rA.errorEstimate > rB.errorEstimate;
+    }
+    if (rA.refinementLevel != rB.refinementLevel)
+    {
+        return rA.refinementLevel < rB.refinementLevel;
+    }
+    // Leaf boxes don't overlap, so no two have the same minimum corner.
+    return c_vector_compare<DIM>()(&rA.min, &rB.min);
+}
 
-        // Translate back from the structs to sensible formats.
-        ThreadReturnData *thread_results = (ThreadReturnData *)answers[i];
-        if (thread_results->exceptionOccurred)
-        {
-            EXCEPTION(
-                "A thread threw the exception: " << thread_results->exceptionMessage);
-        }
+template <unsigned DIM>
+bool LookupTableGenerator<DIM>::QueuedBoxLevelCompare::operator()(const QueuedBox& rA, const QueuedBox& rB) const
+{
+    if (rA.refinementLevel != rB.refinementLevel)
+    {
+        return rA.refinementLevel < rB.refinementLevel;
+    }
+    return QueuedBoxPriorityCompare()(rA, rB);
+}
 
-        unsigned error_occurred = thread_results->errorOccurred;
-        std::vector<double> results = thread_results->QoIs;
-        c_vector<double, DIM> *p_scalings = *iter;
-        delete thread_results; // Clean up memory
-
-        // Store all the info in the master process and tell boxes about it.
-        {
-            boost::shared_ptr<ParameterPointData> data = boost::shared_ptr<ParameterPointData>(
-                new ParameterPointData(results, error_occurred));
-
-            mParameterPoints.push_back(*p_scalings);
-            mParameterPointData.push_back(data);
-            mNumEvaluations++;
-
-            // Tell all parameter boxes this information for future refinement.
-            mpParentBox->AssignQoIValues(p_scalings, data);
-            // This should have updated our error estimates in the ParameterPointData*
-
-            std::stringstream line_of_output;
-            line_of_output << std::setprecision(8);
-            for (unsigned j = 0; j < DIM; j++)
-            {
-                line_of_output << (*p_scalings)[j] << "\t";
-            }
-            line_of_output << error_occurred;
-            for (unsigned j = 0; j < results.size(); j++)
-            {
-                line_of_output << "\t" << results[j];
-            }
-            if (data->HasErrorEstimates())
-            {
-                unsigned num_estimates = data->rGetQoIErrorEstimates().size();
-                line_of_output << "\t" << num_estimates;
-                for (unsigned j = 0; j < num_estimates; j++)
-                {
-                    line_of_output << "\t" << data->rGetQoIErrorEstimates()[j];
-                    if (i == (int)(num_threads - 1u))
-                    {
-                        // An extra bit of reporting that might be nice can only be called when all boxes have all corner data
-                        // i.e. when the last thread has finished, so will appear sporadically in the output!
-                        line_of_output << "\t" << mpParentBox->ReportPercentageOfSpaceWhereToleranceIsMetForQoI(mQoITolerances[j], j);
-                    }
-                }
-            }
-
-            *rFile << line_of_output.str() << std::endl;
-        }
+template <unsigned DIM>
+void LookupTableGenerator<DIM>::CollectLeafBoxes(ParameterBox<DIM>* pBox, std::vector<ParameterBox<DIM>*>& rLeaves)
+{
+    if (!pBox->mAmParent)
+    {
+        rLeaves.push_back(pBox);
+        return;
+    }
+    for (unsigned i = 0; i < pBox->mDaughterBoxes.size(); i++)
+    {
+        CollectLeafBoxes(pBox->mDaughterBoxes[i], rLeaves);
     }
 }
 
-void *ThreadedActionPotential(void *argument)
+template <unsigned DIM>
+void LookupTableGenerator<DIM>::EnqueueIfNeedsRefinement(ParameterBox<DIM>* pBox,
+                                                         unsigned quantityIndex,
+                                                         std::set<QueuedBox, QueuedBoxPriorityCompare>& rQueue,
+                                                         std::set<QueuedBox, QueuedBoxLevelCompare>& rQueueByLevel)
 {
-    // bool debugging_on = true;
+    if (!pBox->DoesBoxNeedFurtherRefinement(mQoITolerances[quantityIndex], quantityIndex))
+    {
+        return;
+    }
+    QueuedBox queued_box;
+    queued_box.pBox = pBox;
+    queued_box.numErrorCodes = pBox->GetNumErrors();
+    queued_box.errorEstimate = pBox->GetMaxErrorInQoIEstimateInThisBox(quantityIndex);
+    queued_box.refinementLevel = pBox->GetRefinementLevel();
+    queued_box.min = pBox->mMin;
+    rQueue.insert(queued_box);
+    rQueueByLevel.insert(queued_box);
+}
 
-    struct ThreadInputData *my_data;
-    my_data = (struct ThreadInputData *)argument;
+template <unsigned DIM>
+bool LookupTableGenerator<DIM>::RefineForQuantityOfInterest(unsigned quantityIndex,
+                                                            const LookupTableEvaluationFunction& rEvaluate,
+                                                            double launchDelay,
+                                                            out_stream& rFile)
+{
+    // A subdivision into 2^DIM boxes (the original refinement scheme) counts as DIM refinement levels,
+    // so we scale the maximum difference in refinement to keep its meaning the same.
+    unsigned max_refinement_level_difference = UNSIGNED_UNSET;
+    if (mMaxRefinementDifference != UNSIGNED_UNSET)
+    {
+        max_refinement_level_difference = mMaxRefinementDifference * DIM;
+    }
 
-    std::vector<double> scalings = my_data->scalings;
-    assert(scalings.size() == my_data->mParameterNames.size());
+    // The boxes that need refining. All their corners have been evaluated, so their rankings won't change.
+    std::set<QueuedBox, QueuedBoxPriorityCompare> queue;
+    std::set<QueuedBox, QueuedBoxLevelCompare> queue_by_level;
+    std::vector<ParameterBox<DIM>*> leaves;
+    CollectLeafBoxes(mpParentBox, leaves);
+    for (unsigned i = 0; i < leaves.size(); i++)
+    {
+        EnqueueIfNeedsRefinement(leaves[i], quantityIndex, queue, queue_by_level);
+    }
+    unsigned most_refined_level = mpParentBox->GetMostRefinedChild()->GetRefinementLevel();
 
-    SetupModel setup(my_data->mFrequency,
-                     my_data->mModelIndex); // Ten tusscher '06 at 1 Hz
+    // Boxes that have been bisected, and are waiting for evaluations at the new points before their
+    // daughters can be queued.
+    struct Refinement
+    {
+        std::vector<ParameterBox<DIM>*> daughters;
+        unsigned numPointsOutstanding;
+    };
+    std::vector<Refinement> refinements;
+
+    // Points that are being evaluated (or waiting for a thread), and the refinements waiting for each.
+    // A point can be shared by refinements of neighbouring boxes, but it is only evaluated once.
+    std::map<c_vector<double, DIM>*, std::vector<unsigned>, c_vector_compare<DIM> > points_in_progress;
+    std::deque<c_vector<double, DIM>*> points_to_launch;
+    std::map<unsigned, c_vector<double, DIM>*> launched_points;
+    unsigned next_launch_id = 0u;
+
+    EvaluationThreads threads(rEvaluate, launchDelay);
+
+    while (true)
+    {
+        // Refine boxes from the top of the queue until there is enough work for all the threads.
+        while (threads.GetNumRunning() + points_to_launch.size() < mNumThreads
+               && mNumEvaluations + points_in_progress.size() < mMaxNumEvaluations
+               && !queue.empty())
+        {
+            QueuedBox next_box = *(queue.begin());
+
+            // Check the selected box isn't going to refine one area too much,
+            // if it is refine the least refined area instead.
+            const QueuedBox& r_least_refined = *(queue_by_level.begin());
+            if (max_refinement_level_difference != UNSIGNED_UNSET
+                && most_refined_level - r_least_refined.refinementLevel >= max_refinement_level_difference
+                && next_box.refinementLevel == most_refined_level)
+            {
+                next_box = r_least_refined;
+            }
+            queue.erase(next_box);
+            queue_by_level.erase(next_box);
+
+            // Bisect this box along the dimension with the largest error estimate
+            // (NB if we GetCorners() after this, it includes the new points and makes no sense!).
+            ParameterBox<DIM>* p_box = next_box.pBox;
+            unsigned dimension_to_split = p_box->ChooseDimensionToSplit(quantityIndex);
+            CornerSet new_points = p_box->SubDivide(dimension_to_split);
+            most_refined_level = std::max(most_refined_level, next_box.refinementLevel + 1u);
+
+            Refinement refinement;
+            refinement.daughters = p_box->mDaughterBoxes;
+            refinement.numPointsOutstanding = new_points.size();
+            refinements.push_back(refinement);
+            const unsigned refinement_idx = refinements.size() - 1u;
+
+            for (CornerSetIter iter = new_points.begin(); iter != new_points.end(); ++iter)
+            {
+                if (points_in_progress.find(*iter) == points_in_progress.end())
+                {
+                    points_to_launch.push_back(*iter);
+                }
+                points_in_progress[*iter].push_back(refinement_idx);
+            }
+
+            // If the new points had all been evaluated already, the daughters have error estimates now.
+            if (new_points.empty())
+            {
+                for (unsigned i = 0; i < refinement.daughters.size(); i++)
+                {
+                    EnqueueIfNeedsRefinement(refinement.daughters[i], quantityIndex, queue, queue_by_level);
+                }
+            }
+        }
+
+        // Start evaluating points if there are threads free.
+        while (!points_to_launch.empty() && threads.GetNumRunning() < mNumThreads)
+        {
+            c_vector<double, DIM>* p_point = points_to_launch.front();
+            points_to_launch.pop_front();
+            std::vector<double> scalings(p_point->begin(), p_point->end());
+            launched_points[next_launch_id] = p_point;
+            threads.Launch(next_launch_id, scalings);
+            next_launch_id++;
+        }
+
+        if (threads.GetNumRunning() == 0u)
+        {
+            // Nothing is running, so either the queue is empty or we have done enough evaluations.
+            assert(points_to_launch.empty());
+            break;
+        }
+
+        // Wait for an evaluation to finish and record it.
+        EvaluationThreads::Result result = threads.WaitForResult();
+        if (result.exceptionOccurred)
+        {
+            EXCEPTION("A thread threw the exception: " << result.exceptionMessage);
+        }
+        c_vector<double, DIM>* p_point = launched_points[result.id];
+        launched_points.erase(result.id);
+        RecordEvaluation(p_point, result.qois, result.errorCode, rFile);
+
+        // Queue the daughters of any refinements that now have all their new points evaluated.
+        const std::vector<unsigned>& r_waiting_refinements = points_in_progress[p_point];
+        for (unsigned i = 0; i < r_waiting_refinements.size(); i++)
+        {
+            Refinement& r_refinement = refinements[r_waiting_refinements[i]];
+            assert(r_refinement.numPointsOutstanding > 0u);
+            r_refinement.numPointsOutstanding--;
+            if (r_refinement.numPointsOutstanding == 0u)
+            {
+                for (unsigned j = 0; j < r_refinement.daughters.size(); j++)
+                {
+                    assert(r_refinement.daughters[j]->mAllCornersEvaluated);
+                    EnqueueIfNeedsRefinement(r_refinement.daughters[j], quantityIndex, queue, queue_by_level);
+                }
+            }
+        }
+        points_in_progress.erase(p_point);
+    }
+
+    if (queue.empty())
+    {
+        std::cout << "Error estimates are within requested tolerances... finishing\n"
+                  << std::flush;
+        return true;
+    }
+    return false;
+}
+
+template <unsigned DIM>
+void LookupTableGenerator<DIM>::RecordEvaluation(c_vector<double, DIM>* pPoint,
+                                                 const std::vector<double>& rQoIs,
+                                                 unsigned errorCode,
+                                                 out_stream& rFile)
+{
+    // Store all the info in the master process and tell boxes about it.
+    boost::shared_ptr<ParameterPointData> data = boost::shared_ptr<ParameterPointData>(
+        new ParameterPointData(rQoIs, errorCode));
+
+    mParameterPoints.push_back(*pPoint);
+    mParameterPointData.push_back(data);
+    mNumEvaluations++;
+
+    // Tell all parameter boxes this information for future refinement.
+    mpParentBox->AssignQoIValues(pPoint, data);
+    // This should have updated our error estimates in the ParameterPointData*
+
+    std::stringstream line_of_output;
+    line_of_output << std::setprecision(8);
+    for (unsigned j = 0; j < DIM; j++)
+    {
+        line_of_output << (*pPoint)[j] << "\t";
+    }
+    line_of_output << errorCode;
+    for (unsigned j = 0; j < rQoIs.size(); j++)
+    {
+        line_of_output << "\t" << rQoIs[j];
+    }
+    if (data->HasErrorEstimates())
+    {
+        unsigned num_estimates = data->rGetQoIErrorEstimates().size();
+        line_of_output << "\t" << num_estimates;
+        for (unsigned j = 0; j < num_estimates; j++)
+        {
+            line_of_output << "\t" << data->rGetQoIErrorEstimates()[j];
+            // A report on progress towards meeting the tolerance on this QoI.
+            line_of_output << "\t" << mpParentBox->ReportPercentageOfSpaceWhereToleranceIsMetForQoI(mQoITolerances[j], j);
+        }
+    }
+
+    *rFile << line_of_output.str() << std::endl;
+}
+
+template <unsigned DIM>
+void LookupTableGenerator<DIM>::RunEvaluationsForThesePoints(
+    CornerSet setOfPoints,
+    const LookupTableEvaluationFunction& rEvaluate,
+    double launchDelay,
+    out_stream& rFile)
+{
+    std::vector<c_vector<double, DIM>*> points(setOfPoints.begin(), setOfPoints.end());
+    std::vector<EvaluationThreads::Result> results(points.size());
+
+    // Run up to mNumThreads evaluations at once.
+    {
+        EvaluationThreads threads(rEvaluate, launchDelay);
+        unsigned num_launched = 0u;
+        unsigned num_finished = 0u;
+        while (num_finished < points.size())
+        {
+            while (num_launched < points.size() && threads.GetNumRunning() < mNumThreads)
+            {
+                std::vector<double> scalings(points[num_launched]->begin(), points[num_launched]->end());
+                threads.Launch(num_launched, scalings);
+                num_launched++;
+            }
+            EvaluationThreads::Result result = threads.WaitForResult();
+            if (result.exceptionOccurred)
+            {
+                EXCEPTION("A thread threw the exception: " << result.exceptionMessage);
+            }
+            results[result.id] = result;
+            num_finished++;
+        }
+    }
+
+    // Record the results in the order of the set, so output doesn't depend on thread timings.
+    for (unsigned i = 0; i < points.size(); i++)
+    {
+        RecordEvaluation(points[i], results[i].qois, results[i].errorCode, rFile);
+    }
+}
+
+void EvaluateActionPotential(const ThreadInputData& rData,
+                             const std::vector<double>& rScalings,
+                             std::vector<double>& rQoIs,
+                             unsigned& rErrorCode)
+{
+    assert(rScalings.size() == rData.mParameterNames.size());
+
+    SetupModel setup(rData.mFrequency,
+                     rData.mModelIndex); // Ten tusscher '06 at 1 Hz
     boost::shared_ptr<AbstractCvodeCell> p_model = setup.GetModel();
 
     // Do parameter scalings
-    for (unsigned i = 0; i < scalings.size(); i++)
+    for (unsigned i = 0; i < rScalings.size(); i++)
     {
         std::string param_name;
-        if (p_model->HasParameter(my_data->mParameterNames[i]))
+        if (p_model->HasParameter(rData.mParameterNames[i]))
         {
-            param_name = my_data->mParameterNames[i];
+            param_name = rData.mParameterNames[i];
         }
         else
         {
-            param_name = my_data->mParameterNames[i] + "_scaling_factor";
+            param_name = rData.mParameterNames[i] + "_scaling_factor";
         }
         p_model->SetParameter(param_name,
-                              my_data->mUnscaledParameters[i] * (scalings[i]));
+                              rData.mUnscaledParameters[i] * (rScalings[i]));
     }
 
     // Reset the state variables to the 'standard' steady state
-    N_Vector state_vars = MakeNVector(my_data->mInitialConditions);
-    p_model->SetStateVariables(state_vars);
+    p_model->SetStateVariables(rData.mInitialConditions);
 
     SingleActionPotentialPrediction ap_runner(p_model);
     ap_runner.SuppressOutput();
-    ap_runner.SetMaxNumPaces(my_data->mMaxNumPaces);
+    ap_runner.SetMaxNumPaces(rData.mMaxNumPaces);
     ap_runner.SetLackOfOneToOneCorrespondenceIsError();
     ap_runner.SetVoltageThresholdForRecordingAsActionPotential(
-        my_data->mVoltageThreshold);
+        rData.mVoltageThreshold);
 
-    // Call the SingleActionPotentialPrediction methods.
-    try
-    {
-        //        if (debugging_on)
-        //        {
-        //            std::stringstream filename;
-        //            for (unsigned i = 0; i < scalings.size(); i++)
-        //            {
-        //                filename << scalings[i] << "_";
-        //            }
-        //            OdeSolution solution = ap_runner.RunSteadyPacingExperiment();
-        //            solution.WriteToFile("Debugging_Lookup", filename.str(), "ms",
-        //            1, false);
-        //        }
-        //        else
-        //        {
-        ap_runner.RunSteadyPacingExperiment();
-        //        }
-    }
-    catch (Exception &e)
-    {
-        ThreadReturnData *return_data = new ThreadReturnData;
-        return_data->exceptionOccurred = true;
-        return_data->exceptionMessage = e.GetShortMessage();
+    // Call the SingleActionPotentialPrediction methods (any exception is passed back to the main thread).
+    ap_runner.RunSteadyPacingExperiment();
 
-        DeleteVector(state_vars);
-        pthread_exit(return_data);
-    }
-
-    unsigned error_occurred = ap_runner.GetErrorCode(); // 0 if there was no error
+    rErrorCode = ap_runner.GetErrorCode(); // 0 if there was no error
 
     // Record the results
-    std::vector<double> results;
-    for (unsigned i = 0; i < my_data->mQuantitiesToRecord.size(); i++)
+    rQoIs.clear();
+    for (unsigned i = 0; i < rData.mQuantitiesToRecord.size(); i++)
     {
         if (ap_runner.DidErrorOccur())
         {
@@ -483,64 +780,72 @@ void *ThreadedActionPotential(void *argument)
 
             // We could use different numerical codes for different errors here if we
             // wanted to, but for QNet all AP errors are just set to -DBL_MAX.
-            if (my_data->mQuantitiesToRecord[i] == QNet)
+            if (rData.mQuantitiesToRecord[i] == QNet)
             {
-                results.push_back(-DBL_MAX);
+                rQoIs.push_back(-DBL_MAX);
                 continue;
             }
 
             // We could use different numerical codes for different errors here if we
             // wanted to.
-            if ((error_message == "NoActionPotential_2" || error_message == "NoActionPotential_3") && (my_data->mQuantitiesToRecord[i] == Apd90 || my_data->mQuantitiesToRecord[i] == Apd50))
+            if ((error_message == "NoActionPotential_2" || error_message == "NoActionPotential_3") && (rData.mQuantitiesToRecord[i] == Apd90 || rData.mQuantitiesToRecord[i] == Apd50))
             {
                 // For an APD calculation failure on repolarisation put in the stimulus
                 // period.
                 double stim_period = boost::static_pointer_cast<RegularStimulus>(
                                          p_model->GetStimulusFunction())
                                          ->GetPeriod();
-                results.push_back(stim_period);
+                rQoIs.push_back(stim_period);
             }
             else
             {
                 // For everything else (failure to depolarize "NoActionPotential_1")
                 // just put in zero for now.
-                results.push_back(0.0);
+                rQoIs.push_back(0.0);
             }
             continue;
         }
 
         // No error cases
         double temp;
-        if (my_data->mQuantitiesToRecord[i] == Apd90)
+        if (rData.mQuantitiesToRecord[i] == Apd90)
         {
             temp = ap_runner.GetApd90();
         }
-        else if (my_data->mQuantitiesToRecord[i] == Apd50)
+        else if (rData.mQuantitiesToRecord[i] == Apd50)
         {
             temp = ap_runner.GetApd50();
         }
-        else if (my_data->mQuantitiesToRecord[i] == UpstrokeVelocity)
+        else if (rData.mQuantitiesToRecord[i] == UpstrokeVelocity)
         {
             temp = ap_runner.GetUpstrokeVelocity();
         }
-        else if (my_data->mQuantitiesToRecord[i] == PeakVoltage)
+        else if (rData.mQuantitiesToRecord[i] == PeakVoltage)
         {
             temp = ap_runner.GetPeakVoltage();
         }
-        else if (my_data->mQuantitiesToRecord[i] == QNet)
+        else if (rData.mQuantitiesToRecord[i] == QNet)
         {
             temp = ap_runner.CalculateQNet();
         }
-        results.push_back(temp);
+        rQoIs.push_back(temp);
     }
+}
 
-    ThreadReturnData *return_data = new ThreadReturnData;
-    return_data->QoIs = results;
-    return_data->errorOccurred = error_occurred;
-    return_data->exceptionOccurred = false;
+template <unsigned DIM>
+void LookupTableGenerator<DIM>::SetNumThreads(unsigned numThreads)
+{
+    if (numThreads == 0u)
+    {
+        EXCEPTION("The number of threads must be at least one.");
+    }
+    mNumThreads = numThreads;
+}
 
-    DeleteVector(state_vars);
-    pthread_exit(return_data);
+template <unsigned DIM>
+unsigned LookupTableGenerator<DIM>::GetNumThreads() const
+{
+    return mNumThreads;
 }
 
 template <unsigned DIM>

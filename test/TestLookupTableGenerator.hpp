@@ -1,6 +1,6 @@
 /*
 
-Copyright (c) 2005-2025, University of Oxford.
+Copyright (c) 2005-2026, University of Oxford.
 All rights reserved.
 
 University of Oxford means the Chancellor, Masters and Scholars of the
@@ -37,6 +37,12 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define TESTLOOKUPTABLEGENERATOR_HPP_
 
 #include <cxxtest/TestSuite.h>
+
+#include <atomic>
+#include <chrono>
+#include <cmath>
+#include <set>
+#include <thread>
 
 #include "CheckpointArchiveTypes.hpp"
 
@@ -125,6 +131,240 @@ public:
 
         TS_ASSERT_EQUALS(parameter_values.size(), 10u);
         TS_ASSERT_EQUALS(quantities_of_interest.size(), 10u);
+    }
+
+    void TestLookupTableMaker2dBisection()
+    {
+        unsigned model_index = 2u; // Ten Tusscher 2006 epi
+
+        std::string file_name = "2d_test";
+        LookupTableGenerator<2> generator(model_index, file_name, "TestLookupTables");
+        generator.SetParameterToScale("membrane_rapid_delayed_rectifier_potassium_current_conductance", 0.0, 1.0);
+        generator.SetParameterToScale("membrane_L_type_calcium_current_conductance", 0.0, 1.0);
+        generator.AddQuantityOfInterest(Apd90, 0.5 /*ms*/); // QoI and tolerance
+
+        generator.SetMaxNumEvaluations(1u); // Just does the corners
+        generator.GenerateLookupTable();
+        TS_ASSERT_EQUALS(generator.GetNumEvaluations(), 4u);
+
+        // Each refinement step bisects one box, adding at most 2^(DIM-1) = 2 new points.
+        for (unsigned i = 0; i < 6u; i++)
+        {
+            unsigned num_evals_before = generator.GetNumEvaluations();
+            generator.SetMaxNumEvaluations(num_evals_before + 1u);
+            generator.GenerateLookupTable();
+            TS_ASSERT_LESS_THAN_EQUALS(num_evals_before + 1u, generator.GetNumEvaluations());
+            TS_ASSERT_LESS_THAN_EQUALS(generator.GetNumEvaluations(), num_evals_before + 2u);
+        }
+
+        std::vector<c_vector<double, 2u>> parameter_values = generator.GetParameterPoints();
+        std::vector<std::vector<double>> quantities_of_interest = generator.GetFunctionValues();
+        TS_ASSERT_EQUALS(parameter_values.size(), generator.GetNumEvaluations());
+        TS_ASSERT_EQUALS(quantities_of_interest.size(), generator.GetNumEvaluations());
+
+        // Interpolation at the corners of parameter space (the first points evaluated) is exact,
+        // and bilinear interpolation shouldn't go outside the range of the data anywhere.
+        std::vector<std::vector<double>> interpolated = generator.Interpolate(parameter_values);
+        double min_apd = DBL_MAX;
+        double max_apd = -DBL_MAX;
+        for (unsigned i = 0; i < quantities_of_interest.size(); i++)
+        {
+            min_apd = std::min(min_apd, quantities_of_interest[i][0]);
+            max_apd = std::max(max_apd, quantities_of_interest[i][0]);
+            if (i < 4u)
+            {
+                TS_ASSERT_DELTA(interpolated[i][0], quantities_of_interest[i][0], 1e-12);
+            }
+        }
+        std::vector<std::vector<double>> sample_points;
+        for (unsigned i = 0; i <= 10u; i++)
+        {
+            sample_points.push_back(std::vector<double>{ 0.1 * i, 1.0 - 0.1 * i });
+            sample_points.push_back(std::vector<double>{ 0.1 * i, 0.33 });
+        }
+        interpolated = generator.Interpolate(sample_points);
+        for (unsigned i = 0; i < interpolated.size(); i++)
+        {
+            TS_ASSERT_LESS_THAN_EQUALS(min_apd - 1e-9, interpolated[i][0]);
+            TS_ASSERT_LESS_THAN_EQUALS(interpolated[i][0], max_apd + 1e-9);
+        }
+
+        // Check archiving and resuming work on a bisected table.
+        OutputFileHandler handler("TestLookupTableArchiving", false);
+        std::string archive_filename = handler.GetOutputDirectoryFullPath() + "Generator2d.arch";
+        {
+            AbstractUntemplatedLookupTableGenerator* const p_generator = &generator;
+            std::ofstream ofs(archive_filename.c_str());
+            boost::archive::text_oarchive output_arch(ofs);
+            output_arch << p_generator;
+        }
+        {
+            AbstractUntemplatedLookupTableGenerator* p_generator;
+            std::ifstream ifs(archive_filename.c_str(), std::ios::binary);
+            boost::archive::text_iarchive input_arch(ifs);
+            input_arch >> p_generator;
+
+            TS_ASSERT_EQUALS(p_generator->GetDimension(), 2u);
+            TS_ASSERT_EQUALS(p_generator->GetNumEvaluations(), generator.GetNumEvaluations());
+            std::vector<std::vector<double>> loaded_interpolated = p_generator->Interpolate(sample_points);
+            for (unsigned i = 0; i < interpolated.size(); i++)
+            {
+                TS_ASSERT_DELTA(loaded_interpolated[i][0], interpolated[i][0], 1e-12);
+            }
+
+            unsigned num_evals_before = p_generator->GetNumEvaluations();
+            p_generator->SetMaxNumEvaluations(num_evals_before + 1u);
+            p_generator->GenerateLookupTable();
+            TS_ASSERT_LESS_THAN_EQUALS(num_evals_before + 1u, p_generator->GetNumEvaluations());
+            TS_ASSERT_LESS_THAN_EQUALS(p_generator->GetNumEvaluations(), num_evals_before + 2u);
+            delete p_generator;
+        }
+    }
+
+    /**
+     * Refine a 2D table of a cheap analytic function, which has a region where 'evaluation' reports
+     * an error code, and takes a pseudo-random time to evaluate so that evaluations finish
+     * out of order.
+     *
+     * The function value is continuous across the error region, so boxes on its edge can converge
+     * (a jump in value there would be refined down to the minimum box width).
+     *
+     * @param rGenerator  the generator to set up (parameters must be set already)
+     * @param rNumCalls  incremented on every call to the function (from any thread)
+     */
+    void SetAnalyticEvaluationFunction(LookupTableGenerator<2>& rGenerator, std::atomic<unsigned>& rNumCalls)
+    {
+        rGenerator.mEvaluationFunctionForTesting = [&rNumCalls](const std::vector<double>& rX, std::vector<double>& rQoIs, unsigned& rErrorCode)
+        {
+            rNumCalls++;
+            // A delay of 0-9ms that varies between points.
+            unsigned delay_ms = (unsigned)(std::fabs(std::sin(1000.0 * rX[0] + 37.0 * rX[1])) * 10.0);
+            std::this_thread::sleep_for(std::chrono::milliseconds(delay_ms));
+
+            rQoIs.clear();
+            rQoIs.push_back(300.0 + 100.0 / (0.2 + rX[0] + 0.5 * rX[1]));
+            rErrorCode = (rX[0] + rX[1] < 0.3) ? 2u : 0u;
+        };
+    }
+
+    void TestParallelRefinementWithAnalyticFunction()
+    {
+        std::atomic<unsigned> num_calls(0u);
+        LookupTableGenerator<2> generator(2u, "2d_analytic_parallel", "TestLookupTableParallel");
+        generator.SetParameterToScale("membrane_rapid_delayed_rectifier_potassium_current_conductance", 0.0, 1.0);
+        generator.SetParameterToScale("membrane_slow_delayed_rectifier_potassium_current_conductance", 0.0, 1.0);
+        generator.AddQuantityOfInterest(Apd90, 2.0 /*ms*/);
+        generator.SetMaxVariationInRefinement(3u);
+        TS_ASSERT_THROWS_THIS(generator.SetNumThreads(0u), "The number of threads must be at least one.");
+        generator.SetNumThreads(8u);
+        TS_ASSERT_EQUALS(generator.GetNumThreads(), 8u);
+        SetAnalyticEvaluationFunction(generator, num_calls);
+
+        // Stop part way through, the cap can only be exceeded by the points on one new plane (1 in 2D).
+        generator.SetMaxNumEvaluations(100u);
+        TS_ASSERT_EQUALS(generator.GenerateLookupTable(), false);
+        TS_ASSERT_LESS_THAN_EQUALS(100u, generator.GetNumEvaluations());
+        TS_ASSERT_LESS_THAN_EQUALS(generator.GetNumEvaluations(), 101u);
+        CheckGeneratorIsConsistent(generator, num_calls);
+
+        // Archive it, and carry on to convergence with a different number of threads.
+        OutputFileHandler handler("TestLookupTableParallel", false);
+        std::string archive_filename = handler.GetOutputDirectoryFullPath() + "Generator2dParallel.arch";
+        {
+            AbstractUntemplatedLookupTableGenerator* const p_generator = &generator;
+            std::ofstream ofs(archive_filename.c_str());
+            boost::archive::text_oarchive output_arch(ofs);
+            output_arch << p_generator;
+        }
+        AbstractUntemplatedLookupTableGenerator* p_abstract_generator;
+        {
+            std::ifstream ifs(archive_filename.c_str(), std::ios::binary);
+            boost::archive::text_iarchive input_arch(ifs);
+            input_arch >> p_abstract_generator;
+        }
+        LookupTableGenerator<2>* p_loaded = dynamic_cast<LookupTableGenerator<2>*>(p_abstract_generator);
+        TS_ASSERT_EQUALS(p_loaded->GetNumEvaluations(), generator.GetNumEvaluations());
+        p_loaded->SetNumThreads(3u);
+        SetAnalyticEvaluationFunction(*p_loaded, num_calls);
+        p_loaded->SetMaxNumEvaluations(100000u);
+        TS_ASSERT_EQUALS(p_loaded->GenerateLookupTable(), true);
+        std::cout << "Analytic 2D table converged with " << p_loaded->GetNumEvaluations() << " evaluations.\n";
+        TS_ASSERT_LESS_THAN(101u, p_loaded->GetNumEvaluations());
+        CheckGeneratorIsConsistent(*p_loaded, num_calls);
+
+        // All the boxes meet the tolerance.
+        std::vector<ParameterBox<2>*> leaves;
+        p_loaded->CollectLeafBoxes(p_loaded->mpParentBox, leaves);
+        for (unsigned i = 0; i < leaves.size(); i++)
+        {
+            TS_ASSERT_EQUALS(leaves[i]->DoesBoxNeedFurtherRefinement(2.0, 0u), false);
+        }
+
+        // And the interpolation is good (looking away from the steepest part of the function).
+        for (unsigned i = 0; i <= 20u; i++)
+        {
+            for (unsigned j = 0; j <= 20u; j++)
+            {
+                std::vector<double> x{ 0.05 * i, 0.05 * j };
+                if (x[0] + x[1] < 0.45)
+                {
+                    continue;
+                }
+                double interpolated = p_loaded->Interpolate(std::vector<std::vector<double> >{ x })[0][0];
+                TS_ASSERT_DELTA(interpolated, 300.0 + 100.0 / (0.2 + x[0] + 0.5 * x[1]), 4.0);
+            }
+        }
+        delete p_loaded;
+    }
+
+    void TestSingleThreadedRefinementIsDeterministic()
+    {
+        std::vector<std::vector<c_vector<double, 2u> > > runs;
+        for (unsigned run = 0; run < 2u; run++)
+        {
+            std::atomic<unsigned> num_calls(0u);
+            LookupTableGenerator<2> generator(2u, "2d_analytic_serial", "TestLookupTableParallel");
+            generator.SetParameterToScale("membrane_rapid_delayed_rectifier_potassium_current_conductance", 0.0, 1.0);
+            generator.SetParameterToScale("membrane_slow_delayed_rectifier_potassium_current_conductance", 0.0, 1.0);
+            generator.AddQuantityOfInterest(Apd90, 2.0 /*ms*/);
+            generator.SetNumThreads(1u);
+            SetAnalyticEvaluationFunction(generator, num_calls);
+            generator.SetMaxNumEvaluations(150u);
+            generator.GenerateLookupTable();
+            CheckGeneratorIsConsistent(generator, num_calls);
+            runs.push_back(generator.GetParameterPoints());
+        }
+        TS_ASSERT_EQUALS(runs[0].size(), runs[1].size());
+        for (unsigned i = 0; i < std::min(runs[0].size(), runs[1].size()); i++)
+        {
+            TS_ASSERT_DELTA(runs[0][i][0], runs[1][i][0], 1e-12);
+            TS_ASSERT_DELTA(runs[0][i][1], runs[1][i][1], 1e-12);
+        }
+    }
+
+    /**
+     * Check that every point was evaluated exactly once, and every box has all its corners evaluated.
+     */
+    void CheckGeneratorIsConsistent(LookupTableGenerator<2>& rGenerator, std::atomic<unsigned>& rNumCalls)
+    {
+        std::vector<c_vector<double, 2u> > points = rGenerator.GetParameterPoints();
+        TS_ASSERT_EQUALS(points.size(), rGenerator.GetNumEvaluations());
+        TS_ASSERT_EQUALS(rNumCalls.load(), rGenerator.GetNumEvaluations());
+        std::set<c_vector<double, 2u>*, c_vector_compare<2u> > unique_points;
+        for (unsigned i = 0; i < points.size(); i++)
+        {
+            unique_points.insert(&points[i]);
+        }
+        TS_ASSERT_EQUALS(unique_points.size(), points.size());
+
+        std::vector<ParameterBox<2>*> leaves;
+        rGenerator.CollectLeafBoxes(rGenerator.mpParentBox, leaves);
+        for (unsigned i = 0; i < leaves.size(); i++)
+        {
+            TS_ASSERT(leaves[i]->mAllCornersEvaluated);
+            TS_ASSERT_EQUALS(leaves[i]->mParameterPointDataMapPredictions.size(), 0u);
+        }
+        TS_ASSERT_EQUALS(rGenerator.mpParentBox->GetCorners().size(), rGenerator.GetNumEvaluations());
     }
 
     void TestLookupTableMaker5d()

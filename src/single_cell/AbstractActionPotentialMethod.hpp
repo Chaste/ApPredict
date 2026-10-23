@@ -124,11 +124,33 @@ private:
      *
      * @return the solution of the ODE.
      */
-    OdeSolution PerformAnalysisOfTwoPaces(
+    OdeSolution PerformAnalysisOfMultiplePaces(
         boost::shared_ptr<AbstractCvodeCell> pModel, double& rApd90,
         double& rApd50, double& rUpstroke, double& rPeak, double& rPeakTime, double& rCaMax,
         double& rCaMin, const double s1_period, const double maximumTimeStep,
         const double printingTimeStep, const double conc);
+
+    /**
+     * Analyse a voltage trace of the last three paces (starting at time 0) of a
+     * steady pacing experiment, populating AP markers and setting any error code and message.
+     *
+     * @param rTimes  The times at which the voltage was recorded (ms).
+     * @param rVoltages  The membrane voltage (mV).
+     * @param s1_period  The period of the regular stimulus (ms).
+     * @param stimulusStartTime  The start time of the regular stimulus (ms).
+     * @param rApd90  double to populate with the postprocessed APD90 (ms)
+     * @param rApd50  double to populate with the postprocessed APD50 (ms)
+     * @param rUpstroke  double to populate with the postprocessed maximum upstroke velocity (mV/ms)
+     * @param rPeak  double to populate with the postprocessed peak voltage (mV)
+     * @param rPeakTime  double to populate with the time of postprocessed peak voltage (ms)
+     * @param conc  concentration argument (only used for more helpful warning messages).
+     *
+     * @return whether any action potentials were recorded (even if an error code was then set).
+     */
+    bool AnalyseVoltageTrace(const std::vector<double>& rTimes, const std::vector<double>& rVoltages,
+                             const double s1_period, const double stimulusStartTime, double& rApd90,
+                             double& rApd50, double& rUpstroke, double& rPeak, double& rPeakTime,
+                             const double conc);
 
     /**
      * A little method to 'push' cell model forward one S1 period, to get it 'in
@@ -412,6 +434,24 @@ public:
      * Reset the action potential evaluator for a new run.
      */
     void Reset();
+
+    /**
+     * Analyse a recorded voltage trace of the last three paces of a steady pacing experiment
+     * (as returned by SteadyStatePacingExperiment()), instead of simulating one, to set the
+     * error code and message. Mainly for testing the analysis on stored traces.
+     *
+     * Uses the same settings (threshold, whether lack of 1:1 correspondence or alternans are errors etc.)
+     * as a simulation would.
+     *
+     * @param rTimes  The times at which the voltage was recorded (ms), starting at 0.
+     * @param rVoltages  The membrane voltage (mV).
+     * @param s1Period  The period of the regular stimulus (ms).
+     * @param stimulusStartTime  The start time of the regular stimulus (ms).
+     */
+    void AnalyseRecordedVoltageTrace(const std::vector<double>& rTimes,
+                                     const std::vector<double>& rVoltages,
+                                     const double s1Period,
+                                     const double stimulusStartTime);
 };
 
 #endif // ABSTRACTACTIONPOTENTIALMETHOD_HPP_

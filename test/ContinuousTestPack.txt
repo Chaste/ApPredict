@@ -9,6 +9,7 @@ TestDoseCalculator.hpp
 TestDoseResponseFitting.hpp
 TestLinearDiscriminantAnalysis.hpp
 TestLookupTableGenerator.hpp
+TestLookupTableBackwardsCompatibility.hpp
 TestLogisticDistribution.hpp
 TestMakeALookupTable.hpp
 TestMetadataCellmlModels.hpp

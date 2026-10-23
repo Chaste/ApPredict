@@ -37,6 +37,8 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define TESTTROUBLESOMEAPEVALUATIONS_HPP_
 
 #include <cxxtest/TestSuite.h>
+#include <fstream>
+#include "FileFinder.hpp"
 #include "SetupModel.hpp"
 #include "SingleActionPotentialPrediction.hpp"
 #include "CommandLineArgumentsMocker.hpp"
@@ -92,6 +94,46 @@ private:
         {
             return "No error";
         }
+    }
+
+    /**
+     * Analyse a voltage trace stored in test/data/troublesome_ap_traces, as SingleActionPotentialPrediction
+     * would for the last three paces of a simulation.
+     *
+     * @param rFileName  The name of the file (columns of time and voltage, '#' comment lines).
+     * @param pStimulus  The stimulus that was applied.
+     * @param voltageThreshold  The voltage threshold for an AP.
+     * @return The error message (or "No error").
+     */
+    std::string AnalyseRecordedTrace(const std::string& rFileName,
+                                     boost::shared_ptr<RegularStimulus> pStimulus,
+                                     double voltageThreshold)
+    {
+        FileFinder trace_file("projects/ApPredict/test/data/troublesome_ap_traces/" + rFileName, RelativeTo::ChasteSourceRoot);
+        std::ifstream in(trace_file.GetAbsolutePath().c_str());
+        TS_ASSERT(in.is_open());
+        std::vector<double> times;
+        std::vector<double> voltages;
+        std::string line;
+        while (std::getline(in, line))
+        {
+            if (line.empty() || line[0] == '#')
+            {
+                continue;
+            }
+            std::stringstream line_stream(line);
+            double time, voltage;
+            line_stream >> time >> voltage;
+            times.push_back(time);
+            voltages.push_back(voltage);
+        }
+
+        boost::shared_ptr<AbstractCvodeCell> p_no_model; // We are not simulating anything.
+        SingleActionPotentialPrediction runner(p_no_model);
+        runner.SetLackOfOneToOneCorrespondenceIsError();
+        runner.SetVoltageThresholdForRecordingAsActionPotential(voltageThreshold);
+        runner.AnalyseRecordedVoltageTrace(times, voltages, pStimulus->GetPeriod(), pStimulus->GetStartTime());
+        return runner.DidErrorOccur() ? runner.GetErrorMessage() : "No error";
     }
 
 public:
@@ -178,6 +220,31 @@ public:
         TS_ASSERT_EQUALS(message, "NoActionPotential_1");
 
         DeleteVector(steady_state);
+    }
+
+    /**
+     * These traces came from making a hERG/IKs lookup table for ten Tusscher 2006 at 1Hz, at the edge of a region
+     * with 2:1 stimulus:AP behaviour, where one long AP spans two stimuli. Whether a simulation gives the
+     * trace starting mid-AP or ending mid-AP depends on how many paces it ran for, and which error code we got
+     * used to depend on tiny details of the trace, so we store the traces rather than simulating them.
+     */
+    void TestRecordedTenTusscherTwoToOneTraces()
+    {
+        SetupModel setup(1.0, 2u); // TT06, 1.0Hz
+        boost::shared_ptr<RegularStimulus> p_stimulus = boost::static_pointer_cast<RegularStimulus>(setup.GetModel()->GetStimulusFunction());
+        const double depolarisation_threshold = -23.0591; // The threshold LookupTableGenerator detects for this model.
+
+        // The trace starts at rest, one AP spans the first two stimuli, and another is still going at the end of the trace.
+        TS_ASSERT_EQUALS(AnalyseRecordedTrace("tt06_1Hz_gKr_0.4033203125_gKs_0.01953125.dat", p_stimulus, depolarisation_threshold),
+                         "NoActionPotential_3");
+
+        // The trace starts part way through an AP that began before it and spans the first stimulus, then one AP spans
+        // the second and third stimuli, and the trace ends at rest. CellProperties doesn't record the first AP and
+        // can mistake the plateau at the start of the trace for the resting potential, giving a short APD for the
+        // second, so this used to be NoActionPotential_5 ("an AP is sub-threshold"). But it is still one long AP for
+        // two stimuli, so it should be NoActionPotential_3.
+        TS_ASSERT_EQUALS(AnalyseRecordedTrace("tt06_1Hz_gKr_0.31640625_gKs_0.03515625.dat", p_stimulus, depolarisation_threshold),
+                         "NoActionPotential_3");
     }
 
     void TestTroublesomeOHaraActionPotentials()
