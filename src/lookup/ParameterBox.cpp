@@ -1,6 +1,6 @@
 /*
 
-Copyright (c) 2005-2025, University of Oxford.
+Copyright (c) 2005-2026, University of Oxford.
 All rights reserved.
 
 University of Oxford means the Chancellor, Masters and Scholars of the
@@ -34,9 +34,13 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include <bitset> // for binary ops.
+#include <cmath>
 
 #include "Exception.hpp"
 #include "ParameterBox.hpp"
+
+/** Boxes narrower than this in a dimension will not be split any further in that dimension. */
+static const double MIN_SPLITTABLE_WIDTH = 1e-5;
 
 template <unsigned DIM>
 ParameterBox<DIM>::ParameterBox(ParameterBox<DIM>* pParent,
@@ -282,6 +286,99 @@ std::set<c_vector<double, DIM>*, c_vector_compare<DIM> > ParameterBox<DIM>::SubD
         AssignQoIValues(new_corner, predicted_data, true);
     }
 
+    TidyUpAfterSubdivision();
+    return new_corners;
+}
+
+template <unsigned DIM>
+std::set<c_vector<double, DIM>*, c_vector_compare<DIM> > ParameterBox<DIM>::SubDivide(unsigned dimension)
+{
+    if (dimension >= DIM)
+    {
+        EXCEPTION("Cannot subdivide along dimension " << dimension << " of a " << DIM << "D box.");
+    }
+    if (mAmParent)
+    {
+        EXCEPTION("Already subdivided this box.");
+    }
+
+    // In order to subdivide a box we require there to be data in existence at all its corners.
+    assert(mParameterPointDataMap.size() == mCorners.size());
+
+    // Work out the extent of the two daughter boxes, they share the plane half way along 'dimension'.
+    const double midpoint = mMin[dimension] + 0.5 * (mMax[dimension] - mMin[dimension]);
+    c_vector<double, DIM> lower_max = mMax;
+    lower_max[dimension] = midpoint;
+    c_vector<double, DIM> upper_min = mMin;
+    upper_min[dimension] = midpoint;
+
+    ParameterBox<DIM>* p_lower_box = new ParameterBox<DIM>(this, mMin, lower_max);
+    mDaughterBoxes.push_back(p_lower_box);
+    ParameterBox<DIM>* p_upper_box = new ParameterBox<DIM>(this, upper_min, mMax);
+    mDaughterBoxes.push_back(p_upper_box);
+
+    // The points on the shared plane are the corners of the lower box
+    // which are at the top end of 'dimension'.
+    CornerSet new_corners;
+    for (unsigned i = 0; i < pow(2, DIM); i++)
+    {
+        std::bitset<DIM> bin_i(i);
+        if (!bin_i[dimension])
+        {
+            continue;
+        }
+        c_vector<double, DIM>* p_corner = p_lower_box->mCorners[i];
+
+        // Generate an estimate of the QoIs at this point based on interpolation of this box.
+        std::vector<double> predicted_qois;
+        InterpolatePoint(*p_corner, predicted_qois);
+
+        DataMapIter iter = mpGreatGrandParentBox->mParameterPointDataMap.find(p_corner);
+        assert(iter != mpGreatGrandParentBox->mParameterPointDataMap.end());
+        boost::shared_ptr<ParameterPointData> p_real_data = (*iter).second;
+
+        if (!p_real_data)
+        {
+            // This point needs evaluating, store our prediction for comparison with real data later.
+            // We don't care whether an error actually occurred or not for this.
+            new_corners.insert(p_corner);
+            boost::shared_ptr<ParameterPointData> predicted_data = boost::shared_ptr<ParameterPointData>(new ParameterPointData(predicted_qois, 0u));
+            AssignQoIValues(p_corner, predicted_data, true);
+        }
+        else
+        {
+            // This point has already been evaluated (a neighbouring box has been refined),
+            // so we can work out the error in our prediction right now.
+            // N.B. we don't set error estimates on the existing data, it belongs to the box that created it.
+            const std::vector<double>& r_real_values = p_real_data->rGetQoIs();
+            assert(predicted_qois.size() == r_real_values.size());
+            std::vector<double> errors_in_predictions;
+            for (unsigned j = 0; j < predicted_qois.size(); j++)
+            {
+                errors_in_predictions.push_back(predicted_qois[j] - r_real_values[j]);
+            }
+            p_lower_box->mErrorsInQoIs.push_back(errors_in_predictions);
+            p_upper_box->mErrorsInQoIs.push_back(errors_in_predictions);
+        }
+    }
+
+    // If all of the points on the shared plane had already been evaluated, then the daughters' error
+    // estimates are already complete.
+    for (unsigned i = 0; i < mDaughterBoxes.size(); i++)
+    {
+        if (mDaughterBoxes[i]->mParameterPointDataMapPredictions.size() == 0u)
+        {
+            mDaughterBoxes[i]->FinaliseErrorEstimates();
+        }
+    }
+
+    TidyUpAfterSubdivision();
+    return new_corners;
+}
+
+template <unsigned DIM>
+void ParameterBox<DIM>::TidyUpAfterSubdivision()
+{
     // Tidy up things that a parent box doesn't need.
     mCorners.clear();
     mParameterPointDataMapPredictions.clear();
@@ -292,7 +389,6 @@ std::set<c_vector<double, DIM>*, c_vector_compare<DIM> > ParameterBox<DIM>::SubD
         mParameterPointDataMap.clear();
     }
     mAmParent = true; // I am not actually a parent until I clear my own corners!
-    return new_corners;
 }
 
 template <unsigned DIM>
@@ -324,7 +420,7 @@ void ParameterBox<DIM>::AssignQoIValues(c_vector<double, DIM>* pCorner,
         if (!isPredictedQoI && !(mpGreatGrandParentBox == this))
         {
             DataMapIter iter2 = mParameterPointDataMapPredictions.find(pCorner);
-            if (iter2 != mParameterPointDataMapPredictions.end())
+            if (iter2 != mParameterPointDataMapPredictions.end() && (*iter2).second)
             {
                 // If it does, we found a prediction, so evaluate it.
                 std::vector<double> predictions = (*iter2).second->rGetQoIs();
@@ -347,27 +443,7 @@ void ParameterBox<DIM>::AssignQoIValues(c_vector<double, DIM>* pCorner,
                 // If we have now evaluated all of the predictions
                 if (mParameterPointDataMapPredictions.size() == 0)
                 {
-                    mAllCornersEvaluated = true;
-
-                    mMaxErrorsInEachQoI.clear();
-                    // Take each QoI error at first corner to be the max for now.
-                    for (unsigned i = 0; i < mErrorsInQoIs[0].size(); i++)
-                    {
-                        mMaxErrorsInEachQoI.push_back(fabs(mErrorsInQoIs[0][i]));
-                    }
-
-                    // For each other corner
-                    for (unsigned i = 1u; i < mErrorsInQoIs.size(); i++)
-                    {
-                        // For each QoI.
-                        for (unsigned j = 0; j < mErrorsInQoIs[i].size(); j++)
-                        {
-                            if (fabs(mErrorsInQoIs[i][j]) > mMaxErrorsInEachQoI[j])
-                            {
-                                mMaxErrorsInEachQoI[j] = fabs(mErrorsInQoIs[i][j]);
-                            }
-                        }
-                    }
+                    FinaliseErrorEstimates();
                 }
             }
         }
@@ -377,6 +453,38 @@ void ParameterBox<DIM>::AssignQoIValues(c_vector<double, DIM>* pCorner,
     for (unsigned i = 0; i < mDaughterBoxes.size(); i++)
     {
         mDaughterBoxes[i]->AssignQoIValues(pCorner, pParameterPointData, isPredictedQoI);
+    }
+}
+
+template <unsigned DIM>
+void ParameterBox<DIM>::FinaliseErrorEstimates()
+{
+    mAllCornersEvaluated = true;
+
+    mMaxErrorsInEachQoI.clear();
+    if (mErrorsInQoIs.size() == 0u)
+    {
+        // Nothing to compare, the error estimates will be treated as unknown.
+        return;
+    }
+
+    // Take each QoI error at first corner to be the max for now.
+    for (unsigned i = 0; i < mErrorsInQoIs[0].size(); i++)
+    {
+        mMaxErrorsInEachQoI.push_back(fabs(mErrorsInQoIs[0][i]));
+    }
+
+    // For each other corner
+    for (unsigned i = 1u; i < mErrorsInQoIs.size(); i++)
+    {
+        // For each QoI.
+        for (unsigned j = 0; j < mErrorsInQoIs[i].size(); j++)
+        {
+            if (fabs(mErrorsInQoIs[i][j]) > mMaxErrorsInEachQoI[j])
+            {
+                mMaxErrorsInEachQoI[j] = fabs(mErrorsInQoIs[i][j]);
+            }
+        }
     }
 }
 
@@ -396,18 +504,16 @@ bool ParameterBox<DIM>::DoesBoxNeedFurtherRefinement(const double& rTolerance,
     assert(!mAmParent);
 
     // Hardcode a stopping criteria based on the width of the box.
-    c_vector<double, DIM> box_width; // should be able to combine with line below but optimised gcc 7.4.0 didn't like it!
-    box_width = mMax - mMin;
-    double max_width = -DBL_MAX;
+    bool any_dimension_splittable = false;
     for (unsigned i = 0; i < DIM; i++)
     {
-        if (box_width[i] > max_width)
+        if (IsDimensionSplittable(i))
         {
-            max_width = box_width[i];
+            any_dimension_splittable = true;
+            break;
         }
     }
-    double box_width_tolerance = 1e-5;
-    if (max_width < box_width_tolerance)
+    if (!any_dimension_splittable)
     {
         return false;
     }
@@ -461,8 +567,154 @@ double ParameterBox<DIM>::GetMaxErrorInQoIEstimateInThisBox(const unsigned& rQua
     //    }
     //    return max - min;
 
-    // New QoI error-estimate based measure
-    return mMaxErrorsInEachQoI[rQuantityIndex];
+    // New QoI error-estimate based measure, the largest error estimate in any dimension that we could refine.
+    // For a box created by a subdivision into 2^DIM boxes this is just mMaxErrorsInEachQoI[rQuantityIndex].
+    // NaN estimates (which can arise from QoIs flagged with -DBL_MAX) never trigger refinement.
+    std::vector<double> errors = GetErrorEstimatesPerDimension(rQuantityIndex);
+    double max_error = 0.0;
+    for (unsigned i = 0; i < DIM; i++)
+    {
+        if (IsDimensionSplittable(i) && errors[i] > max_error)
+        {
+            max_error = errors[i];
+        }
+    }
+    return max_error;
+}
+
+template <unsigned DIM>
+std::vector<double> ParameterBox<DIM>::GetErrorEstimatesPerDimension(const unsigned& rQuantityIndex)
+{
+    std::vector<double> errors(DIM, DBL_MAX); // Unknown until we find the split that measured them.
+    std::vector<bool> found(DIM, false);
+    unsigned num_found = 0u;
+
+    // Walk up the family tree to find the most recent split in each dimension.
+    ParameterBox<DIM>* p_box = this;
+    while (p_box->mpParentBox && num_found < DIM)
+    {
+        ParameterBox<DIM>* p_parent = p_box->mpParentBox;
+        for (unsigned i = 0; i < DIM; i++)
+        {
+            // If this box was created by halving dimension i of its parent.
+            if (!found[i] && (p_box->mMax[i] - p_box->mMin[i]) < 0.75 * (p_parent->mMax[i] - p_parent->mMin[i]))
+            {
+                found[i] = true;
+                num_found++;
+                if (p_box->mMaxErrorsInEachQoI.size() > rQuantityIndex)
+                {
+                    errors[i] = p_box->mMaxErrorsInEachQoI[rQuantityIndex];
+                }
+            }
+        }
+        p_box = p_parent;
+    }
+    return errors;
+}
+
+template <unsigned DIM>
+unsigned ParameterBox<DIM>::GetRefinementLevel() const
+{
+    const ParameterBox<DIM>* p_root = mpGreatGrandParentBox;
+    double level = 0.0;
+    for (unsigned i = 0; i < DIM; i++)
+    {
+        level += log2((p_root->mMax[i] - p_root->mMin[i]) / (mMax[i] - mMin[i]));
+    }
+    return (unsigned)(std::lround(level));
+}
+
+template <unsigned DIM>
+bool ParameterBox<DIM>::IsDimensionSplittable(unsigned dimension) const
+{
+    return (mMax[dimension] - mMin[dimension] >= MIN_SPLITTABLE_WIDTH);
+}
+
+template <unsigned DIM>
+double ParameterBox<DIM>::GetQoIVariationAlongDimension(unsigned dimension, const unsigned& rQuantityIndex)
+{
+    double max_variation = 0.0;
+    // Corners are in binary order (see constructor), so corners i and i + 2^dimension
+    // are at either end of an edge parallel to 'dimension'.
+    for (unsigned i = 0; i < pow(2, DIM); i++)
+    {
+        std::bitset<DIM> bin_i(i);
+        if (bin_i[dimension])
+        {
+            continue;
+        }
+        DataMapIter lower = mParameterPointDataMap.find(mCorners[i]);
+        DataMapIter upper = mParameterPointDataMap.find(mCorners[i + (1u << dimension)]);
+        if (lower == mParameterPointDataMap.end() || upper == mParameterPointDataMap.end()
+            || !(*lower).second || !(*upper).second
+            || (*lower).second->GetErrorCode() > 0u || (*upper).second->GetErrorCode() > 0u)
+        {
+            continue;
+        }
+        double variation = fabs((*upper).second->rGetQoIs()[rQuantityIndex] - (*lower).second->rGetQoIs()[rQuantityIndex]);
+        if (variation > max_variation)
+        {
+            max_variation = variation;
+        }
+    }
+    return max_variation;
+}
+
+template <unsigned DIM>
+unsigned ParameterBox<DIM>::ChooseDimensionToSplit(const unsigned& rQuantityIndex)
+{
+    if (mAmParent)
+    {
+        EXCEPTION("This box has already been subdivided.");
+    }
+
+    std::vector<double> errors = GetErrorEstimatesPerDimension(rQuantityIndex);
+
+    unsigned best_dim = UNSIGNED_UNSET;
+    double best_error = 0.0;
+    double best_variation = 0.0;
+    for (unsigned i = 0; i < DIM; i++)
+    {
+        if (!IsDimensionSplittable(i))
+        {
+            continue;
+        }
+
+        // Treat NaN error estimates as the lowest possible, so the choice is deterministic.
+        double error = std::isnan(errors[i]) ? -DBL_MAX : errors[i];
+        double variation = GetQoIVariationAlongDimension(i, rQuantityIndex);
+
+        bool is_better = false;
+        if (best_dim == UNSIGNED_UNSET || error > best_error)
+        {
+            is_better = true;
+        }
+        else if (error == best_error)
+        {
+            if (variation > best_variation)
+            {
+                is_better = true;
+            }
+            else if (variation == best_variation
+                     && (mMax[i] - mMin[i]) > (mMax[best_dim] - mMin[best_dim]))
+            {
+                is_better = true;
+            }
+        }
+
+        if (is_better)
+        {
+            best_dim = i;
+            best_error = error;
+            best_variation = variation;
+        }
+    }
+
+    if (best_dim == UNSIGNED_UNSET)
+    {
+        EXCEPTION("This box is too small to split in any dimension.");
+    }
+    return best_dim;
 }
 
 template <unsigned DIM>
@@ -536,7 +788,7 @@ void ParameterBox<DIM>::GetErrorEstimateInAllBoxes(ParameterBox<DIM>*& pBestBox,
 template <unsigned DIM>
 ParameterBox<DIM>* ParameterBox<DIM>::FindBoxWithLargestQoIErrorEstimate(const unsigned& rQuantityIndex,
                                                                          const double& rTolerance,
-                                                                         const unsigned& rMaxGenerationDifference)
+                                                                         const unsigned& rMaxRefinementLevelDifference)
 {
     // Only the grand parent should call this. If I have a parent I'm not it.
     if (mpParentBox)
@@ -560,8 +812,9 @@ ParameterBox<DIM>* ParameterBox<DIM>::FindBoxWithLargestQoIErrorEstimate(const u
         // Check the selected box isn't going to refine one area too much,
         // if it is refine least refined area instead.
         if (least_refined // if an unrefined box exists that doesn't meet the tolerances.
-            && ((most_refined->GetGeneration() - least_refined->GetGeneration()) == rMaxGenerationDifference)
-            && (p_box->GetGeneration() == GetMostRefinedChild()->GetGeneration()))
+            && rMaxRefinementLevelDifference != UNSIGNED_UNSET
+            && ((most_refined->GetRefinementLevel() - least_refined->GetRefinementLevel()) >= rMaxRefinementLevelDifference)
+            && (p_box->GetRefinementLevel() == most_refined->GetRefinementLevel()))
         {
             return least_refined;
         }
@@ -722,7 +975,7 @@ ParameterBox<DIM>* ParameterBox<DIM>::GetMostRefinedChild()
         for (unsigned i = 0; i < mDaughterBoxes.size(); i++)
         {
             ParameterBox<DIM>* this_daughters_most_refined = mDaughterBoxes[i]->GetMostRefinedChild();
-            if (!p_box || this_daughters_most_refined->GetGeneration() > p_box->GetGeneration())
+            if (!p_box || this_daughters_most_refined->GetRefinementLevel() > p_box->GetRefinementLevel())
             {
                 p_box = this_daughters_most_refined;
             }
@@ -756,7 +1009,7 @@ ParameterBox<DIM>* ParameterBox<DIM>::GetLeastRefinedChild(const double& rTolera
 
             if (this_daughters_least_refined // If this daughter box needs refinement
                 && (!p_box // and we either don't have a box at the moment, or this box is a lower generation
-                    || this_daughters_least_refined->GetGeneration() < p_box->GetGeneration()))
+                    || this_daughters_least_refined->GetRefinementLevel() < p_box->GetRefinementLevel()))
             {
                 p_box = this_daughters_least_refined;
             }
@@ -809,7 +1062,9 @@ double ParameterBox<DIM>::ReportPercentageOfSpaceWhereToleranceIsMetForQoI(const
             area_box *= widths[j];
         }
 
-        if (all_boxes[i]->DoesBoxNeedFurtherRefinement(rTolerance, rQuantityIndex))
+        // Boxes still waiting for some of their new corners to be evaluated don't have error estimates yet.
+        if ((all_boxes[i]->mpParentBox && !all_boxes[i]->mAllCornersEvaluated)
+            || all_boxes[i]->DoesBoxNeedFurtherRefinement(rTolerance, rQuantityIndex))
         {
             area_not += area_box;
         }

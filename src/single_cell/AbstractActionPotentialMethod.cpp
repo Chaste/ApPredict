@@ -34,6 +34,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 // Standard headers
+#include <algorithm>
 #include <cmath>
 
 // Chaste includes
@@ -41,6 +42,13 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 // ApPredict includes
 #include "AbstractActionPotentialMethod.hpp"
+
+/**
+ * The number of paces we analyse at the end of a steady pacing experiment.
+ * We usually analyse two paces to look for alternans, but have observed three period
+ * behaviour or more, so this is a hardcoded option for now.
+ */
+static const unsigned NUM_PACES_TO_ANALYSE = 3u;
 
 AbstractActionPotentialMethod::AbstractActionPotentialMethod()
     : mRunYet(false),
@@ -230,7 +238,7 @@ OdeSolution AbstractActionPotentialMethod::SteadyStatePacingExperiment(
         maximum_time_step = printingTimeStep;
     }
 
-    const unsigned num_paces_to_analyze = 2u;
+    const unsigned num_initial_check_paces = 2u;
 
     // In this block we just do one/two complete action potentials
     // to see if the model 'fires off' an action potential properly.
@@ -238,7 +246,7 @@ OdeSolution AbstractActionPotentialMethod::SteadyStatePacingExperiment(
     // running to steady state.
     {
         pModel->SetMaxSteps(100000 + 10 * s1_period);
-        OdeSolution solution = pModel->Solve(0, num_paces_to_analyze * s1_period, maximum_time_step,
+        OdeSolution solution = pModel->Solve(0, num_initial_check_paces * s1_period, maximum_time_step,
                                              printingTimeStep); // Maximum timestep here is usually
         // the printing time step
         std::vector<double> voltages = solution.GetVariableAtIndex(voltage_index);
@@ -289,15 +297,14 @@ OdeSolution AbstractActionPotentialMethod::SteadyStatePacingExperiment(
     // The mMaxNumPaces is based on the total we want to do, so the steady state
     // runner
     // should go for fewer, as some are analysed before this, and some after.
-    const unsigned num_paces_analysed_elsewhere = 2u * num_paces_to_analyze;
+    const unsigned num_paces_analysed_elsewhere = 2u * num_initial_check_paces;
 
     if (!skip_steady_state_calculation && mMaxNumPaces > num_paces_analysed_elsewhere)
     {
         // This method tries to detect a steady state if we are happy we're
         // producing APs...
         SteadyStateRunner steady_runner(pModel, true); // The true denotes a 'two
-        // pace scan', which will
-        // catch alternans too.
+        // pace scan', which will catch alternans too.
         if (mSuppressOutput)
         {
             steady_runner.SuppressOutput();
@@ -313,14 +320,14 @@ OdeSolution AbstractActionPotentialMethod::SteadyStatePacingExperiment(
         steady_runner.RunToSteadyState();
     }
 
-    OdeSolution solution = PerformAnalysisOfTwoPaces(
+    OdeSolution solution = PerformAnalysisOfMultiplePaces(
         pModel, rApd90, rApd50, rUpstroke, rPeak, rPeakTime, rCaMax, rCaMin,
         s1_period, maximum_time_step, printingTimeStep, conc);
 
     if (mRepeat)
     {
         // std::cout << "Repeating simulation to order alternans APs consistently...\n";
-        solution = PerformAnalysisOfTwoPaces(
+        solution = PerformAnalysisOfMultiplePaces(
             pModel, rApd90, rApd50, rUpstroke, rPeak, rPeakTime, rCaMax, rCaMin,
             s1_period, maximum_time_step, printingTimeStep, conc);
     }
@@ -335,7 +342,7 @@ void AbstractActionPotentialMethod::PushModelForwardOneS1Interval(
     pModel->Solve(0, pacingCycleLength, maxTimeStep);
 }
 
-OdeSolution AbstractActionPotentialMethod::PerformAnalysisOfTwoPaces(
+OdeSolution AbstractActionPotentialMethod::PerformAnalysisOfMultiplePaces(
     boost::shared_ptr<AbstractCvodeCell> pModel,
     double &rApd90,
     double &rApd50,
@@ -349,11 +356,70 @@ OdeSolution AbstractActionPotentialMethod::PerformAnalysisOfTwoPaces(
     const double printingTimeStep,
     const double conc)
 {
-    // We usually analyse two paces to look for alternans.
-    // Have observed three period behaviour or more, so this is a hardcoded option
-    // for now.
-    const unsigned num_paces_to_analyze = 3u;
     mRepeat = false;
+
+    pModel->SetMaxSteps(NUM_PACES_TO_ANALYSE * (100000 + 10 * s1_period)); // Internal ODE solver steps, not paces!
+    OdeSolution solution = pModel->Solve(0, NUM_PACES_TO_ANALYSE * s1_period, maximumTimeStep,
+                                         printingTimeStep); // Get plenty of detail on these
+    // paces for analysis.
+
+    const unsigned voltage_index = pModel->GetSystemInformation()->GetStateVariableIndex("membrane_voltage");
+    std::vector<double> voltages = solution.GetVariableAtIndex(voltage_index);
+    boost::shared_ptr<RegularStimulus> p_reg_stim = boost::static_pointer_cast<RegularStimulus>(
+        pModel->GetStimulusFunction());
+
+    bool action_potentials_recorded = AnalyseVoltageTrace(solution.rGetTimes(), voltages, s1_period,
+                                                          p_reg_stim->GetStartTime(), rApd90, rApd50,
+                                                          rUpstroke, rPeak, rPeakTime, conc);
+
+    if (action_potentials_recorded)
+    {
+        if (pModel->HasAnyVariable("cytosolic_calcium_concentration"))
+        {
+            if (pModel->HasDerivedQuantity("cytosolic_calcium_concentration"))
+            {
+                solution.CalculateDerivedQuantitiesAndParameters(pModel.get());
+            }
+            std::vector<double> calcium = solution.GetAnyVariable("cytosolic_calcium_concentration");
+            rCaMax = *(std::max_element(calcium.begin(), calcium.end()));
+            rCaMin = *(std::min_element(calcium.begin(), calcium.end()));
+        }
+        else
+        {
+            WARN_ONCE_ONLY(pModel->GetSystemName()
+                           << " does not have 'cytosolic_calcium_concentration' "
+                              "annotated, please tag it if it is present.");
+        }
+    }
+
+    mRepeatNumber++;
+
+    return solution;
+}
+
+void AbstractActionPotentialMethod::AnalyseRecordedVoltageTrace(const std::vector<double>& rTimes,
+                                                                const std::vector<double>& rVoltages,
+                                                                const double s1Period,
+                                                                const double stimulusStartTime)
+{
+    mRunYet = true;
+    mRepeat = false;
+    mRepeatNumber = 1u; // Treat this as the final analysis, as we can't simulate any more paces.
+    double apd90, apd50, upstroke, peak, peak_time;
+    AnalyseVoltageTrace(rTimes, rVoltages, s1Period, stimulusStartTime, apd90, apd50, upstroke, peak, peak_time, DOUBLE_UNSET);
+}
+
+bool AbstractActionPotentialMethod::AnalyseVoltageTrace(const std::vector<double>& rTimes,
+                                                        const std::vector<double>& rVoltages,
+                                                        const double s1_period,
+                                                        const double stimulusStartTime,
+                                                        double& rApd90,
+                                                        double& rApd50,
+                                                        double& rUpstroke,
+                                                        double& rPeak,
+                                                        double& rPeakTime,
+                                                        const double conc)
+{
     const double alternans_threshold = 1; // ms in APD90 - hardcoded,
     // could make an option in future. But if it is any smaller alternans 'comes
     // and goes' as you
@@ -361,16 +427,11 @@ OdeSolution AbstractActionPotentialMethod::PerformAnalysisOfTwoPaces(
     // (after a bifurcation)
     // kind of alternans.
 
-    pModel->SetMaxSteps(num_paces_to_analyze * (100000 + 10 * s1_period)); // Internal ODE solver steps, not paces!
-    OdeSolution solution = pModel->Solve(0, num_paces_to_analyze * s1_period, maximumTimeStep,
-                                         printingTimeStep); // Get plenty of detail on these two
-    // paces for analysis.
-
     // Get voltage properties
-    const unsigned voltage_index = pModel->GetSystemInformation()->GetStateVariableIndex("membrane_voltage");
-    std::vector<double> voltages = solution.GetVariableAtIndex(voltage_index);
-    CellProperties voltage_properties(voltages, solution.rGetTimes(),
+    const std::vector<double>& voltages = rVoltages;
+    CellProperties voltage_properties(voltages, rTimes,
                                       mActionPotentialThreshold);
+    bool action_potentials_recorded = false;
 
     std::vector<double> apd90s;
     std::vector<double> peak_voltages;
@@ -410,26 +471,9 @@ OdeSolution AbstractActionPotentialMethod::PerformAnalysisOfTwoPaces(
         }
         // It makes sense to return the peak voltage time relative to start of
         // stimulus application.
-        boost::shared_ptr<RegularStimulus> p_reg_stim = boost::static_pointer_cast<RegularStimulus>(
-            pModel->GetStimulusFunction());
-        rPeakTime = std::fmod(rPeakTime - p_reg_stim->GetStartTime(), s1_period);
+        rPeakTime = std::fmod(rPeakTime - stimulusStartTime, s1_period);
 
-        if (pModel->HasAnyVariable("cytosolic_calcium_concentration"))
-        {
-            if (pModel->HasDerivedQuantity("cytosolic_calcium_concentration"))
-            {
-                solution.CalculateDerivedQuantitiesAndParameters(pModel.get());
-            }
-            std::vector<double> calcium = solution.GetAnyVariable("cytosolic_calcium_concentration");
-            rCaMax = *(std::max_element(calcium.begin(), calcium.end()));
-            rCaMin = *(std::min_element(calcium.begin(), calcium.end()));
-        }
-        else
-        {
-            WARN_ONCE_ONLY(pModel->GetSystemName()
-                           << " does not have 'cytosolic_calcium_concentration' "
-                              "annotated, please tag it if it is present.");
-        }
+        action_potentials_recorded = true;
         mSuccessful = true;
     }
     catch (Exception &e)
@@ -547,7 +591,7 @@ OdeSolution AbstractActionPotentialMethod::PerformAnalysisOfTwoPaces(
         }
 
         // Deal with the case when there was only less than three AP but three stimuli
-        if (apd90s.size() < num_paces_to_analyze && mSuccessful)
+        if (apd90s.size() < NUM_PACES_TO_ANALYSE && mSuccessful)
         {
             std::stringstream message;
             if (conc != DOUBLE_UNSET)
@@ -578,7 +622,22 @@ OdeSolution AbstractActionPotentialMethod::PerformAnalysisOfTwoPaces(
                         an_ap_greater_than_period = true;
                     }
                 }
-                if (an_ap_greater_than_period || voltages.back() >= mActionPotentialThreshold)
+                // If a stimulus arrives while the cell is still above threshold then one AP spans two stimuli.
+                // We need to check this directly, because if the trace starts part way through an AP (carried
+                // over from before the trace) CellProperties doesn't record that AP, and can mistake its plateau
+                // for the resting potential, giving a misleadingly short APD for the next AP.
+                bool a_stimulus_during_an_ap = false;
+                for (unsigned i = 0; i < NUM_PACES_TO_ANALYSE; i++)
+                {
+                    // The last recorded voltage at (or before) the time this stimulus starts to be applied.
+                    const double stimulus_time = std::fmod(stimulusStartTime, s1_period) + i * s1_period;
+                    const unsigned index = std::upper_bound(rTimes.begin(), rTimes.end(), stimulus_time + 1e-6) - rTimes.begin();
+                    if (index > 0u && voltages[index - 1u] >= mActionPotentialThreshold)
+                    {
+                        a_stimulus_during_an_ap = true;
+                    }
+                }
+                if (an_ap_greater_than_period || a_stimulus_during_an_ap || voltages.back() >= mActionPotentialThreshold)
                 {
                     mErrorCode = 3u;
                     mErrorMessage = "NoActionPotential_3";
@@ -594,9 +653,7 @@ OdeSolution AbstractActionPotentialMethod::PerformAnalysisOfTwoPaces(
         }
     }
 
-    mRepeatNumber++;
-
-    return solution;
+    return action_potentials_recorded;
 }
 
 void AbstractActionPotentialMethod::

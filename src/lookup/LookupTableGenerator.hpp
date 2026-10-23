@@ -1,6 +1,6 @@
 /*
 
-Copyright (c) 2005-2025, University of Oxford.
+Copyright (c) 2005-2026, University of Oxford.
 All rights reserved.
 
 University of Oxford means the Chancellor, Masters and Scholars of the
@@ -37,6 +37,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define LOOKUPTABLEGENERATOR_HPP_
 
 #include <boost/shared_ptr.hpp>
+#include <functional>
 #include <set>
 // Seems that whatever version of ublas we are using now contains
 // boost serialization methods for c_vector, which is nice.
@@ -58,6 +59,14 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "UblasVectorInclude.hpp" // Chaste helper header to get c_vectors included with right namespace.
 
 /**
+ * A function that evaluates the quantities of interest at a point in parameter space.
+ *
+ * Arguments are the parameter scalings, a vector to fill with the QoIs, and an error code
+ * to set (0 if there was no error). It may be called from several threads at once.
+ */
+typedef std::function<void(const std::vector<double>&, std::vector<double>&, unsigned&)> LookupTableEvaluationFunction;
+
+/**
  * A class that will generate lookup tables in DIM-dimensional parameter space,
  * populate them, perform refinement, etc.
  *
@@ -71,6 +80,17 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * You should add QoIs in order of importance, as the lookup table will be
  * refined for each in turn.
+ *
+ * Refinement works by keeping all the ParameterBoxes that need refining in a queue,
+ * ranked by the number of error codes at their corners (fewest first) and then by their
+ * error estimate (largest first). Whenever a thread is free the box at the top of the queue
+ * is bisected along the dimension with the largest error estimate
+ * (see ParameterBox::ChooseDimensionToSplit()), and its new points are evaluated. Once all of a
+ * box's new points have been evaluated its daughters have error estimates and are queued in turn.
+ * With more than one thread the order of refinement depends on which evaluations finish first.
+ *
+ * Tables generated with older versions of this class (which divided boxes into 2^DIM) can
+ * still be loaded, interpolated and refined further.
  *
  * If you ever add a new DIM (6 or more) be sure to add new explicit instantiation and boost
  * serialization export wrappers...
@@ -199,14 +219,123 @@ private:
     double mVoltageThreshold;
 
     /**
-	 * This method will farm out the evaluation of a set of points using
-	 * multi-threading.
-	 *
-	 * @param setOfPoints  A collection of points in parameter space at which to
-	 * evaluate QoIs.
-	 * @param rFile  The output file to write a line of results into.
-	 */
-    void RunEvaluationsForThesePoints(CornerSet setOfPoints, out_stream& rFile);
+     * The maximum number of evaluations to run at once (each on its own thread).
+     * Not archived, as it is a property of the machine rather than the table.
+     */
+    unsigned mNumThreads;
+
+    /**
+     * If set, this is used to evaluate QoIs instead of running action potential simulations.
+     * Only for testing the refinement algorithm quickly, not archived.
+     */
+    LookupTableEvaluationFunction mEvaluationFunctionForTesting;
+
+    /** A box waiting in the refinement queue, with the quantities it is ranked by. */
+    struct QueuedBox
+    {
+        /** The box */
+        ParameterBox<DIM>* pBox;
+        /** The number of its corners at which QoI evaluations gave error codes */
+        unsigned numErrorCodes;
+        /** Its error estimate for the QoI being refined */
+        double errorEstimate;
+        /** Its refinement level, see ParameterBox::GetRefinementLevel() */
+        unsigned refinementLevel;
+        /** Its minimum corner, used to break ties deterministically */
+        c_vector<double, DIM> min;
+    };
+
+    /**
+     * Ranks queued boxes for refinement: fewest error codes first, then largest error estimate,
+     * then least refined, then by minimum corner.
+     */
+    struct QueuedBoxPriorityCompare
+    {
+        /**
+         * @param rA  a queued box
+         * @param rB  another queued box
+         * @return whether rA should be refined before rB.
+         */
+        bool operator()(const QueuedBox& rA, const QueuedBox& rB) const;
+    };
+
+    /** Ranks queued boxes by refinement level (least refined first), then by QueuedBoxPriorityCompare. */
+    struct QueuedBoxLevelCompare
+    {
+        /**
+         * @param rA  a queued box
+         * @param rB  another queued box
+         * @return whether rA is less refined than rB (or ranked higher at the same refinement level).
+         */
+        bool operator()(const QueuedBox& rA, const QueuedBox& rB) const;
+    };
+
+    /**
+     * This method will farm out the evaluation of a set of points using
+     * multi-threading, and record the results in the order of the set.
+     *
+     * @param setOfPoints  A collection of points in parameter space at which to
+     * evaluate QoIs.
+     * @param rEvaluate  The function that evaluates QoIs at a point.
+     * @param launchDelay  A pause (in seconds) after launching each thread.
+     * @param rFile  The output file to write a line of results into.
+     */
+    void RunEvaluationsForThesePoints(CornerSet setOfPoints,
+                                      const LookupTableEvaluationFunction& rEvaluate,
+                                      double launchDelay,
+                                      out_stream& rFile);
+
+    /**
+     * Refine the lookup table for one QoI until its error estimates meet the tolerance
+     * everywhere, or we reach the maximum number of evaluations.
+     *
+     * Keeps up to #mNumThreads evaluations running at once, refining further boxes from the top of
+     * the queue whenever a thread is free. Always waits for running evaluations to finish before
+     * returning, so the table is left in a consistent state for archiving.
+     *
+     * @param quantityIndex  The index of the QoI to refine for.
+     * @param rEvaluate  The function that evaluates QoIs at a point.
+     * @param launchDelay  A pause (in seconds) after launching each thread.
+     * @param rFile  The output file to write lines of results into.
+     * @return Whether the tolerance for this QoI is met.
+     */
+    bool RefineForQuantityOfInterest(unsigned quantityIndex,
+                                     const LookupTableEvaluationFunction& rEvaluate,
+                                     double launchDelay,
+                                     out_stream& rFile);
+
+    /**
+     * Record the result of an evaluation: store it, tell the parameter boxes about it, and write
+     * it to the output file.
+     *
+     * @param pPoint  The point in parameter space that was evaluated.
+     * @param rQoIs  The QoIs at this point.
+     * @param errorCode  The error code from the evaluation (0 if no error).
+     * @param rFile  The output file to write a line of results into.
+     */
+    void RecordEvaluation(c_vector<double, DIM>* pPoint,
+                          const std::vector<double>& rQoIs,
+                          unsigned errorCode,
+                          out_stream& rFile);
+
+    /**
+     * Add a box to the refinement queues if it needs further refinement.
+     *
+     * @param pBox  The box (which must be a leaf with all its corners evaluated).
+     * @param quantityIndex  The index of the QoI being refined.
+     * @param rQueue  The queue ranked by priority.
+     * @param rQueueByLevel  The same boxes ranked by refinement level.
+     */
+    void EnqueueIfNeedsRefinement(ParameterBox<DIM>* pBox,
+                                  unsigned quantityIndex,
+                                  std::set<QueuedBox, QueuedBoxPriorityCompare>& rQueue,
+                                  std::set<QueuedBox, QueuedBoxLevelCompare>& rQueueByLevel);
+
+    /**
+     * @param pBox  A box.
+     * @param rLeaves  Filled with all the boxes in pBox's family (including itself) that have no children.
+     */
+    void CollectLeafBoxes(ParameterBox<DIM>* pBox, std::vector<ParameterBox<DIM>*>& rLeaves);
 
     /**
 	 *  Private constructor, just for use in archiving
@@ -324,6 +453,9 @@ public:
 	 * other parts of
 	 * the parameter space.
 	 *
+	 * The difference is measured in whole levels of refinement, i.e. halving a box in
+	 * every dimension, which takes DIM bisections.
+	 *
 	 * @param rMaxRefinementDifference  The maximum difference in the parameter
 	 * boxes to allow.
 	 */
@@ -360,6 +492,19 @@ public:
 	 * @param frequency  The pacing frequency to use (in Hz).
 	 */
     void SetPacingFrequency(double frequency);
+
+    /**
+     * Set the maximum number of evaluations (simulations) to run at once, each on its own thread.
+     * Defaults to the number of cores available on the machine.
+     *
+     * @param numThreads  The number of threads to use (at least 1).
+     */
+    void SetNumThreads(unsigned numThreads);
+
+    /**
+     * @return The maximum number of evaluations that will run at once.
+     */
+    unsigned GetNumThreads() const;
 
     /**
      * Helper method that just returns DIM, to avoid template chaos.
