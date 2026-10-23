@@ -123,6 +123,21 @@ public:
             TS_ASSERT_THROWS_THIS(SetupModel setup(1.0, UNSIGNED_UNSET),
                                   "Invalid file given with --cellml argument: bla.cellml");
         }
+        {
+            // See https://github.com/Chaste/ApPredict/issues/3 - requesting a block on a
+            // channel that isn't labelled in the model should be picked up immediately,
+            // rather than only once we reach a concentration in the loop that actually
+            // causes some conductance change (which was confusing, as it could look like
+            // the simulation had run successfully for the earlier, e.g. zero, concentrations).
+            CommandLineArgumentsMocker wrapper("--model 1 --pacing-freq 1.0 --pacing-max-time 5 "
+                                                "--pic50-nal 1 --hill-nal 1 --saturation-nal 0 "
+                                                "--plasma-conc-high 100 --plasma-conc-low 0 "
+                                                "--plasma-conc-count 4 --plasma-conc-logscale true");
+
+            ApPredictMethods methods;
+            TS_ASSERT_THROWS_CONTAINS(methods.Run(),
+                                      "does not have the current \"membrane_persistent_sodium_current_conductance\" labelled, but you have requested a block on this channel.");
+        }
     }
 
     void TestVoltageThresholdDetectionAlgorithm()
